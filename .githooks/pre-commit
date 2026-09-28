@@ -1,3 +1,5 @@
 #!/bin/sh
+# Refuse a staged file that was rewritten rather than edited. See tools/guard_rewrite.py.
+python tools/guard_rewrite.py || exit 1
 # Refuse a commit that carries personal data. See tools/privacy_scan.py.
 exec python tools/privacy_scan.py --staged

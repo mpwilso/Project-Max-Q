@@ -1348,6 +1348,69 @@ class SetScore(unittest.TestCase):
             finally:
                 sweep.SCORED = saved
 
+    def _cli(self, entries, rows=None):
+        """cmd_set_score in a temp data dir; returns (scored.json contents, printed text)."""
+        import contextlib, io
+        saved = sweep.SCORED, sweep.DATA
+        with tempfile.TemporaryDirectory() as d:
+            sweep.DATA, sweep.SCORED = Path(d), Path(d) / "scored.json"
+            (Path(d) / "latest.json").write_text(json.dumps({"rows": rows or {}}), encoding="utf-8")
+            (Path(d) / "seen.json").write_text(json.dumps({k: "2030-01-02" for k in (rows or {})}), encoding="utf-8")
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out):
+                    sweep.cmd_set_score(entries, G)
+                return sweep.load_scored(), out.getvalue()
+            finally:
+                sweep.SCORED, sweep.DATA = saved
+
+    def test_every_repeated_flag_is_stored(self):
+        # A single-valued flag kept only the last of several --set-score flags, silently.
+        d, _ = self._cli(["k:A:1=80:Apply", "k:A:2=62:Maybe", "k:A:3=40:Skip"])
+        self.assertEqual({k: v["score"] for k, v in d.items()}, {"k:A:1": 80, "k:A:2": 62, "k:A:3": 40})
+
+    def test_one_bad_entry_writes_nothing(self):
+        with self.assertRaises(SystemExit):
+            self._cli(["k:A:1=80:Apply", "k:A:2=eighty:Maybe"])
+        with self.assertRaises(SystemExit):
+            self._cli(["k:A:1=80:Apply", "k:A:1=70:Maybe"])                  # same key twice
+
+    def test_a_hand_label_that_disagrees_with_the_signals_is_named(self):
+        r = row(title="Staff Product Manager", location="Remote, US", desc="10+ years of product management experience.")
+        computed = sweep.conversion_signals(dict(r, key="k:A:1"), G)["label"]
+        other = next(x for x in sweep.CONVERSION_LABELS if x != computed)
+        _, out = self._cli([f"k:A:1=82:Apply:conv={other}"], rows={"k:A:1": r})
+        self.assertIn(f"conv={other} but the sweep computes {computed}", out)
+        _, out = self._cli(["k:A:1=82:Apply"], rows={"k:A:1": r})
+        self.assertIn(f"Add :conv={computed}", out)
+
+
+class StateCodeMarkets(unittest.TestCase):
+    """endorsed_state_codes and endorsed_exact_segments. Boards also write Canada as "CA", so a
+    Canadian segment must never endorse on the California code, and "New York" as a whole segment is
+    the city while the same words inside a segment can be the state."""
+    G2 = dict(G, endorsed_state_codes=["CA"], endorsed_exact_segments=["new york"],
+              endorsed_state_code_not_if_codes=["AB", "BC", "MB", "ON", "QC", "SK"],
+              location_fail_any=[x for x in G["location_fail_any"] if x not in G["blocked_us_markets"]],
+              blocked_us_markets=[])
+
+    def verdict(self, loc, g=None):
+        return sweep.gate(row(location=loc, desc=""), g or self.G2)
+
+    def test_a_state_code_endorses_any_city_in_it(self):
+        self.assertEqual(self.verdict("Oakland, CA")[0], "PASS")
+        self.assertEqual(self.verdict("Oakland, CA", G)[0], "LOCATION-POLICY")          # stock gates: off
+
+    def test_ca_meaning_canada_never_endorses(self):
+        self.assertEqual(self.verdict("Montreal, QC, CA")[0], "LOCATION-POLICY")
+        v, why = self.verdict("Calgary, AB, CA")                                   # the endorsed foreign path
+        self.assertEqual(v, "PASS")
+        self.assertTrue(any(w.startswith("KNOCKOUT") for w in why), why)
+
+    def test_an_exact_segment_is_the_city_not_the_state(self):
+        self.assertEqual(self.verdict("New York")[0], "PASS")
+        self.assertEqual(self.verdict("Tarrytown, New York")[0], "LOCATION-POLICY")
+
 
 class SweepSandbox(unittest.TestCase):
     """End-to-end run() against fake adapters in a temp data dir, across simulated days."""

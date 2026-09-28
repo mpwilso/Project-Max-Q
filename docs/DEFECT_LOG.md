@@ -71,3 +71,31 @@ Each entry: what it looked like, why it happened, what changed, and where it is 
 - **Fix:** any dealbreaker makes the verdict skip, in code. Re-measured by replaying the recorded answers:
   agreement 67% to 79%, bad jobs pushed up 3 to 0, with no new model calls.
 - **Pinned by:** `tests/test_fitscore.py::Validate::test_a_dealbreaker_makes_the_verdict_skip_whatever_the_score`.
+
+### 10. Several scores recorded, one kept
+- **Symptom:** a batch of `--set-score` flags in one command reported success, and only the last score
+  was in the ledger.
+- **Cause:** a single-valued command-line option; each repeat overwrote the one before, without a word.
+- **Fix:** the flag repeats. Every entry is parsed before any is written, so one malformed entry or a
+  key given twice writes nothing. A hand-typed Conversion label that disagrees with the computed
+  signals is stored as given and named in a warning.
+- **Pinned by:** `tests/test_sweep.py::SetScore` (`test_every_repeated_flag_is_stored`,
+  `test_one_bad_entry_writes_nothing`).
+
+### 11. "CA" meant Canada
+- **Symptom:** endorsing California by its state code would also have endorsed "Montreal, QC, CA".
+- **Cause:** boards write both California and Canada as "CA", and the US check already reads uppercase
+  two-letter codes as states.
+- **Fix:** a segment carrying a Canadian province code, the word Canada, or an endorsed foreign market
+  never endorses on a state code. The same change added whole-segment matching, so "New York" can mean
+  the city without endorsing "Tarrytown, New York".
+- **Pinned by:** `tests/test_sweep.py::StateCodeMarkets`.
+
+### 12. A one-line edit that rewrote the whole file
+- **Symptom:** commits where every line of a file changed: line endings flipped from CRLF to LF, or a
+  JSON file re-serialized with a different indent. The real change was one line, buried.
+- **Cause:** the coding agent edited with `sed -i` under Git Bash, or loaded and dumped JSON with default
+  settings. A rule against it in the agent's instructions did not stop it recurring.
+- **Fix:** a pre-commit check compares each staged file with HEAD and refuses a line-ending flip or a
+  JSON file where most lines changed. An environment variable overrides it, and only the maintainer sets it.
+- **Pinned by:** `tests/test_guard_rewrite.py`.

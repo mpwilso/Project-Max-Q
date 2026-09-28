@@ -105,6 +105,8 @@ need them.
 | `title_include_any` / `title_exclude_any` | Title phrases that put a posting in or out of your lane |
 | `title_lane_override` | Phrases that let a title past the engineering-title guard (below) |
 | `endorsed_onsite_markets` | Cities you would work in onsite or hybrid |
+| `endorsed_state_codes` | Whole US states you would work in, by two-letter code (list the state's full name in `endorsed_onsite_markets` too). A segment with a Canadian province code never counts, because boards also write Canada as "CA" |
+| `endorsed_exact_segments` | Locations that endorse only as a whole segment: a bare "New York" is the city, while the words inside "Tarrytown, New York" are the state |
 | `blocked_us_markets` | US cities you rule out (also list them in `location_fail_any`) |
 | `endorsed_foreign_markets` | Non-US cities you would take, with the knockout note to show |
 | `candidate_years_total` | Your years of relevant experience, for the years-gap read |

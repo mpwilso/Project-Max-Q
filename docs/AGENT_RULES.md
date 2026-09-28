@@ -20,6 +20,8 @@ the project as much as the code is: an agent that is fast is only useful if its 
 ## Every defect becomes a test
 - A defect found in real data gets a regression test in the same session.
 - Run the full offline suite before a long sweep and after editing the sweep, the gates or an adapter.
+- A rule the agent keeps breaking becomes a check. Rewriting a whole file to change one line happened
+  again after it was written down, so a pre-commit hook now refuses it (`tools/guard_rewrite.py`).
 
 ## Changes to configuration have a blast radius
 - After any edit to `gates.json`, rebuild the report from the last snapshot (`--report-only`) and read

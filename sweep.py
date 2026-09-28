@@ -1592,8 +1592,21 @@ def location_policy_ok(original, g):
         if any(m in seg.lower() for m in remote_markers) and not remote_names_foreign_place(seg, g):
             return True, "remote"
     # Endorsed onsite markets must come from a segment that actually cleared the US check.
+    # A whole state can be endorsed by its UPPERCASE code (endorsed_state_codes), read the way the US
+    # check reads codes. Boards also write Canada as "CA" ('CA, BC, Vancouver'), so a segment with a
+    # Canadian province code, the word canada, or an endorsed foreign market never endorses on a code.
+    # endorsed_exact_segments matches a whole segment: a bare "New York" is the city, while the word
+    # would also match "Tarrytown, New York", the state.
+    exact = set(g.get("endorsed_exact_segments", []))
+    codes = set(g.get("endorsed_state_codes", []))
+    not_codes = set(g.get("endorsed_state_code_not_if_codes", []))
     for seg in us_segments(original, g):
         if any(_has_word(seg.lower(), c) for c in endorsed): return True, "market"
+        if re.sub(r"\s+", " ", seg.strip().lower()) in exact: return True, "market"
+        seg_codes = set(re.findall(r"(?<![A-Za-z])[A-Z]{2}(?![A-Za-z])", seg))
+        if (codes & seg_codes and not (not_codes & seg_codes) and not _has_word(seg.lower(), "canada")
+                and not endorsed_foreign_market(seg, g)):
+            return True, "market"
     # A segment naming only the country says nothing about onsite, so the location policy cannot
     # judge it. It passes as "bare country" and _gate_core flags it for verification.
     if g.get("bare_country_passes") and any(_bare_country(seg, g) for seg in us_segments(original, g)):
@@ -2307,6 +2320,41 @@ def parse_set_score(arg):
     if re.search(r"=\s*(un)?built\s*$", verdict, re.I):
         raise ValueError(f"the built flag is inside the verdict text ({verdict!r}): write it as :built")
     return key, score, verdict or None, built, conversion
+
+def cmd_set_score(entries, g):
+    """--set-score, one or more entries. Every entry is parsed before any is written, so one
+    malformed entry writes nothing. With a single-valued flag, only the last of several --set-score
+    flags was stored and the rest vanished without a word. Exits with a message on a rejected run."""
+    try:
+        parsed = [parse_set_score(x) for x in entries]
+    except ValueError as ex:
+        sys.exit(f"--set-score REJECTED, nothing written: {ex}")
+    keys = [p[0] for p in parsed]
+    dupes = sorted({k for k in keys if keys.count(k) > 1})
+    if dupes:
+        sys.exit(f"--set-score REJECTED, nothing written: key given twice: {', '.join(dupes)}")
+    rows = load_json(DATA / "latest.json", {}).get("rows") or {}
+    seen = load_json(DATA / "seen.json", {})
+    scored_before = load_scored()
+    for key, score, verdict, built_flag, conv in parsed:
+        snap_row = rows.get(key) or {}
+        jdh = snap_row.get("jd_hash")
+        e = set_score(key, score, verdict, built=built_flag, conversion=conv,
+                      jdh=jdh if jdh and jdh != jd_hash("") else None)
+        print(f"scored.json: {key} -> {e}")
+        if key not in scored_before and key not in seen:
+            print(f"WARNING: {key} is not a req the sweep has ever seen. Fine for a pasted JD off a board "
+                  "that is not swept; otherwise check the key for a typo, because --window will never match it.")
+        # A hand-typed Conversion label is stored as given (a referral in hand is a real override the
+        # sweep cannot see), but a label that disagrees with the computed signals is named.
+        if snap_row:
+            sig = conversion_signals(dict(snap_row, key=key), g, seen)
+            if conv and conv != sig["label"]:
+                print(f"WARNING: {key} conv={conv} but the sweep computes {sig['label']} ({sig['drags']} drag(s)). "
+                      "Keep it only if something the sweep cannot see justifies it, and say what.")
+            elif not conv and not (scored_before.get(key) or {}).get("conversion"):
+                print(f"NOTE: {key} has no Conversion stored; the sweep computes {sig['label']} "
+                      f"({sig['drags']} drag(s)). Add :conv={sig['label']} to store it.")
 
 def set_score(key, score, verdict, built=None, jdh=None, conversion=None):
     """Record a score so a standing target is not re-litigated every day. verdict=None keeps the
@@ -3965,9 +4013,10 @@ if __name__ == "__main__":
     ap.add_argument("--report-only", action="store_true",
                     help="rebuild the report from data/latest.json, no network")
     ap.add_argument("--set-score", metavar="KEY=SCORE:VERDICT[:built|:unbuilt][:conv=HIGH|MEDIUM|LOW]",
+                    action="append",
                     help="record a score (and the conversion read) in data/scored.json so standing targets are not "
                          "re-litigated. The verdict may contain colons; an empty verdict keeps the stored one; "
-                         "malformed input is rejected and nothing is written")
+                         "one malformed entry rejects the whole run and nothing is written. Repeat the flag to record several")
     ap.add_argument("--show-cadence", action="store_true", help="print per-employer tier and cache age, then exit")
     ap.add_argument("--window", help="list gate-passing reqs inside a window (24h/48h/7d/14d) for the shortlist")
     ap.add_argument("--company", help="restrict --window to one employer (substring)")
@@ -3976,21 +4025,7 @@ if __name__ == "__main__":
                     help="recompute the pre-rank hint's rank correlation against scored.json, then exit")
     a = ap.parse_args()
     g = json.loads((ROOT / "gates.json").read_text(encoding="utf-8"))
-    if a.set_score:
-        try:
-            key, score, verdict, built_flag, conv = parse_set_score(a.set_score)
-            is_new = key not in load_scored()
-            snap_row = (load_json(DATA / "latest.json", {}).get("rows") or {}).get(key) or {}
-            jdh = snap_row.get("jd_hash")
-            e = set_score(key, score, verdict, built=built_flag, conversion=conv,
-                          jdh=jdh if jdh and jdh != jd_hash("") else None)
-        except ValueError as ex:
-            sys.exit(f"--set-score REJECTED, nothing written: {ex}")
-        print(f"scored.json: {key} -> {e}")
-        if is_new and key not in load_json(DATA / "seen.json", {}):
-            print(f"WARNING: {key} is not a req the sweep has ever seen. Fine for a pasted JD off a board "
-                  "that is not swept; otherwise check the key for a typo, because --window will never match it.")
-        sys.exit()
+    if a.set_score: cmd_set_score(a.set_score, g); sys.exit()
     if a.show_cadence:
         rl = load_json(READLOG, {})
         snap = load_json(DATA / "latest.json", {})
