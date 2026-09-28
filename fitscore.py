@@ -6,6 +6,8 @@ still shown, and a person still decides. Three scorers share one interface:
     baseline   the keyword lane hint from gates.json (`prerank`) plus the gate verdict. Offline, free.
     claude     Claude reads the profile, the rubric and the posting and returns a structured score.
                Needs `pip install -r requirements-ai.txt` and an Anthropic API key.
+    claude-code  the same prompt through the Claude Code CLI (`claude -p`) on a Claude subscription,
+               with no API account.
     replay     answers recorded from an earlier run (evals/recorded/*.json), so an evaluation can be
                re-run without paying for it again.
 
@@ -47,7 +49,7 @@ SCHEMA = {
 
 
 def verdict_for(score):
-    """The verdict comes from the score in code, so the label and the number can never disagree."""
+    """The verdict comes from the score in code (and any dealbreaker makes it skip; see validate)."""
     return "apply" if score >= APPLY_AT else "maybe" if score >= MAYBE_AT else "skip"
 
 
@@ -71,7 +73,11 @@ def validate(raw):
     if abs(total - score) > 2:                       # the parts must add up to the whole
         raise ValueError(f"score {score} does not match its areas (sum {total})")
     out = {k: raw.get(k) or [] for k in ("strengths", "gaps", "dealbreakers")}
-    out.update(areas=areas, score=score, verdict=verdict_for(score), summary=raw.get("summary", ""))
+    # A dealbreaker decides the verdict whatever the points say: the first evaluation showed the model
+    # naming "onsite in New York, he will not relocate" and still scoring the job 90, because location
+    # is only 10 points of the rubric.
+    verdict = "skip" if out["dealbreakers"] else verdict_for(score)
+    out.update(areas=areas, score=score, verdict=verdict, summary=raw.get("summary", ""))
     return out
 
 
@@ -146,12 +152,55 @@ class ClaudeScorer:
         return validate(json.loads(text))
 
 
+class ClaudeCodeScorer(ClaudeScorer):
+    """The same prompt and schema, run through the Claude Code CLI (`claude -p`) on a Claude
+    subscription, so no API account is needed. Each posting is a fresh, locked-down session: no tools,
+    no settings or MCP configuration, no saved session, run from an empty temporary folder."""
+    name = "claude-code"
+
+    def __init__(self, model=None, runner=None, **kw):
+        super().__init__(client=object(), **kw)       # the base class only needs the prompt text
+        import shutil
+        self.exe = shutil.which("claude")
+        if self.exe is None and runner is None:
+            sys.exit("the claude-code scorer needs the Claude Code CLI on PATH (`claude`)")
+        self.model, self.runner = model, runner
+        self.usage = {"equivalent_api_cost_usd": 0.0}
+
+    def command(self, p):
+        cmd = [self.exe or "claude", "-p", f"<posting>\n{posting_text(p)}\n</posting>",
+               "--output-format", "json", "--no-session-persistence", "--setting-sources", "",
+               "--strict-mcp-config", "--tools", "", "--system-prompt", self.system,
+               "--json-schema", json.dumps(SCHEMA)]
+        return cmd + (["--model", self.model] if self.model else [])
+
+    def score(self, p):
+        import subprocess, tempfile
+        with tempfile.TemporaryDirectory() as empty:
+            run = self.runner or (lambda cmd, cwd: subprocess.run(
+                cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8", timeout=600))
+            done = run(self.command(p), empty)
+        try:
+            out = json.loads(done.stdout)
+        except (json.JSONDecodeError, TypeError):
+            raise ValueError(f"claude -p returned no JSON (exit {done.returncode}): {(done.stderr or '')[:200]}")
+        if out.get("is_error") or out.get("subtype") != "success":
+            raise ValueError(f"claude -p failed: {out.get('subtype')} {str(out.get('result'))[:200]}")
+        self.usage["equivalent_api_cost_usd"] += out.get("total_cost_usd") or 0.0
+        self.model = self.model or next(iter(out.get("modelUsage") or {}), None)
+        if not isinstance(out.get("structured_output"), dict):
+            raise ValueError("claude -p returned no structured output")
+        return validate(out["structured_output"])
+
+
 class ReplayScorer:
     """Answers recorded from an earlier run, keyed by posting id."""
     name = "replay"
 
     def __init__(self, path):
-        self.recorded = json.loads(Path(path).read_text(encoding="utf-8"))["answers"]
+        rec = json.loads(Path(path).read_text(encoding="utf-8"))
+        self.recorded = rec["answers"]
+        self.source, self.model = rec.get("scorer"), rec.get("model")
 
     def score(self, p):
         a = self.recorded.get(str(p["id"]))
@@ -163,6 +212,7 @@ class ReplayScorer:
 def make_scorer(name, replay=None):
     if name == "baseline": return BaselineScorer()
     if name == "claude": return ClaudeScorer()
+    if name == "claude-code": return ClaudeCodeScorer()
     if name == "replay": return ReplayScorer(replay)
     raise SystemExit(f"unknown scorer {name!r}")
 
@@ -175,7 +225,8 @@ def rank(scorer):
     snap = sweep.load_json(sweep.DATA / "latest.json", None)
     if not snap:
         sys.exit("no data/latest.json yet: run a sweep first (see Quick start)")
-    cache = sweep.load_json(CACHE, {}) if scorer.name == "claude" else {}
+    live = scorer.name in ("claude", "claude-code")
+    cache = sweep.load_json(CACHE, {}) if live else {}
     rows = [r for r in snap["rows"].values() if sweep.gate(r, g)[0] in ("PASS", "REVIEW")]
     scored, failed = [], []
     for r in rows:
@@ -184,9 +235,9 @@ def rank(scorer):
             res = cache.get(ck) or scorer.score({**r, "id": r["key"]})
         except ValueError as e:
             failed.append((r, str(e))); continue
-        if scorer.name == "claude": cache[ck] = res
+        if live: cache[ck] = res
         scored.append((res, r))
-    if scorer.name == "claude":
+    if live:
         sweep.write_json_atomic(CACHE, cache)
     scored.sort(key=lambda x: -x[0]["score"])
     print(f"{len(scored)} posting(s) ranked by the {scorer.name} scorer; a person decides on every one.\n")
@@ -203,7 +254,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     rk = sub.add_parser("rank", help="rank the last sweep's passing postings by fit")
-    rk.add_argument("--scorer", default="baseline", choices=["baseline", "claude", "replay"])
+    rk.add_argument("--scorer", default="baseline", choices=["baseline", "claude", "claude-code", "replay"])
     rk.add_argument("--replay", help="recorded answers file for --scorer replay")
     a = ap.parse_args()
     if a.cmd == "rank":

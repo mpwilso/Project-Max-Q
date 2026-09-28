@@ -37,6 +37,11 @@ class Validate(unittest.TestCase):
         self.assertEqual([fitscore.verdict_for(s) for s in (75, 74, 55, 54)], ["apply", "maybe", "maybe", "skip"])
         self.assertEqual(fitscore.validate(GOOD)["verdict"], "apply")
 
+    def test_a_dealbreaker_makes_the_verdict_skip_whatever_the_score(self):
+        onsite = dict(GOOD, dealbreakers=["Five days onsite in New York; he will not relocate."])
+        res = fitscore.validate(onsite)
+        self.assertEqual((res["score"], res["verdict"]), (88, "skip"))
+
     def test_an_area_over_its_maximum_is_rejected(self):
         bad = json.loads(json.dumps(GOOD)); bad["areas"]["logistics"] = 11
         with self.assertRaises(ValueError): fitscore.validate(bad)
@@ -76,6 +81,43 @@ class ClaudeRequest(unittest.TestCase):
     def test_a_cut_off_answer_is_an_error(self):
         with self.assertRaises(ValueError):
             self.scorer(text='{"areas":', stop_reason="max_tokens").score(POSTING)
+
+
+class ClaudeCodeCommand(unittest.TestCase):
+    """The claude-code scorer runs `claude -p` locked down and reads its structured output."""
+    def run_with(self, payload, rc=0):
+        seen = {}
+        def runner(cmd, cwd):
+            seen["cmd"], seen["cwd"] = cmd, cwd
+            return SimpleNamespace(stdout=json.dumps(payload), stderr="", returncode=rc)
+        return fitscore.ClaudeCodeScorer(runner=runner), seen
+
+    def test_the_session_is_isolated_and_asks_for_the_schema(self):
+        ok = {"is_error": False, "subtype": "success", "structured_output": GOOD,
+              "total_cost_usd": 0.04, "modelUsage": {"claude-opus-5-5": {}}}
+        s, seen = self.run_with(ok)
+        self.assertEqual(s.score(POSTING)["score"], 88)
+        cmd = seen["cmd"]
+        for flag in ("-p", "--no-session-persistence", "--strict-mcp-config", "--json-schema"):
+            self.assertIn(flag, cmd)
+        self.assertEqual(cmd[cmd.index("--tools") + 1], "")               # no tools at all
+        self.assertEqual(cmd[cmd.index("--setting-sources") + 1], "")     # no user or project settings
+        self.assertEqual(json.loads(cmd[cmd.index("--json-schema") + 1]), fitscore.SCHEMA)
+        self.assertIn("John Doe", cmd[cmd.index("--system-prompt") + 1])
+        self.assertEqual(s.model, "claude-opus-5-5")
+        self.assertAlmostEqual(s.usage["equivalent_api_cost_usd"], 0.04)
+
+    def test_a_failed_session_or_missing_output_is_an_error(self):
+        for payload in ({"is_error": True, "subtype": "error_during_execution", "result": "boom"},
+                        {"is_error": False, "subtype": "success", "result": "text only"}):
+            s, _ = self.run_with(payload)
+            with self.assertRaises(ValueError):
+                s.score(POSTING)
+
+    def test_output_that_is_not_json_is_an_error(self):
+        s = fitscore.ClaudeCodeScorer(runner=lambda cmd, cwd: SimpleNamespace(stdout="oops", stderr="", returncode=1))
+        with self.assertRaises(ValueError):
+            s.score(POSTING)
 
 
 class Metrics(unittest.TestCase):

@@ -65,8 +65,9 @@ def pct(x):
     return "n/a" if x is None else f"{x:.0%}"
 
 
-def report(name, data_path, rows, m, usage=None):
+def report(name, data_path, rows, m, usage=None, model=None):
     L = [f"# Fit scorer evaluation: {name}", "",
+         *([f"Model: `{model}`.", ""] if model else []),
          f"Data: `{rel(data_path)}` ({m['n']} labeled postings). Run {dt.date.today().isoformat()}.", "",
          "| Measure | Result |", "|---|---|",
          f"| Agrees with the label | {pct(m['agreement'])} ({m['agreed']} of {m['scored']}) |",
@@ -79,9 +80,12 @@ def report(name, data_path, rows, m, usage=None):
          "| label \\ scored | " + " | ".join(ORDER) + " |", "|---|" + "---|" * len(ORDER)]
     for l in ORDER:
         L.append(f"| {l} | " + " | ".join(str(m["confusion"][l][p]) for p in ORDER) + " |")
-    if usage and any(usage.values()):
+    if usage and "input_tokens" in usage and any(usage.values()):
         L += ["", f"Tokens: {usage['input_tokens']:,} input ({usage['cache_read_input_tokens']:,} from cache), "
                   f"{usage['output_tokens']:,} output."]
+    if usage and usage.get("equivalent_api_cost_usd"):
+        L += ["", f"Run through Claude Code on a subscription; the same calls at API prices would cost about "
+                  f"${usage['equivalent_api_cost_usd']:.2f}."]
     miss = [r for r in rows if r["pred"] != r["label"]]
     L += ["", f"## Disagreements ({len(miss)})", ""]
     if not miss:
@@ -96,7 +100,7 @@ def report(name, data_path, rows, m, usage=None):
 
 def main():
     ap = argparse.ArgumentParser(description="Measure a fit scorer against labeled postings.")
-    ap.add_argument("--scorer", default="baseline", choices=["baseline", "claude", "replay"])
+    ap.add_argument("--scorer", default="baseline", choices=["baseline", "claude", "claude-code", "replay"])
     ap.add_argument("--replay", help="recorded answers for --scorer replay")
     ap.add_argument("--data", default=str(DEFAULT_DATA))
     ap.add_argument("--record", action="store_true", help="save the scorer's answers for later replay")
@@ -118,9 +122,11 @@ def main():
     m = metrics([(r["label"], r["pred"]) for r in rows])
     local = "evals/local" in Path(a.data).resolve().as_posix()
     out_dir = ROOT / "evals" / ("local" if local else "results")
-    out = Path(a.out) if a.out else out_dir / f"fit_{scorer.name}.md"
+    out = Path(a.out) if a.out else out_dir / f"fit_{getattr(scorer, 'source', None) or scorer.name}.md"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(report(scorer.name, a.data, rows, m, getattr(scorer, "usage", None)), encoding="utf-8", newline="\n")
+    title = f"{scorer.source} (replayed)" if getattr(scorer, "source", None) else scorer.name
+    out.write_text(report(title, a.data, rows, m, getattr(scorer, "usage", None), getattr(scorer, "model", None)),
+                   encoding="utf-8", newline="\n")
     if a.record:
         rec_dir = ROOT / "evals" / ("local" if local else "recorded")
         rec_dir.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,616 @@
+{
+ "scorer": "claude-code",
+ "model": "claude-opus-5-5",
+ "data": "evals/fit/labeled.jsonl",
+ "answers": {
+  "s01": {
+   "strengths": [
+    "He is product owner for Northwind's NetSuite ERP, which covers order-to-cash, the exact system and process this role owns.",
+    "He ran the month-end close program that cut close from 9 working days to 6.",
+    "He prioritizes the finance systems backlog and chairs its weekly intake meeting.",
+    "He coordinates UAT and release sign-off for quarterly ERP releases.",
+    "His 4.5 years of systems ownership meets the 4+ year requirement.",
+    "He built SQL reporting for finance leadership, which covers the SQL plus."
+   ],
+   "gaps": [
+    "The profile does not say he writes requirements documents (1 point off skills).",
+    "The profile does not state his work authorization or confirm the job is full-time and permanent (1 point off logistics)."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 30,
+    "skills": 24,
+    "seniority": 20,
+    "domain": 15,
+    "logistics": 9
+   },
+   "score": 98,
+   "verdict": "apply",
+   "summary": "Score 98, verdict apply: a US-remote NetSuite order-to-cash product role with month-end close, backlog and UAT work that matches his verified experience almost exactly."
+  },
+  "s02": {
+   "strengths": [
+    "He led a Coupa procurement rollout to 3 business units and 420 requesters, which closely matches the adoption work.",
+    "He prioritized the finance systems backlog and chaired its weekly intake meeting.",
+    "He coordinated UAT and release sign-off for quarterly ERP releases.",
+    "He is the product owner for NetSuite procure-to-pay, which gives him the ERP context for integrations.",
+    "The Denver hybrid setup fits his location without relocation."
+   ],
+   "gaps": [
+    "He has 4.5 years against a 5+ year requirement for a senior title.",
+    "The profile doesn't explicitly show that he defined ERP integrations.",
+    "The posting covers five business units, compared with the three in his rollout."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 30,
+    "skills": 23,
+    "seniority": 16,
+    "domain": 15,
+    "logistics": 10
+   },
+   "score": 94,
+   "verdict": "apply",
+   "summary": "Verdict: apply. This is a strong match: a Coupa product owner role in Denver that mirrors his rollout, backlog and release work. The only real gap is that he is about half a year short of the 5+ year requirement."
+  },
+  "s03": {
+   "strengths": [
+    "He has 4.5 years as product owner for NetSuite ERP, the platform this role consolidates onto.",
+    "He has direct procure-to-pay process ownership in NetSuite and through the Coupa rollout.",
+    "His month-end close program (9 to 6 days) is relevant record-to-report experience.",
+    "He has led a cross-business-unit rollout to 3 units and 420 requesters.",
+    "He has coordinated UAT and release sign-off for quarterly ERP releases.",
+    "The remote US role fits his location preferences with no relocation."
+   ],
+   "gaps": [
+    "His profile shows no ERP consolidation or data migration program.",
+    "His profile does not show formal dependency tracking across IT and vendors, or risk reporting to leadership.",
+    "His 4.5 years are as a product owner, not under a program manager title.",
+    "His profile does not state his US work authorization."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 27,
+    "skills": 21,
+    "seniority": 17,
+    "domain": 15,
+    "logistics": 9
+   },
+   "score": 89,
+   "verdict": "apply",
+   "summary": "This is a strong match, and the verdict is apply. It is a remote technical program manager role consolidating ERPs onto NetSuite, which fits his NetSuite, procure-to-pay and close-improvement experience. The main gaps are that he hasn't run an ERP migration and his years are as a product owner rather than a program manager."
+  },
+  "s04": {
+   "strengths": [
+    "He is already the NetSuite product owner at Northwind Traders, the company that posted this job.",
+    "He led the Coupa rollout to 3 business units and 420 requesters.",
+    "He coordinated UAT and release sign-off for the quarterly ERP releases.",
+    "His close improvement program cut month-end close from 9 working days to 6.",
+    "He prioritized the finance systems backlog and chaired its weekly intake meeting.",
+    "The role is an individual-contributor job and fully remote in the US."
+   ],
+   "gaps": [
+    "The profile shows no experience with the expense tool.",
+    "The profile does not say he writes user stories.",
+    "The 'Lead' title may expect more seniority than his 4.5 years."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 29,
+    "skills": 23,
+    "seniority": 19,
+    "domain": 15,
+    "logistics": 10
+   },
+   "score": 96,
+   "verdict": "apply",
+   "summary": "Apply (96/100): this is essentially his current job made broader at his current employer, and the only gaps are small (the expense tool and writing user stories). The posting doesn't say whether the role is full-time and permanent, so check that."
+  },
+  "s05": {
+   "strengths": [
+    "Product manager is one of his target titles, and the role is an individual-contributor job.",
+    "Remote work in the US fits his location needs.",
+    "His SQL and Excel reporting gives him some basis for funnel analysis.",
+    "He has 4.5 years of product-owner experience, including prioritizing a backlog and coordinating releases."
+   ],
+   "gaps": [
+    "His profile shows no experience designing A/B tests or running experiments.",
+    "He has no consumer growth product management experience, and the posting requires 3+ years of it.",
+    "His domain is internal finance and ERP systems, not activation for a consumer app.",
+    "His profile shows no weekly experiment shipping with a growth pod."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 12,
+    "skills": 6,
+    "seniority": 10,
+    "domain": 2,
+    "logistics": 10
+   },
+   "score": 40,
+   "verdict": "skip",
+   "summary": "Skip (40/100). The title and remote setup fit, but the daily work is consumer growth experimentation, which is outside John's finance and ERP systems background."
+  },
+  "s06": {
+   "strengths": [
+    "Finance platforms matches his NetSuite ERP and finance systems product owner work.",
+    "Remote US works for him and needs no relocation.",
+    "Backlog prioritization and the close improvement program show real product work in this area."
+   ],
+   "gaps": [
+    "He has 4.5 years of experience, and the role requires 10+ years of product management.",
+    "The profile shows no experience managing managers, and the role requires 4+ years of it.",
+    "Portfolio budget ownership is required, and his profile lists budget ownership as not claimable.",
+    "Setting strategy with the CFO at director level goes beyond the scope his profile shows."
+   ],
+   "dealbreakers": [
+    "The core of the job is managing people: leading six PMs and hiring and developing them. He has ruled out people-manager roles."
+   ],
+   "areas": {
+    "role_match": 6,
+    "skills": 8,
+    "seniority": 2,
+    "domain": 13,
+    "logistics": 10
+   },
+   "score": 39,
+   "verdict": "skip",
+   "summary": "Skip (39/100). Remote finance-platforms work lines up with his target, but this is a director job built around managing people, budget ownership and 10+ years of experience. He wants an individual-contributor role, and the profile shows none of those three things."
+  },
+  "s07": {
+   "strengths": [
+    "He has been the NetSuite ERP product owner at Northwind Traders since 2021.",
+    "His 4.5 years of ERP product ownership meet the 4+ year requirement.",
+    "He prioritized the finance systems backlog, which lines up with owning the roadmap.",
+    "His order-to-cash, procure-to-pay and close work fit the ERP domain."
+   ],
+   "gaps": [
+    "The job is five days a week onsite in Manhattan, and he only works in Denver or remotely."
+   ],
+   "dealbreakers": [
+    "The job requires five days a week in a Manhattan office, and the candidate will not relocate from Denver."
+   ],
+   "areas": {
+    "role_match": 30,
+    "skills": 25,
+    "seniority": 20,
+    "domain": 15,
+    "logistics": 0
+   },
+   "score": 90,
+   "verdict": "apply",
+   "summary": "The role, skills, seniority and domain are a near-perfect match, but the job is fully onsite in New York and he will not relocate, so the verdict should be skip despite the 90 total."
+  },
+  "s08": {
+   "strengths": [
+    "He has been product owner for a finance ERP (NetSuite) for 4.5 years.",
+    "He has owned finance systems backlogs and chaired their intake meetings.",
+    "He knows finance processes: order-to-cash, procure-to-pay and month-end close.",
+    "The job is remote in the US, which matches his location preferences."
+   ],
+   "gaps": [
+    "The profile shows no SAP or S/4HANA experience, and the job requires it.",
+    "The profile shows no SAP configuration work.",
+    "He has 4.5 years of product ownership against the 6+ years required."
+   ],
+   "dealbreakers": [
+    "The job requires SAP FI/CO certification, and the candidate holds no certifications."
+   ],
+   "areas": {
+    "role_match": 22,
+    "skills": 0,
+    "seniority": 6,
+    "domain": 12,
+    "logistics": 10
+   },
+   "score": 50,
+   "verdict": "skip",
+   "summary": "The role is a good match: a remote finance ERP product owner job. But the required SAP FI/CO certification and 6+ years of SAP experience block it, so skip."
+  },
+  "s09": {
+   "strengths": [
+    "He knows ERP well from NetSuite product ownership, which helps with ERP add-ons.",
+    "His finance-systems domain matches the software being sold.",
+    "The Denver location works for him."
+   ],
+   "gaps": [
+    "The profile shows no quota-carrying, pipeline-building or closing experience.",
+    "He has none of the required 4+ years of SaaS sales.",
+    "The job is selling to CFOs, not product, program or product-owner work."
+   ],
+   "dealbreakers": [
+    "This is a quota-carrying sales role, and he has said he doesn't want sales roles."
+   ],
+   "areas": {
+    "role_match": 0,
+    "skills": 3,
+    "seniority": 4,
+    "domain": 10,
+    "logistics": 10
+   },
+   "score": 27,
+   "verdict": "skip",
+   "summary": "Skip (27/100). This is an enterprise sales job with a quota, a type of role he has ruled out. The ERP domain and the Denver location fit, but he has no sales track record and the job isn't product work."
+  },
+  "s10": {
+   "strengths": [
+    "Technical program manager is one of his target roles.",
+    "He led a multi-unit Coupa rollout and ran the month-end close program, which shows program coordination.",
+    "He built SQL reporting for finance leadership.",
+    "He coordinated UAT and release sign-off for quarterly ERP releases, which is close to cutover work.",
+    "The role is remote in the US, which matches his location terms."
+   ],
+   "gaps": [
+    "The profile shows no data warehouse migration or data platform work.",
+    "The profile does not mention data pipelines.",
+    "He has 4.5 years as a product owner, below the 5+ years of TPM experience asked for.",
+    "The domain is data infrastructure, not finance systems, ERP or procurement.",
+    "The profile shows no work with data engineering teams on schedules and dependencies."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 22,
+    "skills": 12,
+    "seniority": 12,
+    "domain": 4,
+    "logistics": 10
+   },
+   "score": 60,
+   "verdict": "maybe",
+   "summary": "Maybe (60/100). He fits the TPM title, the remote policy and the SQL requirement, and his rollout and release coordination carry over. But the core job is a data warehouse migration outside his finance systems domain, with no pipeline experience shown. He is also slightly short of the 5+ years of TPM experience."
+  },
+  "s11": {
+   "strengths": [
+    "He has coordinated quarterly ERP releases and release sign-off, which fits the release rhythm work.",
+    "He prioritized the finance systems backlog and chaired its weekly intake meeting, which is close to running planning cycles.",
+    "His SQL and Excel reporting for finance leadership fits the metrics part of the role.",
+    "His 4.5 years at Northwind meet the 4+ years requirement.",
+    "The role is remote in the US, which matches his location preference."
+   ],
+   "gaps": [
+    "Product operations for a whole product org is next to his product-owner lane, not in it.",
+    "The work centers on product org operations, not finance systems, ERP or procurement.",
+    "The profile shows no headcount planning work with finance.",
+    "The posting doesn't say the role is full-time and permanent, so that needs checking."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 18,
+    "skills": 17,
+    "seniority": 18,
+    "domain": 6,
+    "logistics": 9
+   },
+   "score": 68,
+   "verdict": "maybe",
+   "summary": "This is a maybe (68): it's remote, the seniority fits, and his release, intake and reporting work carries over, but product operations is outside his finance-systems product lane."
+  },
+  "s12": {
+   "strengths": [
+    "Owning a business-systems roadmap matches his NetSuite product-owner and backlog prioritization work.",
+    "Order-to-cash experience is next to the revenue side of the business.",
+    "Coupa rollout and quarterly ERP release coordination show systems program delivery.",
+    "Remote US works for his location needs."
+   ],
+   "gaps": [
+    "The profile shows no CRM, CPQ or sales compensation tool experience.",
+    "The posting asks for 5+ years in revenue operations, and he has 4.5 years in finance systems.",
+    "Go-to-market and revenue operations are outside his finance systems, ERP and procurement domain.",
+    "Territory and quota planning with sales leadership is sales-facing work, which he wants to avoid."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 18,
+    "skills": 8,
+    "seniority": 16,
+    "domain": 5,
+    "logistics": 10
+   },
+   "score": 57,
+   "verdict": "maybe",
+   "summary": "This is a maybe (57/100). It's systems program work he could reasonably do, but the tools (CRM, CPQ, sales compensation) and the revenue operations domain don't show up in his profile. It's also close to sales work, which he doesn't want. There are no hard blockers, and remote US works for him."
+  },
+  "s13": {
+   "strengths": [
+    "He has 4.5 years as product owner for NetSuite, above the 3-year requirement.",
+    "He ran a month-end close program that cut close from 9 to 6 working days.",
+    "His SQL and Excel reporting for finance leadership is close to building saved searches.",
+    "Hybrid work in Denver fits his location preference."
+   ],
+   "gaps": [
+    "A business systems analyst role sits next to his product owner lane, not squarely in it.",
+    "The profile doesn't show hands-on setup of NetSuite saved searches or workflows.",
+    "The profile doesn't state direct requirements gathering with accounting teams.",
+    "The posting doesn't say whether the job is full-time and permanent."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 17,
+    "skills": 19,
+    "seniority": 20,
+    "domain": 15,
+    "logistics": 10
+   },
+   "score": 81,
+   "verdict": "apply",
+   "summary": "Strong fit (apply): the job centers on NetSuite, month-end close and hybrid work in Denver, which match his profile, but it is an analyst role that involves configuration work his profile doesn't show."
+  },
+  "s14": {
+   "strengths": [
+    "He has been product owner for NetSuite procure-to-pay, which is this job's core product area.",
+    "He led a Coupa rollout to 3 business units and 420 requesters, which matches the Coupa focus.",
+    "His 4.5 years at Northwind meets the 4+ year requirement.",
+    "Finance systems and procurement are exactly his domain."
+   ],
+   "gaps": [
+    "The profile shows a Coupa rollout but not hands-on work building Coupa integrations.",
+    "The posting asks for onsite work in Calgary, which is outside his Denver metro or US-remote target."
+   ],
+   "dealbreakers": [
+    "The role is onsite in Calgary, Canada, and he will not relocate.",
+    "Canadian work authorization is required, and the profile does not show that he has it."
+   ],
+   "areas": {
+    "role_match": 29,
+    "skills": 22,
+    "seniority": 19,
+    "domain": 15,
+    "logistics": 0
+   },
+   "score": 85,
+   "verdict": "apply",
+   "summary": "The work itself fits him almost perfectly: P2P product ownership and Coupa. But the onsite Calgary requirement and the need for Canadian work authorization are hard blockers. The areas add up to 85, which would normally mean apply. The dealbreakers override that, so skip it unless he would relocate and can work in Canada."
+  },
+  "s15": {
+   "strengths": [
+    "Remote US fits his location limits without relocating.",
+    "He has product ownership experience, including backlog prioritization and release sign-off.",
+    "His order-to-cash ERP work touches payments at the business-process level."
+   ],
+   "gaps": [
+    "The profile shows no distributed systems, low-latency or throughput engineering work.",
+    "The profile shows no PCI compliance or payment-processing infrastructure experience.",
+    "He has 4.5 years in ERP product work, short of 6+ years building distributed systems products.",
+    "The profile does not state the required computer science degree.",
+    "This is payments infrastructure engineering, not his finance and business systems lane."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 14,
+    "skills": 4,
+    "seniority": 7,
+    "domain": 5,
+    "logistics": 10
+   },
+   "score": 40,
+   "verdict": "skip",
+   "summary": "Skip: remote works, but this deeply technical payments infrastructure role needs distributed systems depth and a CS background that the profile doesn't show."
+  },
+  "s16": {
+   "strengths": [
+    "He is the product owner for the NetSuite order-to-cash process today, which is the core of this job.",
+    "He already prioritizes the finance systems backlog and chairs its weekly intake meeting.",
+    "He coordinates UAT and release sign-off for quarterly ERP releases.",
+    "This is an individual-contributor role, which is what he wants.",
+    "The job is remote in the US, which fits his location rules."
+   ],
+   "gaps": [
+    "The profile doesn't show direct work on the pricing, invoicing or collections workflows specifically.",
+    "The word 'Lead' in the title may mean a step up in level from his current product-owner role."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 30,
+    "skills": 23,
+    "seniority": 19,
+    "domain": 15,
+    "logistics": 10
+   },
+   "score": 97,
+   "verdict": "apply",
+   "summary": "Verdict: apply (97/100). This is his current job at another company: product owner for NetSuite order-to-cash, running the backlog, UAT and releases, as a remote US individual contributor. He has 4.5 years against the 4+ required. The only small gaps are the specific pricing and collections workflows and the 'Lead' title."
+  },
+  "s17": {
+   "strengths": [
+    "It is a product manager role, a title he is targeting.",
+    "His backlog prioritization and roadmap-style work carry over to roadmap ownership.",
+    "Remote US full-time fits his location and work preferences."
+   ],
+   "gaps": [
+    "The profile shows no experiment tracking or GPU scheduling experience.",
+    "His domain is ERP and finance systems, not ML training and evaluation platforms.",
+    "He does not have the preferred PhD."
+   ],
+   "dealbreakers": [
+    "A machine learning background is required, and the profile explicitly excludes ML work."
+   ],
+   "areas": {
+    "role_match": 12,
+    "skills": 5,
+    "seniority": 17,
+    "domain": 1,
+    "logistics": 10
+   },
+   "score": 45,
+   "verdict": "skip",
+   "summary": "Skip: the job is remote and has a PM title, but it requires an ML background he doesn't have and sits outside his finance-systems domain."
+  },
+  "s18": {
+   "strengths": [
+    "He is already the NetSuite ERP product owner, the exact system this upgrade covers.",
+    "He has run backlog prioritization for the finance systems team.",
+    "He coordinated UAT and release sign-off for quarterly ERP releases.",
+    "His 4.5 years meet the 4+ year requirement.",
+    "A remote US role fits his location limits."
+   ],
+   "gaps": [
+    "It is a 6-month contract through a staffing partner, but he wants a full-time permanent role.",
+    "The posting is at his current employer, so it is unclear how it relates to his current position."
+   ],
+   "dealbreakers": [
+    "The 6-month contract conflicts with his stated goal of a full-time permanent role."
+   ],
+   "areas": {
+    "role_match": 8,
+    "skills": 25,
+    "seniority": 20,
+    "domain": 15,
+    "logistics": 10
+   },
+   "score": 78,
+   "verdict": "apply",
+   "summary": "The daily work (NetSuite backlog and UAT) is almost exactly what he does now, and seniority and remote work both fit. But this is a short contract through a staffing agency, and he wants a permanent full-time role. That dealbreaker is charged in role match, which brings the total down to maybe territory."
+  },
+  "s19": {
+   "strengths": [
+    "He ran a month-end close improvement program that cut the close from 9 working days to 6.",
+    "He is the product owner for NetSuite ERP, which is the named system.",
+    "He has 4.5 years at Northwind Traders, above the 4-year minimum.",
+    "He has worked with the finance systems team and run UAT with business users.",
+    "The role is remote in the US, which fits his location limits."
+   ],
+   "gaps": [
+    "Most of his experience is as a product owner, so only part of it is formal program management.",
+    "The profile shows no close-calendar mapping and no direct work with accounting teams on close tasks.",
+    "The posting does not say whether the role is full-time and permanent."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 29,
+    "skills": 23,
+    "seniority": 17,
+    "domain": 15,
+    "logistics": 10
+   },
+   "score": 94,
+   "verdict": "apply",
+   "summary": "Very strong fit (apply): the job's main task, shortening the close on NetSuite, matches his verified close program. The only small question is whether his 4.5 years count as program management."
+  },
+  "s20": {
+   "strengths": [
+    "It is an individual-contributor product manager role, which is one of his target roles.",
+    "His 4.5 years as NetSuite product owner meets the 3+ years requirement.",
+    "His backlog prioritization, intake and UAT coordination carry over to internal-tools product work."
+   ],
+   "gaps": [
+    "The product is support-team tooling, not finance or business systems.",
+    "The posting names no tools, so his NetSuite, Coupa and SQL experience has no clear match.",
+    "His title was product owner rather than product manager, which may be a small step."
+   ],
+   "dealbreakers": [
+    "The role is hybrid in Chicago four days a week, and he will not move from Denver."
+   ],
+   "areas": {
+    "role_match": 18,
+    "skills": 12,
+    "seniority": 18,
+    "domain": 3,
+    "logistics": 0
+   },
+   "score": 51,
+   "verdict": "skip",
+   "summary": "Skip: he could handle the product work, but the domain is support tools, and the four-day Chicago hybrid schedule is a location dealbreaker for a candidate who won't leave Denver."
+  },
+  "s21": {
+   "strengths": [
+    "He has 4.5 years as product owner for a NetSuite ERP, covering order-to-cash and procure-to-pay.",
+    "He has coordinated UAT and release sign-off for quarterly ERP releases.",
+    "The job is remote in the US, which works for his location."
+   ],
+   "gaps": [
+    "The job is client-facing consulting with billable hours, not product or program work.",
+    "The profile says he owns NetSuite as a product but never says he configures it, so the 3+ years of configuration isn't shown.",
+    "Travel of up to 50% is far more than a remote role he would want."
+   ],
+   "dealbreakers": [
+    "He has said he is not interested in travel-heavy consulting, and this job is client consulting with up to 50% travel."
+   ],
+   "areas": {
+    "role_match": 5,
+    "skills": 14,
+    "seniority": 15,
+    "domain": 12,
+    "logistics": 3
+   },
+   "score": 49,
+   "verdict": "skip",
+   "summary": "Skip. NetSuite and finance systems fit his background, but this is a billable consulting job with up to 50% travel, which he has ruled out."
+  },
+  "s22": {
+   "strengths": [
+    "He was product owner for the NetSuite ERP, the core system on this roadmap.",
+    "He led the Coupa rollout to 3 business units and 420 requesters.",
+    "He coordinated quarterly ERP releases, including UAT and release sign-off, which maps to managing releases.",
+    "He chaired the weekly intake meeting and prioritized the finance systems backlog.",
+    "The role is remote in the US and is an individual-contributor program role."
+   ],
+   "gaps": [
+    "The posting asks for 8+ years of program management, and the profile shows 4.5 years.",
+    "The profile shows no HRIS experience.",
+    "He has not run steering meetings at senior program level, so this is less proven than his intake work."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 28,
+    "skills": 21,
+    "seniority": 8,
+    "domain": 14,
+    "logistics": 10
+   },
+   "score": 81,
+   "verdict": "apply",
+   "summary": "This is an apply at 81. Contoso Health's roadmap uses NetSuite and Coupa, the systems he owned and rolled out, and the remote US setup works for him. The biggest risk is the 8+ years requirement: he has 4.5 years, and the missing years cost the most points. HRIS is the other gap."
+  },
+  "s23": {
+   "strengths": [
+    "Individual product-owner role with backlog ownership, matching his NetSuite ERP product owner work.",
+    "He prioritized the finance systems backlog and chaired its weekly intake meeting.",
+    "4.5 years of product ownership at a distributor meets the 4+ year bar.",
+    "Onsite in Denver fits his location without relocation."
+   ],
+   "gaps": [
+    "The profile shows no warehouse management system experience.",
+    "No receiving, putaway or shipping workflow experience is stated.",
+    "His systems domain is finance (order-to-cash, procure-to-pay), not warehouse operations.",
+    "The posting does not say whether the role is full-time and permanent."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 27,
+    "skills": 15,
+    "seniority": 17,
+    "domain": 9,
+    "logistics": 10
+   },
+   "score": 78,
+   "verdict": "apply",
+   "summary": "A strong product-owner and location match with enough tenure, but his ERP and finance systems background only partly fits warehouse workflows."
+  },
+  "s24": {
+   "strengths": [
+    "Technical program manager is one of his target role titles.",
+    "He coordinated quarterly ERP releases, including UAT and release sign-off.",
+    "He led a cross-unit Coupa rollout to 420 requesters.",
+    "The role is remote in the US, which fits his location needs."
+   ],
+   "gaps": [
+    "The profile shows no experience shipping console or mobile games.",
+    "The profile shows no experience managing live-service or live-ops schedules.",
+    "He has not worked with art, design or game engineering teams.",
+    "He has 4.5 years of experience against the 5+ years required.",
+    "Game development is far from his finance systems and ERP domain."
+   ],
+   "dealbreakers": [],
+   "areas": {
+    "role_match": 15,
+    "skills": 7,
+    "seniority": 16,
+    "domain": 1,
+    "logistics": 10
+   },
+   "score": 49,
+   "verdict": "skip",
+   "summary": "Skip (49): the title and remote setup fit, but the work is game launch coordination, and he has no gaming experience or domain background."
+  }
+ }
+}

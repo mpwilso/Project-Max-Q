@@ -17,4 +17,5 @@ Rules:
    work in) belongs in `dealbreakers`, and the score should reflect it.
 3. Use only facts in the profile. Do not assume experience the profile does not state.
 
-Verdicts: 75 and above is `apply`, 55 to 74 is `maybe`, below 55 is `skip`.
+Verdicts: 75 and above is `apply`, 55 to 74 is `maybe`, below 55 is `skip`. Any dealbreaker makes the
+verdict `skip`, whatever the score; the code enforces this.
