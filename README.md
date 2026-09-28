@@ -9,7 +9,7 @@ decide on. It never applies to anything. I make every call that matters.
 
 I also built it as an experiment in working with an AI coding agent. Claude Code wrote most of the
 code. I wrote the rules it had to follow, decided what it could and couldn't decide on its own, and
-held it to one standard: any bug we found in real data got a test before we moved on. There are 376
+held it to one standard: any bug we found in real data got a test before we moved on. There are 385
 of those tests now, and they run on every change.
 
 The code is named `maxq` inside the repo. Max Q is the moment a rocket takes the most stress on the
@@ -202,13 +202,29 @@ covers how. History starts at a clean public snapshot of a private working copy.
 enters this repository: I run `tools/privacy_scan.py` on every commit and push through opt-in hooks
 (`git config core.hooksPath .githooks`) against a local, gitignored blocklist.
 
+## Truth checks on the resume (Phase 2, first slice)
+
+A tailored resume is where an AI assistant is most tempted to embellish. `claimcheck.py` stops that
+in code: every bullet must cite a verified claim about the candidate (`[claim-id]`), and a line is
+blocked if it states a figure, a system or a title those claims don't support, or anything on the
+never-claim list.
+
+```
+python claimcheck.py examples/john_doe/resume.md            # every line traces: passes
+python claimcheck.py examples/john_doe/resume_blocked.md    # 5 of 6 lines blocked, with reasons
+```
+
+The blocked example shows each rule catching something: an inflated number (600 requesters, not
+420), people management he never did, a tool none of his claims mention, a title he never held, and a
+line with no source at all. One blocked line blocks the whole resume, so the fix is always to change
+the wording or add a verified claim, never to talk the check out of it.
+
 ## Roadmap
 
-This is **Phase 1: discovery**. Phase 2 adds the checks between a tailored resume and anything that
-gets sent:
-- every resume line must trace to a verified claim about the candidate, or the build is blocked;
-- deterministic checks on the page (one page, no unsupported metrics, no titles the candidate has not
-  held) before any reviewer sees it;
+Phase 1, discovery, is done. Phase 2 is the checks between a tailored resume and anything that gets
+sent. Done so far: claim tracing (above). Next:
+- measure the Claude fit scorer against the labeled set and publish the numbers beside the baseline;
+- more page checks before any reviewer sees a draft (one page, no hedged or unsupported metrics);
 - an independent review pass and a person's approval before a file is released.
 
 ## License
