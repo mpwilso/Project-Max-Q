@@ -1,6 +1,6 @@
 # maxq
 
-[![tests](https://github.com/mpwilso/maxq/actions/workflows/tests.yml/badge.svg)](https://github.com/mpwilso/maxq/actions/workflows/tests.yml)
+[![tests](https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml/badge.svg)](https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml)
 
 **A human-in-the-loop job search pipeline, built by an AI coding agent under written rules.**
 
