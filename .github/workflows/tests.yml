@@ -20,3 +20,4 @@ jobs:
       - run: python -m unittest discover -s tests -t .
       - run: python sweep.py --selftest
       - run: python evals/run_fit_eval.py
+      - run: python claimcheck.py examples/john_doe/resume.md

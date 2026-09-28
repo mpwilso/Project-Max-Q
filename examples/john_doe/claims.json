@@ -1,0 +1,25 @@
+{
+ "_comment": "John Doe's verified claims (fictional). Every resume line must trace to at least one of these. 'facts' lists what a line may state: figures, systems and phrases. A line that states a figure or a system not in any claim it matches is blocked.",
+ "candidate": "John Doe",
+ "titles_held": ["Product Owner, Finance Systems", "Business Systems Analyst"],
+ "claims": [
+  {"id": "erp-owner", "text": "Product owner for the company's NetSuite ERP, covering order-to-cash and procure-to-pay.",
+   "facts": ["netsuite", "erp", "order-to-cash", "procure-to-pay", "product owner"]},
+  {"id": "coupa-rollout", "text": "Led the rollout of Coupa procurement to 3 business units and 420 requesters.",
+   "facts": ["coupa", "procurement", "3", "420", "business units", "requesters", "rollout"]},
+  {"id": "close-program", "text": "Ran the month-end close improvement program; close shortened from 9 working days to 6.",
+   "facts": ["month-end close", "9", "6", "working days", "close"]},
+  {"id": "backlog", "text": "Prioritized the backlog for the finance systems team and chaired its weekly intake meeting.",
+   "facts": ["backlog", "intake", "prioritized", "finance systems"]},
+  {"id": "reporting", "text": "Built SQL and Excel reporting for finance leadership.",
+   "facts": ["sql", "excel", "reporting", "finance leadership"]},
+  {"id": "releases", "text": "Coordinated user acceptance testing and release sign-off for quarterly ERP releases.",
+   "facts": ["uat", "user acceptance testing", "release", "quarterly", "erp"]},
+  {"id": "tenure", "text": "4.5 years at Northwind Traders, 2021 to present.",
+   "facts": ["northwind traders", "4.5", "2021"]}
+ ],
+ "known_systems": ["netsuite", "coupa", "sap", "oracle", "workday", "sql",
+                   "excel", "python", "tableau", "power bi", "jira", "snowflake"],
+ "never_claim": ["managed a team", "direct reports", "people manager", "hired", "budget owner",
+                 "certified", "certification", "cpa", "sap", "oracle", "machine learning"]
+}
