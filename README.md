@@ -1,27 +1,33 @@
-# maxq
+# Project Max Q
 
 [![tests](https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml/badge.svg)](https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml)
 
-**A human-in-the-loop job search pipeline, built by an AI coding agent under written rules.**
+Job hunting at volume is mostly noise. Listing sites are stale and incomplete, and a slow week looks
+exactly like a broken search. I built Max Q to fix that for myself: it reads job postings straight from
+each company's own careers site, filters out the ones that don't fit, and gives me a short list to
+decide on. It never applies to anything. I make every call that matters.
 
-maxq reads employers' own job boards across 38 applicant-tracking systems, runs every posting through
-deterministic gates, and hands a person a short, honest list to decide on. It never applies to
-anything. The code was written by Claude Code (Anthropic's coding agent) working to a spec and a set
-of operating rules; 363 offline tests, fail-closed checks and human approval decide what ships.
+I also built it as an experiment in working with an AI coding agent. Claude Code wrote most of the
+code. I wrote the rules it had to follow, decided what it could and couldn't decide on its own, and
+held it to one standard: any bug we found in real data got a test before we moved on. There are 363
+of those tests now, and they run on every change.
 
-The domain is job discovery. The subject is how to make agent-built software trustworthy.
+The code is named `maxq` inside the repo. Max Q is the moment a rocket takes the most stress on the
+way up; job searching felt about the same.
 
-## What this demonstrates
+## What's worth looking at
 
-- **Governing an AI agent's work**: written operating rules ([docs/AGENT_RULES.md](docs/AGENT_RULES.md)),
-  every real-world defect turned into a regression test ([docs/DEFECT_LOG.md](docs/DEFECT_LOG.md)),
-  and a clear line between what code decides and what a person decides.
-- **Failure-mode-driven design**: a small result is a suspected bug until the numbers explain it;
-  missing coverage is reported, never silent; nothing is closed on an incomplete read.
-- **Product judgment**: a fit read and a separate "will this reach a human" read, kept apart on purpose;
-  a sort hint that never filters; an optimization measured before it is trusted.
-- **Engineering discipline**: a plugin contract for new board types, fixture-backed tests with fully
-  synthetic data, CI on every push, and a privacy scan on every commit.
+- **How the AI agent was managed.** The rules it worked under are in
+  [docs/AGENT_RULES.md](docs/AGENT_RULES.md), and the real bugs it hit, with the test that now guards
+  each one, are in [docs/DEFECT_LOG.md](docs/DEFECT_LOG.md).
+- **Designing for the ways things break.** A suspiciously small result is treated as a bug until the
+  numbers explain it. A careers site that can't be read gets reported, not quietly skipped. Nothing is
+  marked closed unless the whole board was read cleanly.
+- **Keeping the decisions straight.** Code handles the hard filters, the AI sorts and drafts, and a
+  person decides and submits. Whether I'm a fit and whether an application will reach a human are
+  scored separately, on purpose.
+- **Engineering basics done properly.** A plugin setup for adding new job boards, tests built on
+  made-up data, automatic checks on every push, and a privacy scan before anything leaves my machine.
 
 ## Quick start
 
@@ -29,29 +35,36 @@ Python 3.12. About two minutes to a first report.
 
 ```
 python -m venv .venv
-.venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
+.venv\Scripts\activate
+# (macOS/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
 
-python sweep.py --selftest                                    # offline: sample postings through the gates
-python -m unittest discover -s tests -t .                     # offline: 363 tests
-python sweep.py --targets examples/targets.quickstart.json    # live: three small public boards
+# offline: run sample postings through the filters
+python sweep.py --selftest
+
+# offline: the full test suite
+python -m unittest discover -s tests -t .
+
+# live: read three small public job boards
+python sweep.py --targets examples/targets.quickstart.json
 ```
 
 The last command writes `reports/SWEEP_REPORT_<date>.md`. Open it; `reports/SAMPLE_REPORT.md` shows
-what a larger run looks like. To see one board's postings and gate verdicts without touching stored state:
-`python adapters/probe.py --company "Notion"`.
+what a larger run looks like. To see one board's postings and verdicts without touching stored state,
+run `python adapters/probe.py --company "Notion"`.
 
 ## How it works
 
 ```mermaid
-flowchart LR
-    T[targets.json<br/>employer boards] --> A[38 board readers<br/>sweep.py + adapters/]
-    A --> G{hard gates<br/>gates.json}
-    G -->|pass| R[report + health block]
-    G -->|title out of lane| B[description scored<br/>REVIEW, never PASS] --> R
-    G -->|fail| X[counted in the funnel]
-    R --> AI[AI agent<br/>sorts, drafts a fit read]
-    AI --> P((person<br/>decides, submits))
+flowchart TD
+    T[targets.json: the companies to read] --> A[38 job board readers]
+    A --> G{filters in gates.json}
+    G -->|passes| R[report with a health check]
+    G -->|title doesn't match,<br/>description does| B[flagged for review,<br/>never counted as a pass]
+    B --> R
+    G -->|fails| X[counted, not shown]
+    R --> AI[AI agent sorts and drafts a fit read]
+    AI --> P([a person decides and applies])
 ```
 
 | Step | Who decides |
@@ -144,21 +157,16 @@ score floor is not yet validated against outcomes, and the engineering-title gua
 
 ## Being a polite reader
 
-maxq reads the same public, unauthenticated listing data each employer's careers page loads in a
+Max Q reads the same public, unauthenticated listing data each employer's careers page loads in a
 browser. It identifies itself with a descriptive User-Agent, waits between requests, backs off on 429
 and 5xx responses and honours Retry-After, uses conditional requests where a board supports them, and
 never reads a site that requires a login. Check each site's terms before running it at scale.
 
 ## How this was built
 
-I designed the architecture, the gates and the rules for when the pipeline may and may not decide
-something on its own, and wrote them down as operating instructions. Claude Code wrote most of the code
-under those instructions. I reviewed its work against the rules, and every defect we found in real data
-became a regression test in the same session. The rules are in [docs/AGENT_RULES.md](docs/AGENT_RULES.md)
-and a selection of the defects in [docs/DEFECT_LOG.md](docs/DEFECT_LOG.md).
-
-History starts at a clean public snapshot. Personal data never enters this repository: the maintainer
-runs `tools/privacy_scan.py` on every commit and push through opt-in hooks
+Claude Code wrote most of the code under rules I wrote and enforced; the opening of this README
+covers how. History starts at a clean public snapshot of a private working copy. Personal data never
+enters this repository: I run `tools/privacy_scan.py` on every commit and push through opt-in hooks
 (`git config core.hooksPath .githooks`) against a local, gitignored blocklist.
 
 ## Roadmap
