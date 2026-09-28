@@ -9,7 +9,7 @@ decide on. It never applies to anything. I make every call that matters.
 
 I also built it as an experiment in working with an AI coding agent. Claude Code wrote most of the
 code. I wrote the rules it had to follow, decided what it could and couldn't decide on its own, and
-held it to one standard: any bug we found in real data got a test before we moved on. There are 363
+held it to one standard: any bug we found in real data got a test before we moved on. There are 376
 of those tests now, and they run on every change.
 
 The code is named `maxq` inside the repo. Max Q is the moment a rocket takes the most stress on the
@@ -23,6 +23,9 @@ way up; job searching felt about the same.
 - **Designing for the ways things break.** A suspiciously small result is treated as a bug until the
   numbers explain it. A careers site that can't be read gets reported, not quietly skipped. Nothing is
   marked closed unless the whole board was read cleanly.
+- **Measuring an AI feature before trusting it.** A Claude-based fit scorer ranks the shortlist, and an
+  evaluation harness measures it against postings a person labeled, next to a plain keyword baseline.
+  See [Ranking by fit](#ranking-by-fit-and-measuring-it).
 - **Keeping the decisions straight.** Code handles the hard filters, the AI sorts and drafts, and a
   person decides and submits. Whether I'm a fit and whether an application will reach a human are
   scored separately, on purpose.
@@ -136,6 +139,36 @@ the board lives; the 53 entries here are examples covering 33 board types.
 | UNCOVERED | The board could not be read this run; its postings are carried, not closed |
 | carried forward | Kept open because the read that would close it was incomplete |
 | conversion read | Separate from fit: how likely an application reaches a human (years gap, level, posting age, crowded board, known contacts) |
+
+## Ranking by fit, and measuring it
+
+After the filters, `fitscore.py` ranks what's left by how well each posting fits the profile. The
+ranking only changes the order: every posting that passed is still listed, and a person still decides.
+
+```
+python fitscore.py rank                    # keyword baseline, offline
+python fitscore.py rank --scorer claude    # Claude scores each posting against the rubric
+```
+
+The Claude scorer sends the profile and rubric ([examples/john_doe/](examples/john_doe/)) with each
+posting and gets back a structured answer: points per rubric area, strengths, gaps and dealbreakers.
+Code checks that the areas are in range and add up to the score, and sets the verdict from the score,
+so the label and the number can never disagree. A declined or cut-off answer is reported, not guessed.
+It needs `pip install -r requirements-ai.txt` and an Anthropic API key.
+
+Whether it is any good is measured, not assumed. `evals/run_fit_eval.py` scores 24 made-up postings
+that were labeled by hand (apply, maybe or skip), including traps: the right title on the wrong job,
+the right job under an odd title. The keyword baseline sets the bar:
+
+| Scorer | Agrees with label | Apply precision | Apply recall | Bad jobs pushed to the top |
+|---|---|---|---|---|
+| Keyword baseline | 46% | 42% | 83% | 3 of 12 |
+| Claude | not run yet | | | |
+
+The baseline finds most real fits but can't tell a contract role, an SAP-only role or a job in the
+wrong country from a good one. That gap is what the model has to close. Full results are in
+[evals/results/](evals/results/). Your own labeled postings can go in `evals/local/`, which is
+gitignored, so real job data never leaves your machine.
 
 ## Design decisions and trade-offs
 
