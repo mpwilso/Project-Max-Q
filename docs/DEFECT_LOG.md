@@ -62,3 +62,12 @@ Each entry: what it looked like, why it happened, what changed, and where it is 
 - **Cause:** two employer entries pointed at the same board.
 - **Fix:** an integrity test over the target list.
 - **Pinned by:** `tests/test_targets.py::test_no_board_is_listed_twice`.
+
+### 9. The AI scorer saw the dealbreaker and scored the job 90 anyway
+- **Symptom:** the first evaluation of the Claude fit scorer ranked three bad jobs as apply: five days
+  onsite in a city the candidate won't move to, a role in Canada, and a six-month contract.
+- **Cause:** the model named each problem as a dealbreaker, but the rubric gives location and terms only
+  10 of 100 points, so the total stayed high. The judgment was right; the scoring design let it through.
+- **Fix:** any dealbreaker makes the verdict skip, in code. Re-measured by replaying the recorded answers:
+  agreement 67% to 79%, bad jobs pushed up 3 to 0, with no new model calls.
+- **Pinned by:** `tests/test_fitscore.py::Validate::test_a_dealbreaker_makes_the_verdict_skip_whatever_the_score`.

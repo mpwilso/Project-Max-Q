@@ -9,7 +9,7 @@ decide on. It never applies to anything. I make every call that matters.
 
 I also built it as an experiment in working with an AI coding agent. Claude Code wrote most of the
 code. I wrote the rules it had to follow, decided what it could and couldn't decide on its own, and
-held it to one standard: any bug we found in real data got a test before we moved on. There are 385
+held it to one standard: any bug we found in real data got a test before we moved on. There are 389
 of those tests now, and they run on every change.
 
 The code is named `maxq` inside the repo. Max Q is the moment a rocket takes the most stress on the
@@ -146,61 +146,41 @@ After the filters, `fitscore.py` ranks what's left by how well each posting fits
 ranking only changes the order: every posting that passed is still listed, and a person still decides.
 
 ```
-python fitscore.py rank                    # keyword baseline, offline
-python fitscore.py rank --scorer claude    # Claude scores each posting against the rubric
+python fitscore.py rank                         # keyword baseline, offline
+python fitscore.py rank --scorer claude-code    # Claude, through the Claude Code CLI (no API account)
+python fitscore.py rank --scorer claude         # Claude, through the API
 ```
 
 The Claude scorer sends the profile and rubric ([examples/john_doe/](examples/john_doe/)) with each
 posting and gets back a structured answer: points per rubric area, strengths, gaps and dealbreakers.
 Code checks that the areas are in range and add up to the score, and sets the verdict from the score,
-so the label and the number can never disagree. A declined or cut-off answer is reported, not guessed.
-It needs `pip install -r requirements-ai.txt` and an Anthropic API key.
+so the label and the number can never disagree, and any dealbreaker makes the verdict skip. A declined
+or cut-off answer is reported, not guessed. The `claude-code` scorer runs each posting as a locked-down
+`claude -p` session (no tools, no settings, nothing saved) on a Claude subscription; the `claude` scorer
+calls the API and needs `pip install -r requirements-ai.txt` and an API key.
 
 Whether it is any good is measured, not assumed. `evals/run_fit_eval.py` scores 24 made-up postings
-that were labeled by hand (apply, maybe or skip), including traps: the right title on the wrong job,
-the right job under an odd title. The keyword baseline sets the bar:
+labeled apply, maybe or skip, including traps: the right title on the wrong job, the right job under an
+odd title, a good job in a place he can't work.
 
 | Scorer | Agrees with label | Apply precision | Apply recall | Bad jobs pushed to the top |
 |---|---|---|---|---|
 | Keyword baseline | 46% | 42% | 83% | 3 of 12 |
-| Claude | not run yet | | | |
+| Claude (Opus 5.5), first run | 67% | 50% | 100% | 3 of 12 |
+| Claude, plus the dealbreaker rule | 79% | 67% | 100% | 0 of 12 |
 
-The baseline finds most real fits but can't tell a contract role, an SAP-only role or a job in the
-wrong country from a good one. That gap is what the model has to close. Full results are in
-[evals/results/](evals/results/). Your own labeled postings can go in `evals/local/`, which is
-gitignored, so real job data never leaves your machine.
+The first Claude run caught every good job but pushed three bad ones to the top: five days onsite in
+New York, a role in Canada, and a six-month contract. In each case the model had named the problem as a
+dealbreaker and still scored the job 78 to 90, because location is only 10 points of the rubric. The
+fix went in code, not the prompt: a dealbreaker now makes the verdict skip. The third row replays the
+same recorded answers under the new rule, so no model call changed; it also means the rule was chosen
+after seeing this set, and a fresh set is the real test.
 
-## Design decisions and trade-offs
-
-- **Employer boards over aggregators.** More adapters to maintain, in exchange for data that is
-  current and complete.
-- **Carry forward over close.** A posting is closed only by a clean, complete read of an enumerable
-  board. Occasionally a closed role lingers; a live role never silently disappears.
-- **Fail-closed location.** A posting with no recognizable location fails. Some good roles need a second
-  look; none from the wrong country slip through.
-- **REVIEW is never PASS.** Rescued postings and ambiguous manager titles go to a person, so the pass
-  count and its health warnings keep meaning something.
-- **Measure before trusting.** Conditional requests (ETag) run in measurement mode; trust is switched
-  on in `gates.json` only after three consecutive clean full sweeps agree.
-- **One core file, plugins at the edge.** `sweep.py` holds the gates, state and the original readers in
-  one place; new board types are plugins with their own tests. Splitting the core is the next refactor.
-
-Known limits: body rescue has a high false-positive rate by design (a person reviews every one), its
-score floor is not yet validated against outcomes, and the engineering-title guard is code, not config.
-
-## Being a polite reader
-
-Max Q reads the same public, unauthenticated listing data each employer's careers page loads in a
-browser. It identifies itself with a descriptive User-Agent, waits between requests, backs off on 429
-and 5xx responses and honours Retry-After, uses conditional requests where a board supports them, and
-never reads a site that requires a login. Check each site's terms before running it at scale.
-
-## How this was built
-
-Claude Code wrote most of the code under rules I wrote and enforced; the opening of this README
-covers how. History starts at a clean public snapshot of a private working copy. Personal data never
-enters this repository: I run `tools/privacy_scan.py` on every commit and push through opt-in hooks
-(`git config core.hooksPath .githooks`) against a local, gitignored blocklist.
+Two honest caveats. The labels were written against John Doe's profile by the project's AI coding
+agent, so this is a consistency check rather than independent ground truth. And the scorer and the
+labeler are the same model family. Recorded answers are in [evals/recorded/](evals/recorded/), full
+reports in [evals/results/](evals/results/). Your own labeled postings can go in `evals/local/`, which
+is gitignored, so real job data never leaves your machine.
 
 ## Truth checks on the resume (Phase 2, first slice)
 
@@ -223,7 +203,7 @@ the wording or add a verified claim, never to talk the check out of it.
 
 Phase 1, discovery, is done. Phase 2 is the checks between a tailored resume and anything that gets
 sent. Done so far: claim tracing (above). Next:
-- measure the Claude fit scorer against the labeled set and publish the numbers beside the baseline;
+- a second, independently labeled set to confirm the fit scorer's numbers;
 - more page checks before any reviewer sees a draft (one page, no hedged or unsupported metrics);
 - an independent review pass and a person's approval before a file is released.
 
