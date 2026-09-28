@@ -21,3 +21,6 @@ venv/
 *.log
 Thumbs.db
 .DS_Store
+
+# your own labeled postings and their reports never leave this machine
+evals/local/
