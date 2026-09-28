@@ -1,0 +1,85 @@
+{
+ "res": {
+  "searchResults": [
+   {
+    "id": "300588114-4417",
+    "jobSummary": "Placeholder summary for a synthetic test posting.",
+    "locations": [
+     {
+      "postLocationId": "postLocation-CHI",
+      "city": "",
+      "stateProvince": "",
+      "countryName": "United States of America",
+      "name": "Chicago",
+      "countryID": "iso-country-USA",
+      "level": 5
+     }
+    ],
+    "positionId": "300588114",
+    "postingTitle": "Regional Partner Manager (Midwest)",
+    "postDateInGMT": "2026-09-11T16:28:00.909Z",
+    "transformedPostingTitle": "regional-partner-manager-midwest",
+    "reqId": "300588114-4417",
+    "team": {
+     "teamName": "Sales",
+     "teamCode": "SALES"
+    },
+    "type": "REQ",
+    "homeOffice": true
+   },
+   {
+    "id": "300640271-0231",
+    "jobSummary": "Placeholder summary for a synthetic test posting.",
+    "locations": [
+     {
+      "postLocationId": "postLocation-AUS",
+      "city": "",
+      "stateProvince": "",
+      "countryName": "United States of America",
+      "name": "Austin",
+      "countryID": "iso-country-USA",
+      "level": 5
+     }
+    ],
+    "positionId": "300640271",
+    "postingTitle": "Hardware Validation Program Manager",
+    "postDateInGMT": "2026-09-14T20:17:47.170Z",
+    "transformedPostingTitle": "hardware-validation-program-manager",
+    "reqId": "300640271-0231",
+    "team": {
+     "teamName": "Hardware",
+     "teamCode": "HARDW"
+    },
+    "type": "REQ",
+    "homeOffice": false
+   },
+   {
+    "id": "300640271-0588",
+    "jobSummary": "Placeholder summary for a synthetic test posting.",
+    "locations": [
+     {
+      "postLocationId": "postLocation-RAL",
+      "city": "",
+      "stateProvince": "",
+      "countryName": "United States of America",
+      "name": "Raleigh",
+      "countryID": "iso-country-USA",
+      "level": 5
+     }
+    ],
+    "positionId": "300640271",
+    "postingTitle": "Hardware Validation Program Manager",
+    "postDateInGMT": "2026-09-14T20:17:47.170Z",
+    "transformedPostingTitle": "hardware-validation-program-manager",
+    "reqId": "300640271-0588",
+    "team": {
+     "teamName": "Hardware",
+     "teamCode": "HARDW"
+    },
+    "type": "REQ",
+    "homeOffice": false
+   }
+  ],
+  "totalRecords": 5
+ }
+}

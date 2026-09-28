@@ -1,0 +1,3 @@
+#!/bin/sh
+# Refuse a push that carries personal data anywhere in history. See tools/privacy_scan.py.
+exec python tools/privacy_scan.py --push

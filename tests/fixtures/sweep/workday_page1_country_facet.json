@@ -1,0 +1,461 @@
+{
+ "_note": "Synthetic Workday CXS page-1 response (POST /jobs, unfiltered). Invented tenant, ids, places and postings. Shape: a country-level facet (locationHierarchy1) beside a city-level one (locations), both nested under locationMainGroup.",
+ "total": 804,
+ "facets": [
+  {
+   "facetParameter": "jobFamilyGroup",
+   "descriptor": "Job Category",
+   "values": [
+    {
+     "descriptor": "Engineering",
+     "id": "f343e2e96b969b60df39395e2683adf0",
+     "count": 402
+    },
+    {
+     "descriptor": "Program Management",
+     "id": "09fc5d1499cbdbf8c887972bfa3830c2",
+     "count": 57
+    },
+    {
+     "descriptor": "Product Management",
+     "id": "6aa930ea502028d25f6f77fae5e7f0e1",
+     "count": 49
+    },
+    {
+     "descriptor": "Sales",
+     "id": "c8c1cfeda99b4a81b88b72b8d8089be3",
+     "count": 88
+    },
+    {
+     "descriptor": "Operations",
+     "id": "d68146e4a128b71d7489e36844774914",
+     "count": 61
+    },
+    {
+     "descriptor": "Marketing",
+     "id": "b51b3b3244f1bd7299c3b0fbac6443b4",
+     "count": 34
+    },
+    {
+     "descriptor": "Information Technology",
+     "id": "ddc4c3818e6f3a1f137bc2600a4ba0be",
+     "count": 29
+    },
+    {
+     "descriptor": "Finance",
+     "id": "128ef137d4b92bf41ba0808bc5e1ceb1",
+     "count": 22
+    },
+    {
+     "descriptor": "People",
+     "id": "b06d79da6074afe5d8ec1bfa680035a8",
+     "count": 13
+    },
+    {
+     "descriptor": "Legal",
+     "id": "0c09d6d0ddce2d00589d953e86055328",
+     "count": 6
+    },
+    {
+     "descriptor": "Facilities",
+     "id": "891be1623dcb296a4775f08f0e5f804f",
+     "count": 4
+    }
+   ]
+  },
+  {
+   "facetParameter": "workerSubType",
+   "descriptor": "Job Type",
+   "values": [
+    {
+     "descriptor": "Regular Employee",
+     "id": "70636617678b6332901d33855782d6ef",
+     "count": 721
+    },
+    {
+     "descriptor": "Management",
+     "id": "b0769c1df78f19d4237e5fd6716dbcee",
+     "count": 55
+    },
+    {
+     "descriptor": "Intern (Fixed Term)",
+     "id": "db4ac627c37b7a231999924f61195d25",
+     "count": 21
+    },
+    {
+     "descriptor": "New College Graduate",
+     "id": "6af6feb6b75f2f9cd9c667c653b6b979",
+     "count": 7
+    }
+   ]
+  },
+  {
+   "facetParameter": "timeType",
+   "descriptor": "Time Type",
+   "values": [
+    {
+     "descriptor": "Full time",
+     "id": "e023205ff14c1d906f599b52731920de",
+     "count": 801
+    },
+    {
+     "descriptor": "Part time",
+     "id": "7af3261a9c9ba9acd9f350dfb2bfefd3",
+     "count": 3
+    }
+   ]
+  },
+  {
+   "facetParameter": "locationMainGroup",
+   "values": [
+    {
+     "facetParameter": "locationHierarchy2",
+     "descriptor": "Location Type",
+     "values": [
+      {
+       "descriptor": "Office",
+       "id": "7b3c8ea19adc911e4081dc04ddfd22f5",
+       "count": 640
+      },
+      {
+       "descriptor": "Remote",
+       "id": "5a1de9b2835ea228a6a7fa685f976002",
+       "count": 164
+      }
+     ]
+    },
+    {
+     "facetParameter": "locationHierarchy1",
+     "descriptor": "Locations",
+     "values": [
+      {
+       "descriptor": "Australia",
+       "id": "01ea6a5683a1ea6f4f6182ff2518b6c8",
+       "count": 6
+      },
+      {
+       "descriptor": "Brazil",
+       "id": "beb9f23eabd624e353f4a2ba2b89505f",
+       "count": 3
+      },
+      {
+       "descriptor": "Canada",
+       "id": "d762c9531f8f9d20b12d1d044e4dc469",
+       "count": 14
+      },
+      {
+       "descriptor": "France",
+       "id": "bb4658f7993557bfaa538e1bb376b462",
+       "count": 9
+      },
+      {
+       "descriptor": "Germany",
+       "id": "adc2b3bc62cf6519ce2588c555976502",
+       "count": 22
+      },
+      {
+       "descriptor": "India",
+       "id": "bcdf3a277b284e8787d380a61bc8a7e7",
+       "count": 41
+      },
+      {
+       "descriptor": "Ireland",
+       "id": "0a3026e1ce2866077c64e20f57c9a90a",
+       "count": 5
+      },
+      {
+       "descriptor": "Japan",
+       "id": "19ee01c6b20486a8028b88684b6d9b1e",
+       "count": 11
+      },
+      {
+       "descriptor": "Mexico",
+       "id": "07c73f1d713004587b99ea08a9e069f3",
+       "count": 4
+      },
+      {
+       "descriptor": "Netherlands",
+       "id": "2a31a9c4ef64e49b7b898c19745ba1b1",
+       "count": 7
+      },
+      {
+       "descriptor": "Poland",
+       "id": "66a114350282a40e4bd5319c2c60c0ec",
+       "count": 8
+      },
+      {
+       "descriptor": "Singapore",
+       "id": "4d0f87325280b083a00c009f51b0d7c9",
+       "count": 6
+      },
+      {
+       "descriptor": "Spain",
+       "id": "8f951bd9e3f2caf195ff8089c8031889",
+       "count": 3
+      },
+      {
+       "descriptor": "Sweden",
+       "id": "928b62fbd095dc10578316a34b691573",
+       "count": 2
+      },
+      {
+       "descriptor": "United Kingdom",
+       "id": "701dab5b8469ec7eeb41ac102f06dff4",
+       "count": 19
+      },
+      {
+       "descriptor": "United States",
+       "id": "7fc92f0e1d2dd7772b8e6c8d706d4421",
+       "count": 612
+      }
+     ]
+    },
+    {
+     "facetParameter": "locations",
+     "descriptor": "Sites",
+     "values": [
+      {
+       "descriptor": "Australia, Harbourview",
+       "id": "acd8bc05c08a583932867e7b6256dae2",
+       "count": 4
+      },
+      {
+       "descriptor": "Australia, Remote",
+       "id": "5d0906c84fc4b79dba3a2a18e95663a9",
+       "count": 2
+      },
+      {
+       "descriptor": "Brazil, Serra Alta",
+       "id": "b71d250ec05b3dee20b3ddaa3e8a16f2",
+       "count": 3
+      },
+      {
+       "descriptor": "Canada, Remote",
+       "id": "d3d37e5094b1c91681d30197c89ad0e5",
+       "count": 5
+      },
+      {
+       "descriptor": "Canada, Pinecrest",
+       "id": "438fda74a9f3d15c614d6ccd03017bf1",
+       "count": 9
+      },
+      {
+       "descriptor": "France, Valmont",
+       "id": "04677429a0f8aa6040f1dfe9840f4c0f",
+       "count": 9
+      },
+      {
+       "descriptor": "Germany, Remote",
+       "id": "84b20f61aa30fec3aa1ff7e8e63d375a",
+       "count": 6
+      },
+      {
+       "descriptor": "Germany, Lindenhoehe",
+       "id": "c579ea773f00627a4200a6cd854aef01",
+       "count": 16
+      },
+      {
+       "descriptor": "India, Remote",
+       "id": "dd8b60e7f44d293fe3dd0b33ba8d8e50",
+       "count": 8
+      },
+      {
+       "descriptor": "India, Chandrapur Tech Park",
+       "id": "5151652a8befefab39e7b2700113301b",
+       "count": 33
+      },
+      {
+       "descriptor": "Ireland, Glenmore",
+       "id": "c0450f242684d6dd44e21d845cd87d7b",
+       "count": 5
+      },
+      {
+       "descriptor": "Japan, Remote",
+       "id": "c34c88eda8bfbb2a968b8c3f58816ffe",
+       "count": 3
+      },
+      {
+       "descriptor": "Japan, Minami-Kawa",
+       "id": "13da0b3925f73868313ce2be79251480",
+       "count": 8
+      },
+      {
+       "descriptor": "Mexico, Remote",
+       "id": "6c64394662db2e111e11216a626802ad",
+       "count": 4
+      },
+      {
+       "descriptor": "Netherlands, Remote",
+       "id": "86f90017d8cff82460da64d898769608",
+       "count": 2
+      },
+      {
+       "descriptor": "Netherlands, Havendam",
+       "id": "9be2915d0b4449c65f82486f596e3abb",
+       "count": 5
+      },
+      {
+       "descriptor": "Poland, Remote",
+       "id": "7d24cf33a64b972151cf46e939700f02",
+       "count": 3
+      },
+      {
+       "descriptor": "Poland, Stary Most",
+       "id": "74288935c09f981059447c84b30b7ef0",
+       "count": 5
+      },
+      {
+       "descriptor": "Singapore, Remote",
+       "id": "a801999708f797049eafcfb2a9f479cf",
+       "count": 1
+      },
+      {
+       "descriptor": "Singapore, Marina Quay",
+       "id": "80aaa328a3706be4cca7e53d9aa893e6",
+       "count": 5
+      },
+      {
+       "descriptor": "Spain, Remote",
+       "id": "2e222e6398cec2a44021d5fda77f6bb2",
+       "count": 3
+      },
+      {
+       "descriptor": "Sweden, Remote",
+       "id": "7873490b8df46344442b42a63f14450f",
+       "count": 2
+      },
+      {
+       "descriptor": "UK, Remote",
+       "id": "4f06293262a72ef0cab18c2464770fc7",
+       "count": 5
+      },
+      {
+       "descriptor": "UK, Ashbourne Cross",
+       "id": "fab0adf7f3dc77bf80e64b8f3ff3cfda",
+       "count": 14
+      },
+      {
+       "descriptor": "US, Remote",
+       "id": "e46c02c9ce029466e70fb981512cf388",
+       "count": 58
+      },
+      {
+       "descriptor": "US, AZ, Remote",
+       "id": "042c0e87ec90cfa2106ffc1c4c303995",
+       "count": 4
+      },
+      {
+       "descriptor": "US, CA, Remote",
+       "id": "b2c44652b39c968fa2455f706c1e7a86",
+       "count": 17
+      },
+      {
+       "descriptor": "US, CA, Harbor Point",
+       "id": "53d21f8229e3a4fd092f1325d21086eb",
+       "count": 211
+      },
+      {
+       "descriptor": "US, CO, Remote",
+       "id": "3ac899f00299398dbc355dae5466187e",
+       "count": 6
+      },
+      {
+       "descriptor": "US, CO, Aspen Ridge",
+       "id": "3c4a6b31ec724b6527c96f0d544ecf56",
+       "count": 12
+      },
+      {
+       "descriptor": "US, FL, Remote",
+       "id": "50dbdfff09a07accde6fe153cccf1c03",
+       "count": 5
+      },
+      {
+       "descriptor": "US, GA, Remote",
+       "id": "7d66bafcf71f22e3f897838667817b98",
+       "count": 3
+      },
+      {
+       "descriptor": "US, IL, Prairieview",
+       "id": "f3fcfb84ebc817faf0c126f6b81e7543",
+       "count": 9
+      },
+      {
+       "descriptor": "US, MA, Remote",
+       "id": "9d69349a1eb475860d447dbb6f4a1a79",
+       "count": 7
+      },
+      {
+       "descriptor": "US, MA, Northfield",
+       "id": "4455406a511fd469db7af5f11f939d46",
+       "count": 18
+      },
+      {
+       "descriptor": "US, NC, Pine Hollow",
+       "id": "b0c00d4435ff095dcedb2d30fcf4fd9a",
+       "count": 10
+      },
+      {
+       "descriptor": "US, NY, Remote",
+       "id": "3f0b1d8da15e3e415d3d70247c62b716",
+       "count": 8
+      },
+      {
+       "descriptor": "US, NY, Hudson Gate",
+       "id": "509e0b80c2ff2883498d5dc400d2a2ed",
+       "count": 21
+      },
+      {
+       "descriptor": "US, OR, Cedar Bend",
+       "id": "e57fb5f7b0bbc088f29192b59f48226c",
+       "count": 27
+      },
+      {
+       "descriptor": "US, TX, Remote",
+       "id": "6a54167cac12dfcd309f8b03b6b162f2",
+       "count": 9
+      },
+      {
+       "descriptor": "US, TX, Lone Oak",
+       "id": "aef05830ef314c1459bd7318bba7a51c",
+       "count": 31
+      },
+      {
+       "descriptor": "US, UT, Remote",
+       "id": "50d11b6c9d8fb5f8da27519b1ccabad6",
+       "count": 2
+      },
+      {
+       "descriptor": "US, VA, Remote",
+       "id": "a9f00df22737b158f9c9d8a4ed24c443",
+       "count": 6
+      },
+      {
+       "descriptor": "US, WA, Remote",
+       "id": "93c9fc1bc8ad60dbad3a0bade9f43a62",
+       "count": 11
+      },
+      {
+       "descriptor": "US, WA, Sound Harbor",
+       "id": "c0507ebae19073b2814cff9c321d5baf",
+       "count": 38
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "jobPostings": [
+  {
+   "title": "Senior Product Manager, Internal Tools",
+   "externalPath": "/job/US-WA-Sound-Harbor/Senior-Product-Manager--Internal-Tools_JR0100231",
+   "locationsText": "US, WA, Sound Harbor",
+   "postedOn": "Posted Today"
+  },
+  {
+   "title": "Firmware Validation Engineer",
+   "externalPath": "/job/US-CA-Harbor-Point/Firmware-Validation-Engineer_JR0100187",
+   "locationsText": "3 Locations",
+   "postedOn": "Posted Yesterday"
+  }
+ ]
+}

@@ -1,0 +1,115 @@
+{
+ "data": [
+  {
+   "id": "610001",
+   "benefits": "<div><!--block-->We offer flexible hours, a learning budget and a quiet week at the end of each quarter.</div>",
+   "benefits_header": "Benefits",
+   "compensation": null,
+   "compensation_minimum": null,
+   "compensation_maximum": null,
+   "compensation_currency": null,
+   "compensation_frequency": null,
+   "compensation_visible": false,
+   "deadline_at": null,
+   "description": "<div><!--block-->You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</div>",
+   "employment_type": "permanent_full_time",
+   "employment_type_text": "Permanent - Full Time",
+   "key_responsibilities": "<ul><li><!--block-->You will own the roadmap for a small internal platform used by several operations teams.</li><li><!--block-->The team ships weekly and keeps a short list of priorities that everyone can read.</li><li><!--block-->You will write clear requirements, review designs with engineers and check the result against the goal.</li></ul>",
+   "key_responsibilities_header": "What You'll Be Doing:",
+   "skills_knowledge_expertise": "<ul><li><!--block-->Most of the work is turning vague requests into scoped, testable changes.</li><li><!--block-->We value plain writing, steady delivery and a habit of asking why before asking how.</li><li><!--block-->You will partner with support, finance and engineering leads to agree what ships next.</li></ul>",
+   "skills_knowledge_expertise_header": "What You'll Bring:",
+   "title": "Lifecycle Marketing Coordinator",
+   "url": "https://careers.tailspintoys.example/en/postings/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+   "path": "/en/postings/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+   "workplace_type": "hybrid",
+   "workplace_type_text": "Hybrid",
+   "job": {
+    "id": "615001",
+    "requisition_id": "REQ-610001",
+    "department": {
+     "id": "70001",
+     "name": "Marketing"
+    }
+   },
+   "location": {
+    "id": "110001",
+    "city": "Denver",
+    "name": "US - Denver"
+   }
+  },
+  {
+   "id": "610002",
+   "benefits": "<div><!--block-->We offer flexible hours, a learning budget and a quiet week at the end of each quarter.</div>",
+   "benefits_header": "Benefits",
+   "compensation": null,
+   "compensation_minimum": null,
+   "compensation_maximum": null,
+   "compensation_currency": null,
+   "compensation_frequency": null,
+   "compensation_visible": false,
+   "deadline_at": null,
+   "description": "<div><!--block-->You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</div>",
+   "employment_type": "permanent_full_time",
+   "employment_type_text": "Permanent - Full Time",
+   "key_responsibilities": "<ul><li><!--block-->You will own the roadmap for a small internal platform used by several operations teams.</li><li><!--block-->The team ships weekly and keeps a short list of priorities that everyone can read.</li><li><!--block-->You will write clear requirements, review designs with engineers and check the result against the goal.</li></ul>",
+   "key_responsibilities_header": "What You'll Be Doing:",
+   "skills_knowledge_expertise": "<ul><li><!--block-->Most of the work is turning vague requests into scoped, testable changes.</li><li><!--block-->We value plain writing, steady delivery and a habit of asking why before asking how.</li><li><!--block-->You will partner with support, finance and engineering leads to agree what ships next.</li></ul>",
+   "skills_knowledge_expertise_header": "What You'll Bring:",
+   "title": "Backend Engineer",
+   "url": "https://careers.tailspintoys.example/en/postings/b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+   "path": "/en/postings/b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+   "workplace_type": "remote",
+   "workplace_type_text": "Remote",
+   "job": {
+    "id": "615002",
+    "requisition_id": "REQ-610002",
+    "department": {
+     "id": "70001",
+     "name": "Marketing"
+    }
+   },
+   "location": {
+    "id": "110002",
+    "city": "Toronto",
+    "name": "Canada - Toronto"
+   }
+  },
+  {
+   "id": "610003",
+   "benefits": "<div><!--block-->We offer flexible hours, a learning budget and a quiet week at the end of each quarter.</div>",
+   "benefits_header": "Benefits",
+   "compensation": "$70,000 - $90,000 / year",
+   "compensation_minimum": 70000.0,
+   "compensation_maximum": 90000.0,
+   "compensation_currency": "USD",
+   "compensation_frequency": "year",
+   "compensation_visible": true,
+   "deadline_at": null,
+   "description": "<div><!--block-->You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</div>",
+   "employment_type": "permanent_full_time",
+   "employment_type_text": "Permanent - Full Time",
+   "key_responsibilities": "<ul><li><!--block-->You will own the roadmap for a small internal platform used by several operations teams.</li><li><!--block-->The team ships weekly and keeps a short list of priorities that everyone can read.</li><li><!--block-->You will write clear requirements, review designs with engineers and check the result against the goal.</li></ul>",
+   "key_responsibilities_header": "What You'll Be Doing:",
+   "skills_knowledge_expertise": "<ul><li><!--block-->Most of the work is turning vague requests into scoped, testable changes.</li><li><!--block-->We value plain writing, steady delivery and a habit of asking why before asking how.</li><li><!--block-->You will partner with support, finance and engineering leads to agree what ships next.</li></ul>",
+   "skills_knowledge_expertise_header": "What You'll Bring:",
+   "title": "Account Executive",
+   "url": "https://careers.tailspintoys.example/en/postings/c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f",
+   "path": "/en/postings/c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f",
+   "workplace_type": "hybrid",
+   "workplace_type_text": "Hybrid",
+   "job": {
+    "id": "615003",
+    "requisition_id": "REQ-610003",
+    "department": {
+     "id": "70001",
+     "name": "Marketing"
+    }
+   },
+   "location": {
+    "id": "110003",
+    "city": "Phoenix",
+    "name": "US - Phoenix"
+   }
+  }
+ ]
+}

@@ -1,0 +1,87 @@
+{
+ "name": "Initech",
+ "description": "",
+ "jobs": [
+  {
+   "title": "Senior Storage Engineer - US Remote",
+   "shortcode": "A1B2C3D4E5",
+   "code": "",
+   "employment_type": "Full-time",
+   "telecommuting": true,
+   "department": "Product",
+   "url": "https://apply.workable.com/j/A1B2C3D4E5",
+   "shortlink": "https://apply.workable.com/j/A1B2C3D4E5",
+   "application_url": "https://apply.workable.com/j/A1B2C3D4E5/apply",
+   "published_on": "2026-07-30",
+   "created_at": "2026-07-30",
+   "country": "United States",
+   "city": "Chicago",
+   "state": "Illinois",
+   "experience": "Mid-Senior level",
+   "locations": [
+    {
+     "country": "United States",
+     "countryCode": "US",
+     "city": "Chicago",
+     "region": "Illinois",
+     "hidden": true
+    }
+   ],
+   "description": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read.</p>"
+  },
+  {
+   "title": "Machine Learning Engineer - EMEA Remote",
+   "shortcode": "B2C3D4E5F6",
+   "code": "",
+   "employment_type": "Full-time",
+   "telecommuting": true,
+   "department": "Open Source",
+   "url": "https://apply.workable.com/j/B2C3D4E5F6",
+   "shortlink": "https://apply.workable.com/j/B2C3D4E5F6",
+   "application_url": "https://apply.workable.com/j/B2C3D4E5F6/apply",
+   "published_on": "2026-05-29",
+   "created_at": "2026-05-29",
+   "country": "France",
+   "city": "Paris",
+   "state": "Île-de-France",
+   "experience": "Mid-Senior level",
+   "locations": [
+    {
+     "country": "France",
+     "countryCode": "FR",
+     "city": "Paris",
+     "region": "Île-de-France",
+     "hidden": false
+    }
+   ],
+   "description": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read.</p>"
+  },
+  {
+   "title": "General Application",
+   "shortcode": "0C9D8E7F6A",
+   "code": "",
+   "employment_type": "Full-time",
+   "telecommuting": true,
+   "department": "General",
+   "url": "https://apply.workable.com/j/0C9D8E7F6A",
+   "shortlink": "https://apply.workable.com/j/0C9D8E7F6A",
+   "application_url": "https://apply.workable.com/j/0C9D8E7F6A/apply",
+   "published_on": "2024-10-17",
+   "created_at": "2022-10-19",
+   "country": "United States",
+   "city": "",
+   "state": "",
+   "experience": "Mid-Senior level",
+   "locations": [
+    {
+     "country": "United States",
+     "countryCode": "US",
+     "city": "",
+     "region": null,
+     "hidden": false
+    }
+   ],
+   "description": "<p>If no open role fits, apply here.</p>"
+  }
+ ]
+}

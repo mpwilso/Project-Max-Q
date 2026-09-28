@@ -1,0 +1,37 @@
+{
+ "version": "https://jsonfeed.org/version/1.1",
+ "title": "Acme Analytics",
+ "home_page_url": "https://careers.acme-analytics.example/jobs",
+ "feed_url": "https://careers.acme-analytics.example/jobs.json",
+ "items": [
+  {
+   "id": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+   "title": "Staff Data Engineer",
+   "url": "https://careers.acme-analytics.example/jobs/700103-staff-data-engineer",
+   "date_published": "2026-05-14T10:04:06-07:00",
+   "content_html": "<h2>The Role</h2><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read.</p>",
+   "_jobposting": {
+    "@context": "http://schema.org/",
+    "@type": "JobPosting",
+    "title": "Staff Data Engineer",
+    "description": "<h2>The Role</h2><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read.</p>",
+    "identifier": {
+     "@type": "PropertyValue",
+     "name": "Acme Analytics",
+     "value": 700103
+    },
+    "datePosted": "2026-05-14T10:04:06-07:00",
+    "hiringOrganization": {
+     "@type": "Organization",
+     "name": "Acme Analytics",
+     "sameAs": "https://careers.acme-analytics.example"
+    },
+    "jobLocationType": "TELECOMMUTE",
+    "applicantLocationRequirements": {
+     "@type": "Country",
+     "name": "US"
+    }
+   }
+  }
+ ]
+}

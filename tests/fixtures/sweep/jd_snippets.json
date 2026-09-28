@@ -1,0 +1,54 @@
+{
+ "_note": "Synthetic JD excerpts. Every employer, id, figure and sentence is invented; each snippet reproduces a pay-band or years-bar SHAPE the parsers must handle (or refuse). Keys are ats:Company:id like a sweep row key.",
+ "comp": {
+  "workday:Acme Analytics:R100101": "life and disability coverage, an employee assistance program, commuter benefits, a 401(k) plan with company match, paid holidays and parental leave. See the benefits guide for details. \n\nUSA, CO, Denver - 148,300.00 - 201,700.00 USD annually",
+  "workday:Acme Analytics:R100102": "life and disability coverage, an employee assistance program, commuter benefits, a 401(k) plan with company match, paid holidays and parental leave. See the benefits guide for details. \n\nUSA, NY, New York - 142,600.00 - 193,400.00 USD annually\nUSA, IL, Chicago - 129,800.00 - 176,300.00 USD annually\nUSA, GA, Atlanta - 129,800.00 - 176,300.00 USD annually\nUSA, OR, Portland - 129,800.00 - 176,300.00 USD annually",
+  "icims_jibe:Globex Systems:7301": " platform roadmaps. \n Enough technical depth to work closely with engineering leads. \n Ability to build trust across engineering, design and operations. \n Hands-on use of AI-assisted tools in your own daily work. \n \n Compensation Range \n\nThe base salary range for this job is USD $118,500.00 - USD $301,900.00 /Yr.\n\nThese ranges cover roles based anywhere in the United States. Individual base pay depends on location, experience and skills. Some roles are also eligible for an annual bonus and equity.",
+  "workday:Initech:JR300201": " Initech offers competitive pay and a full benefits package. \n \n \nYour base salary will be set by your location, experience, and the pay of peers in similar roles. The base salary range is 162,000 USD - 249,500 USD for Level 3, and 193,000 USD - 311,000 USD for Level 4. \n You will also be eligible for equity and benefits . \n \n\nApplications for this job will be accepted at least until October 30, 2026. \n This posting is for an existing vacancy.",
+  "greenhouse:Northwind Traders:4400512": "and the District of Columbia due to local requirements. Pay for candidates in other locations will be discussed during the process. Hiring for this role is not limited to the locations below. \n\n The expected pay ranges for this role are:\n\n \n Based in Colorado, Illinois, Maryland, Minnesota or Vermont : $124,300 (Entry Minimum for Zone 3) - $155,400(Mid for Zone 3).\n\n Based in New York, New Jersey, or Washington State: $131,700 (Entry Minimum for Zone 2) - $164,600 (Mid for Zone 2).\n\n Based in the San Francisco Bay area, California: $146,900  (Entry Minimum for Zone 1) - $183,600 (Mid for Zone 1).\n\n This role may be eligible for a bonus.",
+  "ashby:Contoso Health:7c1e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f": "ontoso Health, base pay is one part of total compensation and falls within a range. Our ranges follow local labor-cost benchmarks for each role, level and location.\n\n \n\nIn the state of California, the reasonably expected salary range is between $166,000 [minimum salary in our lowest geographic market within California] to $249,000 [maximum salary in our highest geographic market within California].\n\n \n\nIn the United States, outside of California, the reasonably expected salary range is between $137,500 [minimum salary in our lowest US geographic market outside of California] to $237,000 [maximum salary in our highest US geographic market outside of California].",
+  "workday:Fabrikam Freight:R51207": "turning open-ended technical options into a clear product plan and a simple customer experience. \n\n Background in B2B software or workflow automation is a plus. \n\n \n Salary Range or On Target Earnings: \n \n Minimum:\n$139,400.00 \n Maximum:\n$322,800.00 \n In addition to base salary and/or OTE, total compensation may include a bonus and equity. \n \n Note: Starting pay depends on a number of factors, including qualifications and experience. \n \n We also use a location-based pay structure; the range may differ in other locations.",
+  "workday:Litware:R0004417": "Litware aims to offer locally competitive rewards, including base pay and, where applicable, short- and long-term incentives, growth opportunities and benefits such as health care, retirement and paid time off.\n\n Hiring Rate Minimum:\n$98,500 annually(minimum will not fall below the applicable State/local minimum salary thresholds)\n Hiring Rate Maximum:\n$133,000 annually\n\n Litware is an Equal Opportunity Employer.",
+  "workday:ExampleCo:52QX18077-2": "wellness programs and more. Learn more about our benefits on our careers site. \n \n Salary transparency \n\nSalary is one part of our total compensation package. For U.S.-based roles, we expect a starting base salary between $104,500 and $188,250. Offers depend on the candidate's experience and location, and may exceed this range. Our package may also include an annual cash bonus, stock grants, and benefits. \n Equal Employment Opportunity",
+  "pcsx:Globex Systems:731059": "tional reporting data to build program health indicators \n\n A habit of continuous improvement and quick self-directed learning \n\n ~~ ~~\nFor Denver, CO-based roles: The base salary range for this role is USD $112,000 per year - USD $124,000 per year.\n\n For New York City, NY-based roles: The base salary range for this role is USD $126,000 per year - USD $139,000 per year.\n\n For Austin, TX-based roles: The base salary range for this role is USD $112,000 per year - USD $124,000 per year.\n\n For Washington, DC-b",
+  "workday:Initech:JR2026110457-1": "Retirement Savings Match :  Eligible U.S. employees can have qualifying student loan payments counted toward the company retirement match.  \n \n Summary pay range: \n 171,400-231,900\n \n \n Language Requirements: \nNot Applicable \n \n Education: \nNot Applicable \n \n Relocation: \nRelocation assistance is not a negotiable benefit for this position.",
+  "ashby:Northwind Traders:5d2c9e10-7b3a-4f68-a1c4-0e9d8b7a6c5f": "eep a single source of truth for enablement content that stays current and easy to find.\n\n - Use engagement and feedback data to keep raising content quality.\n\n\n\nNorthwind Traders does not offer visa sponsorship for this role.\n\n \n\nCompensation & Equity\n\nCanada: CA$176,200– CA$251,900 + equity\n\nUnited States: $127,500 – $181,00 + equity\n\n______________________________________________________________________\n\n\n\n\nPOSTING INFORMATION\n\n - Open vacancy: This posting is for an existing open role.",
+  "pcsx:Fabrikam Freight:830115204467": "If you need a reasonable accommodation for any part of the application process, contact the recruiting team. \n Bonus or Equity \nThis position is also eligible for a bonus as part of total compensation.\n Pay Range \nThe salary range for this position (in local currency) is 108,700.00 - 181,400.00",
+  "icims_jibe:Contoso Health:6120": "multi-tenant environment with per-tenant configuration.\n\n Experience with a customer feedback platform.\n\n Experience in an agile team and with tools such as Jira.\n\n  \n Contoso Health is committed to equal pay and transparency.  The annual base salary range for this position is $147,00 - $229,000. The range is a general guideline that combines the distinct US labor markets.  Pay decisions depend on scope, experience and other factors.",
+  "greenhouse:Acme Analytics:6600218004": "ith delivery partners to implement the changes\n\n Enough technical depth to set realistic objectives and timelines and to earn credibility with engineering leaders\n\n \n  \n About Acme Analytics \n\n Acme Analytics is a data platform company. Teams in logistics, retail and finance use it to build dashboards and forecasts on the Acme platform. Headquartered in Denver with 25+ offices around the globe, Acme offers a unified data, governance and AI platform."
+ },
+ "tenure": {
+  "icims_classic:Initech:204511": {
+   "title": "Product Owner",
+   "location": "United States | Remote",
+   "company": "Initech",
+   "ats": "icims_classic",
+   "id": "204511",
+   "text": "to the team and improve how it delivers. \n\n \n \n Empower the delivery team to ship value while staying flexible and focused on outcomes. \n\n \n Qualifications\n\n Required Qualifications  \n\n \n 5 years experience with BS/BA; 3 years with MS/MA; 9 years experience with a high school diploma. \n\n Clear communication and the ability to build trusted relationships with teams, leaders and stakeholders. \n\n \n \n Working knowledge of the product lifecycle and Agile"
+  },
+  "pcsx:Northwind Traders:417702335108": {
+   "title": "Program Manager, Store Pilot Testing and Governance",
+   "location": "100 Harbor Way, Denver, Colorado, United States",
+   "company": "Northwind Traders",
+   "ats": "pcsx",
+   "id": "417702335108",
+   "text": "– Build alignment with senior stakeholders and partner teams, balancing structure with flexibility while pilots move fast.\n \n We’d love to hear from people with: \n 6–10+ years of experience in program management, strategy, business operations, or related fields.\n A record of running complex programs that cross several teams.\n Experience building governance models, decision frameworks and portfolio practices."
+  },
+  "icims_classic:Initech:388120": {
+   "title": "Technical Project Manager - Senior",
+   "location": "Springfield, VA, United States | Remote",
+   "company": "Initech",
+   "ats": "icims_classic",
+   "id": "388120",
+   "text": "ystems—you’ll help shape how the platform runs. \n\n Qualifications\n\n Position Requirements: \n\n  \n\n \n Bachelor’s degree with 8 years of experience, Master’s with 6 years, Associate’s with 10 years, or HS diploma/equivalent with 12 years of relevant experience.\n\n Project leadership experience on data integration programs, including sensor feeds and reporting pipelines."
+  },
+  "pcsx:Fabrikam Freight:5520417790213": {
+   "title": "Staff IT Program Manager",
+   "location": "United States-Remote | Remote",
+   "company": "Fabrikam Freight",
+   "ats": "pcsx",
+   "id": "5520417790213",
+   "text": ", and change management plans to support a smooth rollout.\n\n Identify risks, issues, and dependencies and coordinate mitigation with technical and business teams.\n\n \n \n Basic Qualifications: \n Associate's degree with 14 years of experience, or Bachelor's degree with 12 years of experience, or Master’s degree with 10 years of experience; a High School diploma or equivalent and 16 years of experience may be considered in lieu of a completed degree.\n\n Experience rolling out commercial software tools in a large company.\n\n A record of running pilots and proofs of concept, includ"
+  }
+ }
+}

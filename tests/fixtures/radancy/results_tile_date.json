@@ -1,0 +1,6 @@
+{
+ "filters": "",
+ "results": "\n<section id=\"search-results\" data-keywords=\"\" data-location=\"\" data-total-results=\"2\" data-total-job-results=\"2\" data-total-pages=\"1\" data-current-page=\"1\" data-records-per-page=\"500\" data-ajax-url=\"/search-jobs/results\">\n<h1>Search results</h1>\n<section id=\"search-results-list\">\n<ul><li>\n    <a href=\"/en/job/austin/principal-program-manager-platform/8812/99241836544\" data-job-id=\"99241836544\">\n        <h2>Principal Program Manager-Platform</h2>\n            <span class=\"job-location\">Austin, TX</span>\n            <span class=\"job-date-posted\">08/12/2026</span>\n    </a>\n</li><li>\n    <a href=\"/en/job/austin/principal-technical-program-manager-data/8812/100740228352\" data-job-id=\"100740228352\">\n        <h2>Principal Technical Program Manager (Data)</h2>\n            <span class=\"job-location\">Austin, TX</span>\n            <span class=\"job-date-posted\">09/14/2026</span>\n    </a>\n</li></ul></section></section>",
+ "hasJobs": true,
+ "hasContent": true
+}

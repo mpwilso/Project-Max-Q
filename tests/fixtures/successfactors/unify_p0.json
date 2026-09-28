@@ -1,0 +1,89 @@
+{
+ "jobSearchResult": [
+  {
+   "response": {
+    "jobLocationShort": [
+     "DENVER, CO, USA    80202 "
+    ],
+    "supportedLocales": [
+     "en_US"
+    ],
+    "brandUrl": "UnitedStates",
+    "unifiedUrlTitle": "Regional-Recruiting-Coordinator",
+    "unifiedStandardStart": "9/16/26",
+    "currency": [
+     "USD"
+    ],
+    "id": "671482",
+    "unifiedStandardTitle": "Regional Recruiting Coordinator",
+    "jobType": [
+     "Corporate Support"
+    ],
+    "jobLocationShortWithCoordinates": [
+     {
+      "value": "DENVER, CO, USA    80202 ",
+      "key": "0.0,0.0"
+     }
+    ],
+    "urlTitle": "Regional-Recruiting-Coordinator"
+   }
+  },
+  {
+   "response": {
+    "jobLocationShort": [
+     "CHICAGO, IL, USA    60601 "
+    ],
+    "supportedLocales": [
+     "en_US"
+    ],
+    "brandUrl": "UnitedStates",
+    "unifiedUrlTitle": "Customer-Growth-&amp;-Loyalty-Marketing-Specialist",
+    "unifiedStandardStart": "9/16/26",
+    "currency": [
+     "USD"
+    ],
+    "id": "683117",
+    "unifiedStandardTitle": "Customer Growth & Loyalty Marketing Specialist",
+    "jobType": [
+     "Corporate Support"
+    ],
+    "jobLocationShortWithCoordinates": [
+     {
+      "value": "CHICAGO, IL, USA    60601 ",
+      "key": "0.0,0.0"
+     }
+    ],
+    "urlTitle": "Customer-Growth-&amp;-Loyalty-Marketing-Specialist"
+   }
+  },
+  {
+   "response": {
+    "jobLocationShort": [
+     "COLUMBUS, OH, USA    43215 "
+    ],
+    "supportedLocales": [
+     "en_US"
+    ],
+    "brandUrl": "UnitedStates",
+    "unifiedUrlTitle": "Data-Engineer",
+    "unifiedStandardStart": "9/16/26",
+    "currency": [
+     "USD"
+    ],
+    "id": "683109",
+    "unifiedStandardTitle": "Data Engineer",
+    "jobType": [
+     "Corporate Support"
+    ],
+    "jobLocationShortWithCoordinates": [
+     {
+      "value": "COLUMBUS, OH, USA    43215 ",
+      "key": "0.0,0.0"
+     }
+    ],
+    "urlTitle": "Data-Engineer"
+   }
+  }
+ ],
+ "totalJobs": 5
+}

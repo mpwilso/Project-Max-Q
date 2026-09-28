@@ -1,0 +1,34 @@
+{
+ "meta": {},
+ "result": {
+  "jobOpening": {
+   "jobOpeningShareUrl": "https://initech.bamboohr.com/careers/2107",
+   "jobOpeningName": "Regional Sales Director (Americas)",
+   "jobOpeningStatus": "Open",
+   "jobCategoryId": null,
+   "departmentId": "31003",
+   "departmentLabel": "4040 - Sales Management",
+   "employmentStatusLabel": "Full-Time",
+   "employmentType": null,
+   "location": {
+    "city": null,
+    "state": null,
+    "postalCode": null,
+    "addressCountry": null
+   },
+   "atsLocation": {
+    "country": "United States",
+    "countryId": "1",
+    "state": "Colorado",
+    "city": "Denver"
+   },
+   "description": "<p><strong>About Initech</strong></p><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal. Most of the work is turning vague requests into scoped, testable changes.</p><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal. Most of the work is turning vague requests into scoped, testable changes. We value plain writing, steady delivery and a habit of asking why before asking how.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li><li>We offer flexible hours, a learning budget and a quiet week at the end of each quarter.</li></ul>",
+   "compensation": null,
+   "datePosted": "2026-07-23",
+   "minimumExperience": "Executive",
+   "locationType": "1",
+   "seekPromoted": false
+  },
+  "formFields": {}
+ }
+}

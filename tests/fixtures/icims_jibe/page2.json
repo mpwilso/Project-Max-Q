@@ -1,0 +1,44 @@
+{
+ "jobs": [
+  {
+   "data": {
+    "slug": "40363",
+    "language": "en-us",
+    "req_id": "40363",
+    "title": "Regional Director, Partner Sales",
+    "description": "<p>Company Overview. Lead a regional partner sales team.</p>",
+    "location_name": "US-DEN-Main",
+    "city": "Denver",
+    "state": "Colorado",
+    "country": "United States",
+    "country_code": "US",
+    "categories": [
+     {
+      "name": "Sales & Partnerships"
+     }
+    ],
+    "tags1": [
+     "Regular"
+    ],
+    "employment_type": "FULL_TIME",
+    "qualifications": "",
+    "responsibilities": "",
+    "salary_min_value": "0",
+    "salary_max_value": "0",
+    "posted_date": "2026-09-04T15:02:00+0000",
+    "update_date": "2026-09-16T17:30:11+0000",
+    "apply_url": "https://uscareers-contosohealth.icims.com/jobs/40363/login"
+   }
+  }
+ ],
+ "locations": [],
+ "totalCount": 3,
+ "request_id": false,
+ "count": 3,
+ "languageCounts": {
+  "en-us": {
+   "displayName": "English",
+   "count": 3
+  }
+ }
+}

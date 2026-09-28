@@ -1,0 +1,61 @@
+{
+ "jobSearchResult": [
+  {
+   "response": {
+    "jobLocationShort": [
+     "AUSTIN, TX, USA    78701 "
+    ],
+    "supportedLocales": [
+     "en_US"
+    ],
+    "brandUrl": "UnitedStates",
+    "unifiedUrlTitle": "HR-Manager-Austin-Convention-Center-%28%245%2C000-Sign-On-Bonus%29",
+    "unifiedStandardStart": "9/14/26",
+    "currency": [
+     "USD"
+    ],
+    "id": "682240",
+    "unifiedStandardTitle": "HR Manager - Austin Convention Center ($5,000 Sign-On Bonus)",
+    "jobType": [
+     "Corporate Support"
+    ],
+    "jobLocationShortWithCoordinates": [
+     {
+      "value": "AUSTIN, TX, USA    78701 ",
+      "key": "0.0,0.0"
+     }
+    ],
+    "urlTitle": "HR-Manager-Austin-Convention-Center-%28%245%2C000-Sign-On-Bonus%29"
+   }
+  },
+  {
+   "response": {
+    "jobLocationShort": [
+     "RALEIGH, NC, USA    27601 "
+    ],
+    "supportedLocales": [
+     "en_US"
+    ],
+    "brandUrl": "UnitedStates",
+    "unifiedUrlTitle": "Accounts-Receivable-Manager",
+    "unifiedStandardStart": "9/14/26",
+    "currency": [
+     "USD"
+    ],
+    "id": "682356",
+    "unifiedStandardTitle": "Accounts Receivable Manager",
+    "jobType": [
+     "Corporate Support"
+    ],
+    "jobLocationShortWithCoordinates": [
+     {
+      "value": "RALEIGH, NC, USA    27601 ",
+      "key": "0.0,0.0"
+     }
+    ],
+    "urlTitle": "Accounts-Receivable-Manager"
+   }
+  }
+ ],
+ "totalJobs": 5
+}

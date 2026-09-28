@@ -1,0 +1,148 @@
+{
+ "offers": [
+  {
+   "id": 3100001,
+   "guid": "n0001",
+   "title": "Account Executive - Remote - North America",
+   "slug": "account-executive-remote-north-america",
+   "status": "published",
+   "created_at": "2026-09-04 13:56:45 UTC",
+   "published_at": "2026-09-04 15:12:15 UTC",
+   "updated_at": "2026-09-14 12:37:21 UTC",
+   "location": "Remote job",
+   "city": "Austin",
+   "state_name": "Texas",
+   "country": "United States",
+   "country_code": "US",
+   "locations": [
+    {
+     "id": 400001,
+     "name": "Austin - US",
+     "state": "Texas",
+     "country": "United States",
+     "city": "Austin",
+     "country_code": "US",
+     "postal_code": null
+    },
+    {
+     "id": 400002,
+     "name": "Chicago - US",
+     "state": "Illinois",
+     "country": "United States",
+     "city": "Chicago",
+     "country_code": "US",
+     "postal_code": null
+    },
+    {
+     "id": 400003,
+     "name": "Phoenix - US",
+     "state": "Arizona",
+     "country": "United States",
+     "city": "Phoenix",
+     "country_code": "US",
+     "postal_code": null
+    }
+   ],
+   "remote": true,
+   "hybrid": false,
+   "on_site": false,
+   "salary": {
+    "max": null,
+    "min": null,
+    "period": null,
+    "currency": null
+   },
+   "department": "Sales",
+   "employment_type_code": "fulltime_permanent",
+   "company_name": "Northwind Traders",
+   "careers_url": "https://careers.northwind.example/o/account-executive-remote-north-america",
+   "careers_apply_url": "https://careers.northwind.example/o/account-executive-remote-north-america/c/new",
+   "description": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal. Most of the work is turning vague requests into scoped, testable changes.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+   "requirements": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>"
+  },
+  {
+   "id": 3100002,
+   "guid": "n0002",
+   "title": "Support Specialist (French Speaking) - Remote - EMEA",
+   "slug": "support-specialist-french-remote-emea",
+   "status": "published",
+   "created_at": "2026-09-16 17:24:17 UTC",
+   "published_at": "2026-09-16 17:31:05 UTC",
+   "updated_at": "2026-09-16 17:35:55 UTC",
+   "location": "Remote job",
+   "city": "Rabat",
+   "state_name": "Rabat-Sale-Kenitra",
+   "country": "Morocco",
+   "country_code": "MA",
+   "locations": [
+    {
+     "id": 400004,
+     "name": "Rabat - MA",
+     "state": "Rabat-Sale-Kenitra",
+     "country": "Morocco",
+     "city": "Rabat",
+     "country_code": "MA",
+     "postal_code": null
+    }
+   ],
+   "remote": true,
+   "hybrid": false,
+   "on_site": false,
+   "salary": {
+    "max": null,
+    "min": null,
+    "period": null,
+    "currency": null
+   },
+   "department": "Sales",
+   "employment_type_code": "fulltime_permanent",
+   "company_name": "Northwind Traders",
+   "careers_url": "https://careers.northwind.example/o/support-specialist-french-remote-emea",
+   "careers_apply_url": "https://careers.northwind.example/o/support-specialist-french-remote-emea/c/new",
+   "description": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal. Most of the work is turning vague requests into scoped, testable changes.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+   "requirements": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>"
+  },
+  {
+   "id": 3100003,
+   "guid": "n0003",
+   "title": "Customer Success Manager - Remote - US",
+   "slug": "customer-success-manager-remote-us",
+   "status": "published",
+   "created_at": "2026-09-10 09:00:00 UTC",
+   "published_at": "2026-09-10 10:30:00 UTC",
+   "updated_at": "2026-09-12 08:00:00 UTC",
+   "location": "Remote job",
+   "city": "Columbus",
+   "state_name": "Ohio",
+   "country": "United States",
+   "country_code": "US",
+   "locations": [
+    {
+     "id": 400005,
+     "name": "Columbus - US",
+     "state": "Ohio",
+     "country": "United States",
+     "city": "Columbus",
+     "country_code": "US",
+     "postal_code": null
+    }
+   ],
+   "remote": true,
+   "hybrid": false,
+   "on_site": false,
+   "salary": {
+    "min": "85000",
+    "max": "105000",
+    "period": "year",
+    "currency": "USD"
+   },
+   "department": "Sales",
+   "employment_type_code": "fulltime_permanent",
+   "company_name": "Northwind Traders",
+   "careers_url": "https://careers.northwind.example/o/customer-success-manager-remote-us",
+   "careers_apply_url": "https://careers.northwind.example/o/customer-success-manager-remote-us/c/new",
+   "description": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal. Most of the work is turning vague requests into scoped, testable changes.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+   "requirements": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>"
+  }
+ ]
+}

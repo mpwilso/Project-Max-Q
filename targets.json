@@ -1,0 +1,398 @@
+{
+ "_comment": "Example employer boards swept by sweep.py, one or more per supported board type. 'ats' names the adapter; the other keys say where the board lives. tier A/B/C is read cadence. Replace with your own list.",
+ "targets": [
+  {
+   "company": "Stripe",
+   "ats": "greenhouse",
+   "slug": "stripe",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Databricks",
+   "ats": "greenhouse",
+   "slug": "databricks",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Datadog",
+   "ats": "greenhouse",
+   "slug": "datadog",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Linear",
+   "ats": "ashby",
+   "slug": "linear",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Palantir",
+   "ats": "lever",
+   "slug": "palantir",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Spotify",
+   "ats": "lever",
+   "slug": "spotify",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Atlassian",
+   "ats": "atlassian",
+   "tier": "A",
+   "verified": true
+  },
+  {
+   "company": "NVIDIA",
+   "ats": "workday",
+   "tenant": "nvidia",
+   "shard": "wd5",
+   "site": "NVIDIAExternalCareerSite",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Adobe",
+   "ats": "workday",
+   "tenant": "adobe",
+   "shard": "wd5",
+   "site": "external_experienced",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Workday Inc",
+   "ats": "workday",
+   "tenant": "workday",
+   "shard": "wd5",
+   "site": "Workday",
+   "tier": "A",
+   "verified": true
+  },
+  {
+   "company": "Autodesk",
+   "ats": "workday",
+   "tenant": "autodesk",
+   "shard": "wd1",
+   "site": "Ext",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Intuit",
+   "ats": "radancy",
+   "origin": "https://jobs.intuit.com",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Netflix",
+   "ats": "eightfold",
+   "domain": "netflix.com",
+   "base": "https://explore.jobs.netflix.net",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Oracle",
+   "ats": "oracle",
+   "host": "eeho.fa.us2.oraclecloud.com",
+   "site": "CX_1",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Amazon",
+   "ats": "amazon",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Meta",
+   "ats": "metacareers",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Figma",
+   "ats": "greenhouse",
+   "slug": "figma",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Notion",
+   "ats": "ashby",
+   "slug": "notion",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Airtable",
+   "ats": "greenhouse",
+   "slug": "airtable",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Zapier",
+   "ats": "ashby",
+   "slug": "zapier",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Snowflake",
+   "ats": "ashby",
+   "slug": "snowflake",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Microsoft",
+   "ats": "pcsx",
+   "base": "https://apply.careers.microsoft.com",
+   "domain": "microsoft.com",
+   "location": "United States",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Coupa",
+   "ats": "lever",
+   "slug": "coupa",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Canva",
+   "ats": "smartrecruiters",
+   "slug": "Canva",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Freshworks",
+   "ats": "smartrecruiters",
+   "slug": "Freshworks",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Zoom",
+   "ats": "workday",
+   "tenant": "zoom",
+   "shard": "wd5",
+   "site": "Zoom",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Veeva Systems",
+   "ats": "lever",
+   "slug": "veeva",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Dynatrace",
+   "ats": "successfactors",
+   "origin": "https://apply.careers.dynatrace.com",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Apple",
+   "ats": "apple",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Siemens Energy",
+   "ats": "avature",
+   "list_url": "https://jobs.siemens-energy.com/en_US/jobs/Jobs",
+   "params": {
+    "29454": "1899100"
+   },
+   "list_location": "United States",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Deel",
+   "ats": "deel",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Retool",
+   "ats": "gem",
+   "slug": "retool",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Google",
+   "ats": "google",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "GitHub",
+   "ats": "icims_jibe",
+   "base": "https://www.github.careers",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "DocuSign",
+   "ats": "icims_jibe",
+   "base": "https://careers.docusign.com",
+   "params": {
+    "country": "United States"
+   },
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Nutanix",
+   "ats": "jobvite",
+   "code": "qKr9VfwZ",
+   "slug": "nutanix",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Rippling",
+   "ats": "rippling",
+   "slug": "rippling",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Hugging Face",
+   "ats": "workable",
+   "slug": "huggingface",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Uber",
+   "ats": "oracle",
+   "host": "iaziqy.fa.ocs.oraclecloud.com",
+   "site": "UberCareers",
+   "job_url_site": "UberCareers",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Siemens Healthineers",
+   "ats": "phenom",
+   "base": "https://careers.siemens-healthineers.com",
+   "referer": "https://careers.siemens-healthineers.com/global/en/search-results",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Cyera",
+   "ats": "comeet",
+   "uid": "17.008",
+   "token": "7182A90154871823783FD838C031A802378",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Port",
+   "ats": "comeet",
+   "uid": "59.004",
+   "token": "954414C02550414C4AA01BFC12A81BFC2550",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Certinia",
+   "ats": "ukg",
+   "base": "https://certinia.rec.pro.ukg.net/CER1500CERC/JobBoard/ad0c6248-e7e9-43f1-b10d-5a324b9b60a6",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Birdeye",
+   "ats": "paylocity",
+   "guid": "96eadb0c-2c7e-4683-9df8-3718e7381570",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "LinearB",
+   "ats": "jazzhr",
+   "slug": "linearb",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Securonix",
+   "ats": "bamboohr",
+   "slug": "securonix",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Hostaway",
+   "ats": "recruitee",
+   "slug": "hostaway",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "DAZN",
+   "ats": "pinpoint",
+   "sub": "dazn",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Yellow.ai",
+   "ats": "zohorecruit",
+   "url": "https://careers.yellow.ai/jobs/Careers",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Peraton",
+   "ats": "icims_classic",
+   "host": "careers-peraton.icims.com",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Productboard",
+   "ats": "gem",
+   "slug": "productboard",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Spacelift",
+   "ats": "teamtailor",
+   "base": "https://careers.spacelift.io",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Egnyte",
+   "ats": "jobvite",
+   "code": "qLHaVfwh",
+   "slug": "egnyte",
+   "tier": "C",
+   "verified": true
+  }
+ ]
+}

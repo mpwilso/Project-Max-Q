@@ -1,0 +1,67 @@
+{
+ "meta": {
+  "totalCount": 3
+ },
+ "result": [
+  {
+   "id": "2051",
+   "jobOpeningName": "Integration Engineer II",
+   "departmentId": "31001",
+   "departmentLabel": "3005 - Professional Services",
+   "employmentStatusLabel": "Full-Time",
+   "employmentType": null,
+   "location": {
+    "city": null,
+    "state": null
+   },
+   "atsLocation": {
+    "country": "Canada",
+    "state": null,
+    "province": "ON",
+    "city": "Toronto"
+   },
+   "isRemote": null,
+   "locationType": "1"
+  },
+  {
+   "id": "2093",
+   "jobOpeningName": "Senior Product Manager",
+   "departmentId": "31002",
+   "departmentLabel": "7005 - Product Management",
+   "employmentStatusLabel": "Full-Time",
+   "employmentType": null,
+   "location": {
+    "city": "Chicago",
+    "state": "Illinois"
+   },
+   "atsLocation": {
+    "country": null,
+    "state": null,
+    "province": null,
+    "city": null
+   },
+   "isRemote": null,
+   "locationType": "2"
+  },
+  {
+   "id": "2107",
+   "jobOpeningName": "Regional Sales Director (Americas)",
+   "departmentId": "31003",
+   "departmentLabel": "4040 - Sales Management",
+   "employmentStatusLabel": "Full-Time",
+   "employmentType": null,
+   "location": {
+    "city": null,
+    "state": null
+   },
+   "atsLocation": {
+    "country": "United States",
+    "state": "Colorado",
+    "province": null,
+    "city": "Denver"
+   },
+   "isRemote": null,
+   "locationType": "1"
+  }
+ ]
+}

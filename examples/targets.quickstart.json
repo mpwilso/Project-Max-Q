@@ -1,0 +1,26 @@
+{
+ "_comment": "Three small public boards for a first run: python sweep.py --targets examples/targets.quickstart.json",
+ "targets": [
+  {
+   "company": "Linear",
+   "ats": "ashby",
+   "slug": "linear",
+   "tier": "C",
+   "verified": true
+  },
+  {
+   "company": "Notion",
+   "ats": "ashby",
+   "slug": "notion",
+   "tier": "B",
+   "verified": true
+  },
+  {
+   "company": "Zapier",
+   "ats": "ashby",
+   "slug": "zapier",
+   "tier": "C",
+   "verified": true
+  }
+ ]
+}

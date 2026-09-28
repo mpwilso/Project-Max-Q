@@ -1,0 +1,3 @@
+#!/bin/sh
+# Refuse a commit that carries personal data. See tools/privacy_scan.py.
+exec python tools/privacy_scan.py --staged

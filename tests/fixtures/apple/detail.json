@@ -1,0 +1,124 @@
+{
+ "res": {
+  "id": "PIPE-300640271",
+  "type": "PIPE",
+  "reqId": "PIPE-300640271",
+  "jobNumber": "300640271-0231",
+  "postingTitle": "Hardware Validation Program Manager",
+  "transformedPostingTitle": "hardware-validation-program-manager",
+  "jobSummary": "Lead validation readiness for a new hardware platform across several engineering teams.",
+  "description": "<p>The program manager drives bring-up and validation schedules from first samples to production.</p>",
+  "responsibilities": "Run the validation plan across design, test and software teams.\nTrack issues to root cause and drive corrective actions.",
+  "minimumQualifications": "BS in an engineering field and 5 years of program management experience.",
+  "preferredQualifications": "Experience shipping hardware at volume.",
+  "highJobTitle": "Hardware EPM ICT4",
+  "teamNames": [
+   "Hardware"
+  ],
+  "locations": [
+   {
+    "id": "postLocation-AUS",
+    "name": "Austin",
+    "city": "Austin",
+    "code": "AUS",
+    "stateProvince": "Texas",
+    "countryName": "United States",
+    "countryID": "iso-country-USA",
+    "level": 5,
+    "postLocationCountryID": "postLocation-USA",
+    "postingIdentifier": "0231"
+   },
+   {
+    "id": "postLocation-RAL",
+    "name": "Raleigh",
+    "city": "Raleigh",
+    "code": "RAL",
+    "stateProvince": "North Carolina",
+    "countryName": "United States",
+    "countryID": "iso-country-USA",
+    "level": 5,
+    "postLocationCountryID": "postLocation-USA",
+    "postingIdentifier": "0588"
+   },
+   {
+    "id": "postLocation-PHX",
+    "name": "Phoenix",
+    "city": "Phoenix",
+    "code": "PHX",
+    "stateProvince": "Arizona",
+    "countryName": "United States",
+    "countryID": "iso-country-USA",
+    "level": 5,
+    "postLocationCountryID": "postLocation-USA",
+    "postingIdentifier": "0619"
+   }
+  ],
+  "postDateInGMT": "2026-09-14T20:17:47.170+00:00",
+  "postingDateMeta": "2026-09-14",
+  "employmentType": "Standard",
+  "homeOffice": false,
+  "positionId": "300640271",
+  "jobType": "CORPORATE",
+  "selectedLocation": {
+   "id": "postLocation-AUS",
+   "name": "Austin",
+   "city": "Austin",
+   "code": "AUS",
+   "stateProvince": "Texas",
+   "countryName": "United States",
+   "countryID": "iso-country-USA",
+   "level": 5,
+   "postLocationCountryID": "postLocation-USA",
+   "postingIdentifier": "0231"
+  },
+  "postingFooters": [
+   {
+    "postLocationId": "postLocation-PHX",
+    "localizations": {
+     "en_US": [
+      {
+       "displayOrder": 1,
+       "name": "Pay & Benefits",
+       "content": "Base pay is one part of total compensation. The base pay range for this role is between $158,300 and $274,900, and your base pay will depend on your skills and location.<br>"
+      },
+      {
+       "displayOrder": 2,
+       "name": "EEO Statement",
+       "content": "<p>Equal opportunity employer statement (synthetic).</p>"
+      }
+     ]
+    }
+   },
+   {
+    "postLocationId": "postLocation-RAL",
+    "localizations": {
+     "en_US": [
+      {
+       "displayOrder": 1,
+       "name": "Pay & Benefits",
+       "content": "Base pay is one part of total compensation. The base pay range for this role is between $171,200 and $298,400, and your base pay will depend on your skills and location.<br>"
+      },
+      {
+       "displayOrder": 2,
+       "name": "EEO Statement",
+       "content": "<p>Equal opportunity employer statement (synthetic).</p>"
+      }
+     ]
+    }
+   },
+   {
+    "postLocationId": "postLocation-AUS",
+    "localizations": {
+     "en_US": [
+      {
+       "displayOrder": 1,
+       "name": "EEO Statement",
+       "content": "<p>Equal opportunity employer statement (synthetic).</p>"
+      }
+     ]
+    }
+   }
+  ],
+  "postingDate": "Sep 14, 2026"
+ }
+}

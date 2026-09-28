@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jobs>
+	<publisher>JazzHR</publisher>
+	<publisherurl>http://app.jazz.co</publisherurl>
+	<lastBuildDate>Wed, 16 Sep 2026 18:53:23 GMT</lastBuildDate>
+	<company><![CDATA[Fabrikam Freight Inc.]]></company>
+	<job>
+		<id><![CDATA[job_20250204193431_KQ7ZP2MXRT4WLB9D]]></id>
+		<internalcode><![CDATA[]]></internalcode>
+		<status><![CDATA[Open]]></status>
+		<title><![CDATA[Support Engineer]]></title>
+		<department><![CDATA[]]></department>
+		<url><![CDATA[http://fabrikamfreight.applytojob.com/apply/Pz7wB3nXe5/Support-Engineer]]></url>
+		<city><![CDATA[Austin]]></city>
+		<state><![CDATA[TX]]></state>
+		<country><![CDATA[United States]]></country>
+		<postalcode><![CDATA[]]></postalcode>
+		<description><![CDATA[<p><strong>About the Role:</strong><br>Answer customer tickets for our shipment tracking tools.&#160;</p>]]></description>
+		<type><![CDATA[Full Time]]></type>
+		<experience><![CDATA[Mid Level]]></experience>
+	</job>
+	<job>
+		<id><![CDATA[job_20260729083751_M4HD8QXC2NVAYR6E]]></id>
+		<internalcode><![CDATA[]]></internalcode>
+		<status><![CDATA[Open]]></status>
+		<title><![CDATA[Associate Customer Success Manager (US)]]></title>
+		<department><![CDATA[]]></department>
+		<url><![CDATA[http://fabrikamfreight.applytojob.com/apply/Rk4vT8qLm2/Associate-Customer-Success-Manager-US]]></url>
+		<city><![CDATA[Raleigh]]></city>
+		<state><![CDATA[NC]]></state>
+		<country><![CDATA[United States]]></country>
+		<postalcode><![CDATA[]]></postalcode>
+		<description><![CDATA[<p><strong>About the Role:</strong><br>Own onboarding for mid-size shipping customers.</p><ul><li><p>Run quarterly reviews with each account.</p></li></ul>]]></description>
+		<type><![CDATA[Full Time]]></type>
+		<experience><![CDATA[Mid Level]]></experience>
+	</job>
+	<job>
+		<id><![CDATA[job_20260801101502_T9BW3LJF6KEPUQ2S]]></id>
+		<internalcode><![CDATA[]]></internalcode>
+		<status><![CDATA[Open]]></status>
+		<title><![CDATA[Platform DevOps Engineer - 2026]]></title>
+		<department><![CDATA[]]></department>
+		<url><![CDATA[http://fabrikamfreight.applytojob.com/apply/Hd2yK9cQa1/Platform-DevOps-Engineer-2026]]></url>
+		<city><![CDATA[Pune]]></city>
+		<state><![CDATA[]]></state>
+		<country><![CDATA[India]]></country>
+		<postalcode><![CDATA[]]></postalcode>
+		<description><![CDATA[<p>Build and run the release pipeline for the routing service.</p>]]></description>
+		<type><![CDATA[Full Time]]></type>
+		<experience><![CDATA[Mid Level]]></experience>
+	</job>
+</jobs>

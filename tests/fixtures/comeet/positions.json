@@ -1,0 +1,137 @@
+[
+ {
+  "name": "Enterprise Account Executive",
+  "department": "Sales",
+  "email": "litware.2A.01B@comeetapply.com",
+  "email_alias": null,
+  "url_comeet_hosted_page": "https://www.comeet.com/jobs/litware/12.00A/enterprise-account-executive/2A.01B",
+  "url_recruit_hosted_page": "https://www.comeet.com/jobs/litware/12.00A/enterprise-account-executive/2A.01B",
+  "url_active_page": "https://www.litware.example/careers/remote-denver-co/enterprise-account-executive/2A.01B?_gl=1*abc*_ga*MTIz&gclid=EXAMPLE",
+  "employment_type": "Full-time",
+  "experience_level": null,
+  "uid": "2A.01B",
+  "location": {
+   "name": "Denver, CO",
+   "country": "US",
+   "city": "Denver",
+   "state": "CO",
+   "postal_code": null,
+   "timezone": "America/Denver",
+   "location_uid": "3C.600",
+   "is_remote": true
+  },
+  "internal_use_custom_id": null,
+  "time_updated": "2026-09-15T21:28:19Z",
+  "company_name": "Litware",
+  "is_internal": false,
+  "workplace_type": "Remote",
+  "position_url": "https://www.comeet.co/careers-api/2.0/company/12.00A/positions/2A.01B?token=EXAMPLE",
+  "details": [
+   {
+    "name": "Description",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li></ul>",
+    "order": 1
+   },
+   {
+    "name": "What You'll Do",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+    "order": 2
+   },
+   {
+    "name": "Requirements",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+    "order": 3
+   }
+  ]
+ },
+ {
+  "name": "DevOps Team Lead",
+  "department": "Engineering",
+  "email": "litware.3C.02E@comeetapply.com",
+  "email_alias": null,
+  "url_comeet_hosted_page": "https://www.comeet.com/jobs/litware/12.00A/devops-team-lead/3C.02E",
+  "url_recruit_hosted_page": "https://www.comeet.com/jobs/litware/12.00A/devops-team-lead/3C.02E",
+  "url_active_page": "https://www.litware.example/careers",
+  "employment_type": "Full-time",
+  "experience_level": null,
+  "uid": "3C.02E",
+  "location": {
+   "name": "Tel Aviv",
+   "country": "IL",
+   "city": "Tel Aviv-Jaffa",
+   "state": "Tel Aviv District",
+   "postal_code": "",
+   "timezone": "Asia/Jerusalem",
+   "location_uid": "7A.101",
+   "is_remote": true
+  },
+  "internal_use_custom_id": null,
+  "time_updated": "2026-09-16T15:33:05Z",
+  "company_name": "Litware",
+  "is_internal": false,
+  "workplace_type": "Hybrid",
+  "position_url": "https://www.comeet.co/careers-api/2.0/company/12.00A/positions/3C.02E?token=EXAMPLE",
+  "details": [
+   {
+    "name": "Description",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li></ul>",
+    "order": 1
+   },
+   {
+    "name": "What You'll Do",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+    "order": 2
+   },
+   {
+    "name": "Requirements",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+    "order": 3
+   }
+  ]
+ },
+ {
+  "name": "Security Researcher",
+  "department": "CTO",
+  "email": "litware.4D.05F@comeetapply.com",
+  "email_alias": null,
+  "url_comeet_hosted_page": "https://www.comeet.com/jobs/litware/12.00A/security-researcher/4D.05F",
+  "url_recruit_hosted_page": "https://www.comeet.com/jobs/litware/12.00A/security-researcher/4D.05F",
+  "url_active_page": null,
+  "employment_type": "Full-time",
+  "experience_level": null,
+  "uid": "4D.05F",
+  "location": {
+   "name": "Tel Aviv",
+   "country": "IL",
+   "city": "Tel Aviv-Jaffa",
+   "state": "Tel Aviv District",
+   "postal_code": "",
+   "timezone": "Asia/Jerusalem",
+   "location_uid": "7A.101",
+   "is_remote": false
+  },
+  "internal_use_custom_id": null,
+  "time_updated": "2026-09-13T22:15:48Z",
+  "company_name": "Litware",
+  "is_internal": false,
+  "workplace_type": "On-site",
+  "position_url": "https://www.comeet.co/careers-api/2.0/company/12.00A/positions/4D.05F?token=EXAMPLE",
+  "details": [
+   {
+    "name": "Description",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li></ul>",
+    "order": 1
+   },
+   {
+    "name": "What You'll Do",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+    "order": 2
+   },
+   {
+    "name": "Requirements",
+    "value": "<p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read. You will write clear requirements, review designs with engineers and check the result against the goal.</p><ul><li>You will own the roadmap for a small internal platform used by several operations teams.</li><li>Most of the work is turning vague requests into scoped, testable changes.</li><li>Our customers are warehouse and logistics operators who need tools that simply work.</li></ul>",
+    "order": 3
+   }
+  ]
+ }
+]

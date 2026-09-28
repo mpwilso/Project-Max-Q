@@ -1,0 +1,23 @@
+.privacy/
+__pycache__/
+*.pyc
+data/
+reports/*
+!reports/SAMPLE_REPORT.md
+
+# never commit output or personal material from a working copy
+out/
+content/
+*.docx
+*.pdf
+*.xlsx
+*.bak
+
+# local environments and editors
+.venv/
+venv/
+.vscode/
+.idea/
+*.log
+Thumbs.db
+.DS_Store

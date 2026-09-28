@@ -1,0 +1,42 @@
+{
+ "opportunities": [
+  {
+   "Id": "6e7f8a9b-0c1d-4e2f-9a3b-4c5d6e7f8a9b",
+   "Featured": false,
+   "Title": "Business Development Rep-AU",
+   "RequisitionNumber": "BUSIN000103",
+   "FullTime": true,
+   "JobCategoryName": "Inside.Sales",
+   "Locations": [
+    {
+     "Id": "e2228267-0000-4f38-83d7-000000000003",
+     "LocalizedName": null,
+     "LocalizedLocationId": null,
+     "LocalizedDescription": null,
+     "Address": {
+      "Line1": "1 Example Way",
+      "Line2": null,
+      "City": "Sydney",
+      "PostalCode": null,
+      "State": {
+       "Code": "NSW",
+       "Name": "New South Wales"
+      },
+      "Country": {
+       "Code": "AUS",
+       "Name": "Australia"
+      }
+     },
+     "DisplayName": false,
+     "DisplayAddress": true
+    }
+   ],
+   "PostedDate": "2026-09-09T18:41:50.087Z",
+   "BriefDescription": "You will own the roadmap for a small internal platform used by several operations teams.",
+   "JobLocationType": null,
+   "OpportunityType": 0
+  }
+ ],
+ "totalCount": 3,
+ "locations": []
+}

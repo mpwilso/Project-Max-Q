@@ -1,0 +1,75 @@
+{
+ "opportunities": [
+  {
+   "Id": "4c5d6e7f-8a9b-4c0d-9e1f-2a3b4c5d6e7f",
+   "Featured": false,
+   "Title": "Digital Experience Manager-US",
+   "RequisitionNumber": "DIGIT000101",
+   "FullTime": true,
+   "JobCategoryName": "Digital.Marketing",
+   "Locations": [
+    {
+     "Id": "ff6bdd96-0000-4509-a71b-000000000001",
+     "LocalizedName": null,
+     "LocalizedLocationId": null,
+     "LocalizedDescription": "TX - US Remote",
+     "Address": {
+      "Line1": "1 Example Way",
+      "Line2": null,
+      "City": "Austin",
+      "PostalCode": null,
+      "State": {
+       "Code": "TX",
+       "Name": "Texas"
+      },
+      "Country": {
+       "Code": "USA",
+       "Name": "United States"
+      }
+     },
+     "DisplayName": false,
+     "DisplayAddress": true
+    }
+   ],
+   "PostedDate": "2026-09-16T15:00:18.551Z",
+   "BriefDescription": "You will own the roadmap for a small internal platform used by several operations teams.",
+   "JobLocationType": 2,
+   "OpportunityType": 0
+  },
+  {
+   "Id": "5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a",
+   "Featured": false,
+   "Title": "Security Compliance Analyst-UK",
+   "RequisitionNumber": "SECUR000102",
+   "FullTime": true,
+   "JobCategoryName": "Risk",
+   "Locations": [
+    {
+     "Id": "837be2d6-0000-4c53-80d0-000000000002",
+     "LocalizedName": null,
+     "LocalizedLocationId": null,
+     "LocalizedDescription": "UK Office",
+     "Address": {
+      "Line1": "1 Example Way",
+      "Line2": null,
+      "City": "Manchester",
+      "PostalCode": null,
+      "State": null,
+      "Country": {
+       "Code": "GBR",
+       "Name": "United Kingdom"
+      }
+     },
+     "DisplayName": false,
+     "DisplayAddress": true
+    }
+   ],
+   "PostedDate": "2026-09-15T08:52:18.441Z",
+   "BriefDescription": "You will own the roadmap for a small internal platform used by several operations teams.",
+   "JobLocationType": 0,
+   "OpportunityType": 0
+  }
+ ],
+ "totalCount": 3,
+ "locations": []
+}

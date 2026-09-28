@@ -1,0 +1,88 @@
+{
+ "jobs": [
+  {
+   "data": {
+    "slug": "40117",
+    "language": "en-us",
+    "req_id": "40117",
+    "title": "Financial Analyst, Clinical Operations",
+    "description": "<p>Company Overview. Contoso Health runs outpatient clinics. <b>What you'll do</b></p>",
+    "location_name": "US-DEN-Main",
+    "city": "Denver",
+    "state": "Colorado",
+    "country": "United States",
+    "country_code": "US",
+    "categories": [
+     {
+      "name": "Finance & Accounting"
+     }
+    ],
+    "tags1": [
+     "Regular"
+    ],
+    "employment_type": "FULL_TIME",
+    "qualifications": "<ul><li>BA/BS in Finance or a related field and 4+ years of experience.</li></ul>",
+    "responsibilities": "<ul><li>Build the monthly forecast for clinic operating costs.</li></ul>",
+    "salary_min_value": "0",
+    "salary_max_value": "0",
+    "posted_date": "2026-08-05T20:13:00+0000",
+    "update_date": "2026-09-15T06:29:49+0000",
+    "apply_url": "https://uscareers-contosohealth.icims.com/jobs/40117/login",
+    "additional_locations": [
+     {
+      "location_name": "US-CHI-Loop",
+      "city": "Chicago",
+      "state": "Illinois",
+      "country": "United States",
+      "country_code": "US"
+     }
+    ],
+    "tags2": [
+     "Hybrid"
+    ]
+   }
+  },
+  {
+   "data": {
+    "slug": "40362",
+    "language": "en-us",
+    "req_id": "40362",
+    "title": "Product Counsel, Health Records",
+    "description": "<p>Company Overview. We are looking for a product lawyer for our records platform.</p>",
+    "location_name": "United States Remote",
+    "street_address": "Remote",
+    "country": "United States",
+    "country_code": "US",
+    "categories": [
+     {
+      "name": "Legal"
+     }
+    ],
+    "tags1": [
+     "Regular"
+    ],
+    "employment_type": "FULL_TIME",
+    "qualifications": "<ul><li>Law degree and admission in one US jurisdiction.</li></ul>",
+    "responsibilities": "",
+    "salary_min_value": "0",
+    "salary_max_value": "0",
+    "posted_date": "2026-09-03T19:14:00+0000",
+    "update_date": "2026-09-16T17:26:53+0000",
+    "apply_url": "https://uscareers-contosohealth.icims.com/jobs/40362/login",
+    "tags2": [
+     "Remote"
+    ]
+   }
+  }
+ ],
+ "locations": [],
+ "totalCount": 3,
+ "request_id": false,
+ "count": 3,
+ "languageCounts": {
+  "en-us": {
+   "displayName": "English",
+   "count": 3
+  }
+ }
+}

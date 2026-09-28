@@ -1,0 +1,70 @@
+{
+ "version": "https://jsonfeed.org/version/1.1",
+ "title": "Acme Analytics",
+ "home_page_url": "https://careers.acme-analytics.example/jobs",
+ "feed_url": "https://careers.acme-analytics.example/jobs.json",
+ "next_url": "https://careers.acme-analytics.example/jobs.json?page=2&per_page=100",
+ "items": [
+  {
+   "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+   "title": "Senior Software Engineer",
+   "url": "https://careers.acme-analytics.example/jobs/700101-senior-software-engineer",
+   "date_published": "2026-08-27T15:10:09-07:00",
+   "content_html": "<h2>The Role</h2><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read.</p>",
+   "_jobposting": {
+    "@context": "http://schema.org/",
+    "@type": "JobPosting",
+    "title": "Senior Software Engineer",
+    "description": "<h2>The Role</h2><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read.</p>",
+    "identifier": {
+     "@type": "PropertyValue",
+     "name": "Acme Analytics",
+     "value": 700101
+    },
+    "datePosted": "2026-08-27T15:10:09-07:00",
+    "hiringOrganization": {
+     "@type": "Organization",
+     "name": "Acme Analytics",
+     "sameAs": "https://careers.acme-analytics.example"
+    }
+   }
+  },
+  {
+   "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+   "title": "Head of Engineering",
+   "url": "https://careers.acme-analytics.example/jobs/700102-head-of-engineering",
+   "date_published": "2026-08-13T09:17:57-07:00",
+   "content_html": "<h2>The Role</h2><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read.</p>",
+   "_jobposting": {
+    "@context": "http://schema.org/",
+    "@type": "JobPosting",
+    "title": "Head of Engineering",
+    "description": "<h2>The Role</h2><p>You will own the roadmap for a small internal platform used by several operations teams. The team ships weekly and keeps a short list of priorities that everyone can read.</p>",
+    "identifier": {
+     "@type": "PropertyValue",
+     "name": "Acme Analytics",
+     "value": 700102
+    },
+    "datePosted": "2026-08-13T09:17:57-07:00",
+    "hiringOrganization": {
+     "@type": "Organization",
+     "name": "Acme Analytics",
+     "sameAs": "https://careers.acme-analytics.example"
+    },
+    "jobLocation": [
+     {
+      "@type": "Place",
+      "address": {
+       "@type": "PostalAddress",
+       "streetAddress": "100 Example St",
+       "addressLocality": "Denver",
+       "postalCode": "80202",
+       "addressCountry": "US",
+       "addressRegion": null
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

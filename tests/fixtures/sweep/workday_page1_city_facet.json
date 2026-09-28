@@ -1,0 +1,329 @@
+{
+ "_note": "Synthetic Workday CXS page-1 response (POST /jobs, unfiltered). Invented tenant, ids, places and postings. Shape: no country facet at all; one city-level `locations` facet whose values carry the country as a comma segment.",
+ "total": 512,
+ "facets": [
+  {
+   "facetParameter": "timeType",
+   "descriptor": "Full/Part-time",
+   "values": [
+    {
+     "descriptor": "Full time",
+     "id": "603d5896b3ac3a88c7de18e0677dc391",
+     "count": 497
+    },
+    {
+     "descriptor": "Part time",
+     "id": "b9f1f30ec868a64322fd6d7a2e6fa20f",
+     "count": 15
+    }
+   ]
+  },
+  {
+   "facetParameter": "workerSubType",
+   "descriptor": "Job Type",
+   "values": [
+    {
+     "descriptor": "Regular",
+     "id": "e4fd5f08c53df92a5d75ee67ae1fb84e",
+     "count": 402
+    },
+    {
+     "descriptor": "Project (Fixed Term)",
+     "id": "a0ec1afe3590dcb1fb791e87102333b7",
+     "count": 51
+    },
+    {
+     "descriptor": "Seasonal",
+     "id": "ce10deec958b84bef907287aaa5f5142",
+     "count": 9
+    },
+    {
+     "descriptor": "Student Program / Intern (Fixed Term)",
+     "id": "121e4724d1626f03e65d85583f41bf68",
+     "count": 50
+    }
+   ]
+  },
+  {
+   "facetParameter": "jobFamilyGroup",
+   "descriptor": "Job Category",
+   "values": [
+    {
+     "descriptor": "Technology Group",
+     "id": "aa66804d860af21e2b9b0457e54a0353",
+     "count": 171
+    },
+    {
+     "descriptor": "Product and Program Group",
+     "id": "24178baa24a9e4cda761f33ee2e14494",
+     "count": 38
+    },
+    {
+     "descriptor": "Data and Analytics Group",
+     "id": "32388f01632809e4f3d54329ae7155fd",
+     "count": 22
+    },
+    {
+     "descriptor": "Finance Group",
+     "id": "4ccaa09220baf1ae4b42f5238f8872f8",
+     "count": 27
+    },
+    {
+     "descriptor": "Marketing Group",
+     "id": "284b10d791a8d9e25d88e5d81ed7c97c",
+     "count": 61
+    },
+    {
+     "descriptor": "Operations Group",
+     "id": "eb064adcc9422113640a78586b9ada88",
+     "count": 44
+    },
+    {
+     "descriptor": "Sales Group",
+     "id": "d43b1ef11a7861969e3aef9ce8c51f6e",
+     "count": 19
+    },
+    {
+     "descriptor": "People Group",
+     "id": "e0be0dc0246ea4728fded4f74f08a507",
+     "count": 12
+    },
+    {
+     "descriptor": "Legal Group",
+     "id": "b9c812da7cbec1ff9c78f0fa4423cc0e",
+     "count": 8
+    },
+    {
+     "descriptor": "Security Group",
+     "id": "459b7a237cff1c989f6769e3f09a149e",
+     "count": 10
+    },
+    {
+     "descriptor": "Other Group",
+     "id": "ad7c6a146ad3216c01db57f481b89b98",
+     "count": 100
+    }
+   ]
+  },
+  {
+   "facetParameter": "locationMainGroup",
+   "values": [
+    {
+     "facetParameter": "locations",
+     "descriptor": "Locations",
+     "values": [
+      {
+       "descriptor": "Havendam, Netherlands",
+       "id": "6b06c7fc306a85b67d6626b7205e5b7b",
+       "count": 1
+      },
+      {
+       "descriptor": "Harbor Point, CA, USA",
+       "id": "914d46bacb5eef6be4394a0b8cfd8429",
+       "count": 22
+      },
+      {
+       "descriptor": "Pinecrest, ON, Canada",
+       "id": "b0cd9d2a58a139bd9153269b4b2a72d9",
+       "count": 2
+      },
+      {
+       "descriptor": "Ashbourne Cross, United Kingdom",
+       "id": "d27223e18c0939700f927e97eb7ce1c6",
+       "count": 7
+      },
+      {
+       "descriptor": "Aspen Ridge, CO, USA",
+       "id": "fe34b5ae7a47c69b6e577d93485fade5",
+       "count": 17
+      },
+      {
+       "descriptor": "Glacier Bay, BC, Canada",
+       "id": "835e7cb880e9383a043afe2adf9adde0",
+       "count": 2
+      },
+      {
+       "descriptor": "Kingsbridge, United Kingdom",
+       "id": "bc07db1cd2de9fc7d3fbacb3c5d6f795",
+       "count": 15
+      },
+      {
+       "descriptor": "Lone Oak, TX, USA",
+       "id": "b4e98a45d57c91a402a9495828c08a8b",
+       "count": 6
+      },
+      {
+       "descriptor": "Remote Worker Location, BC, Canada",
+       "id": "b7f5096f033b2fbe7ab69b2bba4a0f9e",
+       "count": 7
+      },
+      {
+       "descriptor": "Valmont, France",
+       "id": "8c220ae0a5627d039d73e118b6778050",
+       "count": 2
+      },
+      {
+       "descriptor": "Cedar Bend, OR, USA",
+       "id": "4c803ee042a5adc6d4249120916c648b",
+       "count": 9
+      },
+      {
+       "descriptor": "Lindenhöhe, Germany",
+       "id": "660ea4ff5de26950ff17692812180313",
+       "count": 2
+      },
+      {
+       "descriptor": "Hudson Gate, NY, USA",
+       "id": "6f36b7f3847ee2f8483b7f7c9858fb79",
+       "count": 8
+      },
+      {
+       "descriptor": "Chandrapur, India",
+       "id": "6303a7d8e04f6ddd78f594504578e3ca",
+       "count": 7
+      },
+      {
+       "descriptor": "Northfield, MA, USA",
+       "id": "00bf10a451995e04fbf00ca7b716244f",
+       "count": 3
+      },
+      {
+       "descriptor": "Minami-Kawa, Japan",
+       "id": "7d4e6da0dcb50dcf749beddcea30d547",
+       "count": 16
+      },
+      {
+       "descriptor": "Prairieview, IL, USA",
+       "id": "1cb0f75119b8a2145b30c56dc125775b",
+       "count": 15
+      },
+      {
+       "descriptor": "Serra Alta, Brazil",
+       "id": "bd48166fd3ec1fd552a43b866868b403",
+       "count": 6
+      },
+      {
+       "descriptor": "Pine Hollow, NC, USA",
+       "id": "4bc39a417b27b0c75943150c8ef874d5",
+       "count": 1
+      },
+      {
+       "descriptor": "Harbourview, Australia",
+       "id": "eab8ed4a693716d953f5b1471bb72abe",
+       "count": 15
+      },
+      {
+       "descriptor": "Sound Harbor, WA, USA",
+       "id": "e0397d5d3a1cf63d4b41a31adbb44623",
+       "count": 18
+      },
+      {
+       "descriptor": "Stary Most, Poland",
+       "id": "b897f6a657bc61bd44c3e15e7ca15460",
+       "count": 9
+      },
+      {
+       "descriptor": "Magnolia Springs, FL, USA",
+       "id": "608f813ebf1642d5c9aad5a9cb3f9ffd",
+       "count": 21
+      },
+      {
+       "descriptor": "Marina Quay, Singapore",
+       "id": "338aa2f8a7098077ea4ff83c5879dae6",
+       "count": 14
+      },
+      {
+       "descriptor": "Red Mesa, AZ, USA",
+       "id": "59f97869213c60ae864740625dd642bc",
+       "count": 4
+      },
+      {
+       "descriptor": "Glenmore, Ireland",
+       "id": "342bd5613e50cc5bff33180c3f9d66a1",
+       "count": 18
+      },
+      {
+       "descriptor": "Copper Falls, GA, USA",
+       "id": "ccae307c26a98d303470357e43f07ab8",
+       "count": 13
+      },
+      {
+       "descriptor": "Remote Worker Location, Sweden",
+       "id": "ddc90356c6599348192be24fa79e7306",
+       "count": 5
+      },
+      {
+       "descriptor": "Riverbend, CA, USA",
+       "id": "770555279f5b43619327d26a7f5b6dc7",
+       "count": 21
+      },
+      {
+       "descriptor": "Remote Worker Location, Australia",
+       "id": "3bc22ded168064cf170bf795deb57b4f",
+       "count": 3
+      },
+      {
+       "descriptor": "Old Mill, PA, USA",
+       "id": "a20cf164c542d32559efd23da56c0123",
+       "count": 6
+      },
+      {
+       "descriptor": "Bergli, Switzerland",
+       "id": "0dd8b94013f2918fd92fc72da87b13dd",
+       "count": 9
+      },
+      {
+       "descriptor": "Lakeshore, MI, USA",
+       "id": "a467fabbde8b781e0cded23f43a751b3",
+       "count": 13
+      },
+      {
+       "descriptor": "Bluegrass Junction, KY, USA",
+       "id": "edca961bf80317b14c31555957389994",
+       "count": 14
+      },
+      {
+       "descriptor": "Canyon View, NV, USA",
+       "id": "dc5df8991336dece2e9961fb08125728",
+       "count": 22
+      },
+      {
+       "descriptor": "Maple Crossing, MN, USA",
+       "id": "9eb294e3f9cc7306692595e54c551115",
+       "count": 22
+      },
+      {
+       "descriptor": "Remote Worker Location, CA, USA",
+       "id": "066e2b5703267f820f8f100307c4a318",
+       "count": 16
+      },
+      {
+       "descriptor": "Remote Worker Location, TX, USA",
+       "id": "dcd7a5eab43d4bf3a7e80148bafa9926",
+       "count": 10
+      },
+      {
+       "descriptor": "Remote Worker Location, USA",
+       "id": "933019c67250b3c37d8584fbc65f3dfe",
+       "count": 15
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "jobPostings": [
+  {
+   "title": "Technical Program Manager, Finance Systems",
+   "externalPath": "/job/Aspen-Ridge-CO-USA/Technical-Program-Manager--Finance-Systems_20100417",
+   "locationsText": "Aspen Ridge, CO, USA",
+   "postedOn": "Posted 3 Days Ago"
+  },
+  {
+   "title": "Marketing Intern, Summer 2027",
+   "externalPath": "/job/Hudson-Gate-NY-USA/Marketing-Intern--Summer-2027_20100452",
+   "locationsText": "Hudson Gate, NY, USA",
+   "postedOn": "Posted 6 Days Ago"
+  }
+ ]
+}

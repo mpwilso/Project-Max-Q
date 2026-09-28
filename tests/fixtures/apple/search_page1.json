@@ -1,0 +1,85 @@
+{
+ "res": {
+  "searchResults": [
+   {
+    "id": "PIPE-310055127",
+    "jobSummary": "Placeholder summary for a synthetic test posting.",
+    "locations": [
+     {
+      "postLocationId": "postLocation-USA",
+      "city": "",
+      "stateProvince": "",
+      "countryName": "United States of America",
+      "name": "United States",
+      "countryID": "iso-country-USA",
+      "level": 1
+     }
+    ],
+    "positionId": "310055127",
+    "postingTitle": "US - Store Associate: Seasonal",
+    "postDateInGMT": "2026-09-16T19:52:40.123456789Z",
+    "transformedPostingTitle": "us-store-associate-seasonal",
+    "reqId": "PIPE-310055127",
+    "team": {
+     "teamName": "Retail",
+     "teamCode": "RETAI"
+    },
+    "type": "PIPE",
+    "homeOffice": false
+   },
+   {
+    "id": "741203958-2210",
+    "jobSummary": "Placeholder summary for a synthetic test posting.",
+    "locations": [
+     {
+      "postLocationId": "postLocation-DEN",
+      "city": "",
+      "stateProvince": "",
+      "countryName": "United States of America",
+      "name": "Denver",
+      "countryID": "iso-country-USA",
+      "level": 5
+     }
+    ],
+    "positionId": "300512877",
+    "postingTitle": "Program Manager, Data Platform Reliability",
+    "postDateInGMT": "2026-09-14T17:47:36.982Z",
+    "transformedPostingTitle": "program-manager-data-platform-reliability",
+    "reqId": "741203958-2210",
+    "team": {
+     "teamName": "Software and Services",
+     "teamCode": "SOFTW"
+    },
+    "type": "REQ",
+    "homeOffice": false
+   },
+   {
+    "id": "300588114-4417",
+    "jobSummary": "Placeholder summary for a synthetic test posting.",
+    "locations": [
+     {
+      "postLocationId": "postLocation-CHI",
+      "city": "",
+      "stateProvince": "",
+      "countryName": "United States of America",
+      "name": "Chicago",
+      "countryID": "iso-country-USA",
+      "level": 5
+     }
+    ],
+    "positionId": "300588114",
+    "postingTitle": "Regional Partner Manager (Midwest)",
+    "postDateInGMT": "2026-09-11T16:28:00.909Z",
+    "transformedPostingTitle": "regional-partner-manager-midwest",
+    "reqId": "300588114-4417",
+    "team": {
+     "teamName": "Sales",
+     "teamCode": "SALES"
+    },
+    "type": "REQ",
+    "homeOffice": true
+   }
+  ],
+  "totalRecords": 5
+ }
+}
