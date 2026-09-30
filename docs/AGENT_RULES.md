@@ -1,7 +1,7 @@
 # Operating rules for the coding agent
 
-maxq was built by an AI coding agent (Claude Code) working under written operating instructions. These
-are the rules from those instructions that shaped this repository, generalized. They are the point of
+Claude Code wrote most of maxq's code under operating rules I wrote and enforced. These are the rules
+from those instructions that shaped this repository, generalized. They are the point of
 the project as much as the code is: an agent that is fast is only useful if its work can be trusted.
 
 ## What the agent may and may not decide
