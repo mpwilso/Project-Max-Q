@@ -1,6 +1,6 @@
 import importlib.util, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 NAME = "paylocity"
 GUID = "3f2a9c1e-5b7d-4e8f-9a0b-1c2d3e4f5a6b"
@@ -35,7 +35,7 @@ class PaylocityTest(unittest.TestCase):
         by = {r["id"]: r for r in rows}
         it = by["5100001"]
         self.assertEqual(it["title"], "IT Operations Manager")
-        self.assertEqual(it["posted"], "2026-09-16")
+        self.assertEqual(it["posted"], local_date("2026-09-16T03:45:27-05:00"))
         self.assertEqual(it["extra"]["date_kind"], "published")
         self.assertEqual(it["location"], "Columbus, OH, United States")
         self.assertEqual(it["url"], "https://recruiting.paylocity.com/Recruiting/Jobs/Details/5100001")

@@ -1,6 +1,6 @@
 import importlib.util, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 NAME = "gem"
 
@@ -42,8 +42,8 @@ class GemTest(unittest.TestCase):
         by = {r["title"]: r for r in self.m.list_jobs(T, self.h)}
         se = by["Software Engineer"]
         self.assertEqual(se["id"], "4001234005")
-        self.assertEqual(se["posted"], "2022-03-25")               # first_published_at, not updated_at
-        self.assertEqual(se["extra"]["refreshed"], "2026-03-18")
+        self.assertEqual(se["posted"], local_date("2022-03-25T18:46:39.000Z"))  # first_published_at, not updated_at
+        self.assertEqual(se["extra"]["refreshed"], local_date("2026-03-18T17:43:11.448Z"))
         self.assertIn("United States", se["location"])
         remote = [r for r in by.values() if r["extra"]["location_type"] == "remote"][0]
         self.assertTrue(remote["location"].endswith("| Remote"))

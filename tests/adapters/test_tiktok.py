@@ -60,7 +60,9 @@ class TikTokListTest(unittest.TestCase):
 
     def test_posted_is_id_timestamp(self):
         r = self.by[PM]
-        self.assertEqual(r["posted"], "2021-08-24")   # top 32 bits of the id are epoch seconds
+        # The top 32 bits of the id are epoch seconds: a moment, dated in the time zone the sweep runs in.
+        self.assertEqual(r["posted"], tiktok.dt.datetime.fromtimestamp(int(PM) >> 32).date().isoformat())
+        self.assertIn(r["posted"], ("2021-08-24", "2021-08-25"))
         self.assertEqual(r["extra"]["date_kind"], "id_timestamp")
         self.assertIsNone(tiktok.id_date("not-a-number"))
 

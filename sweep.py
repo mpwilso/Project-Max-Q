@@ -289,7 +289,10 @@ def rescue_summary(dstats, gates):
     return (f"rescue: {dstats['rescue_candidates']} out-of-lane req(s) needed a body read, "
             f"{dstats['rescue_fetched']} fetched, {dstats.get('rescue_known', 0)} already read and settled, "
             f"{dstats['rescue_skipped']} left for a later run "
-            f"(budget {(gates.get('rescue') or {}).get('max_fetch_per_run', 250)}/run)")
+            f"(budget {(gates.get('rescue') or {}).get('max_fetch_per_run', 250)}/run)"
+            + (f"; {dstats['rescue_failed']} fetch(es) failed" if dstats.get("rescue_failed") else "")
+            + (f"; {dstats['rescue_fail_wait']} earlier failure(s) waiting out the {RESCUE_FAIL_RETRY_DAYS}-day retry"
+               if dstats.get("rescue_fail_wait") else ""))
 
 def etag_summary(read_targets, trust):
     """The one "etag:" line per run. None when no ETag board was read live."""
@@ -344,6 +347,20 @@ MONTHS = {m: i + 1 for i, m in enumerate(
     ["january", "february", "march", "april", "may", "june", "july",
      "august", "september", "october", "november", "december"])}
 
+_TS_ZONED = re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:[.,](\d+))?)?\s*(Z|[+-]\d{2}:?\d{2})(?!\d)", re.I)
+
+def epoch_date(v):
+    """A Unix epoch (seconds, or milliseconds when 13 digits / over 1e11) -> the LOCAL 'YYYY-MM-DD', or
+    None. Several boards publish epochs; dated in UTC, a req posted in the evening west of Greenwich
+    would be dated tomorrow, because TODAY is the local date. Never raises."""
+    try:
+        x = float(str(v).strip()) if not isinstance(v, (int, float)) else float(v)
+        if x > 1e11: x /= 1000.0
+        if x <= 0: return None
+        return dt.datetime.fromtimestamp(x, dt.timezone.utc).astimezone().date().isoformat()
+    except (TypeError, ValueError, OverflowError, OSError):
+        return None
+
 def iso_date(s):
     """Everything the boards emit -> 'YYYY-MM-DD', or None. Never raises.
 
@@ -351,8 +368,24 @@ def iso_date(s):
     'September 2, 2026' (Workday startDate; slicing that to [:10] gives 'September '),
     '9/2/2026', 'Posted Sep 2, 2026'.
     """
-    if not s: return None
+    if s is None or s == "" or isinstance(s, bool): return None
+    if isinstance(s, (int, float)) or (isinstance(s, str) and re.fullmatch(r"\s*\d{10}(?:\d{3})?\s*", s)):
+        return epoch_date(s)
     s = str(s).strip()
+    # A moment in time (a clock time plus Z or an offset) is dated in the sweep's own time zone, the
+    # same one TODAY uses. Slicing the date off a UTC timestamp dated an evening run's reqs tomorrow.
+    # Exactly midnight is a date written as a timestamp ('...T00:00:00.000+0000') and keeps its date.
+    m = _TS_ZONED.search(s)
+    if m and any(int(x or 0) for x in m.group(4, 5, 6, 7)):
+        try:
+            tz = m.group(8).upper().replace(":", "")
+            off = dt.timezone.utc if tz == "Z" else dt.timezone(
+                (1 if tz[0] == "+" else -1) * dt.timedelta(hours=int(tz[1:3]), minutes=int(tz[3:5])))
+            t = dt.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)),
+                            int(m.group(4)), int(m.group(5)), int(m.group(6) or 0), tzinfo=off)
+            return t.astimezone().date().isoformat()
+        except (ValueError, OverflowError, OSError):
+            pass
     m = re.search(r"(\d{4})-(\d{1,2})-(\d{1,2})", s)
     if m: return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
     m = re.search(r"([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})", s)
@@ -375,8 +408,10 @@ def days_between(iso, as_of=None):
         return None
 
 def days_since(iso):
-    """Age in days from an already-normalised date, or None. Never raises."""
-    return days_between(iso, None)
+    """Age in days from an already-normalised date, or None. Never raises. One day in the future is
+    date-line skew (a board that dates in UTC, read in the evening), shown as 0, never "-1d"."""
+    d = days_between(iso, None)
+    return 0 if d == -1 else d
 
 # The K/M suffix must not be the first letter of the next word: in "$95,000 to $120,000 Medical,
 # dental and vision" the M of "Medical" would otherwise read as a suffix and make the top of the
@@ -594,7 +629,7 @@ def _lever_rows(t, d):
         cats = j.get("categories") or {}
         locs = [cats.get("location") or ""] + list(cats.get("allLocations") or [])
         if j.get("workplaceType") == "remote": locs.append("Remote")
-        posted = dt.datetime.fromtimestamp(j["createdAt"] / 1000, dt.timezone.utc).date().isoformat() if j.get("createdAt") else None
+        posted = epoch_date(j["createdAt"]) if j.get("createdAt") else None
         desc = (j.get("descriptionPlain") or "") + "\n" + "\n".join(
             f"{l.get('text','')}\n{strip_html(l.get('content',''))}" for l in j.get("lists", []))
         out.append(norm(t["company"], "lever", j["id"], j.get("text"), " | ".join(x for x in locs if x),
@@ -847,7 +882,7 @@ def eightfold(t, smoke=False):
             if not pos or start >= total or start >= 500 or smoke: break
             if incremental_stop(t, [p["id"] for p in pos]): break
     for pid, p in seen.items():
-        posted = dt.datetime.fromtimestamp(p["t_create"], dt.timezone.utc).date().isoformat() if p.get("t_create") else None
+        posted = epoch_date(p["t_create"]) if p.get("t_create") else None
         out.append(norm(t["company"], "eightfold", pid, p.get("name"),
                         " | ".join(p.get("locations") or [p.get("location") or ""]),
                         p.get("canonicalPositionUrl") or f"{t['base']}/careers/job/{pid}", posted, "", None,
@@ -1324,8 +1359,8 @@ def pcsx(t, smoke=False):
     for pid, p in seen.items():
         locs = list(p.get("locations") or [])
         if (p.get("workLocationOption") or "").startswith("remote"): locs.append("Remote")
-        posted = dt.datetime.fromtimestamp(p["postedTs"], dt.timezone.utc).date().isoformat() if p.get("postedTs") else None
-        created = dt.datetime.fromtimestamp(p["creationTs"], dt.timezone.utc).date().isoformat() if p.get("creationTs") else None
+        posted = epoch_date(p["postedTs"]) if p.get("postedTs") else None
+        created = epoch_date(p["creationTs"]) if p.get("creationTs") else None
         out.append(norm(t["company"], "pcsx", pid, p.get("name"), " | ".join(locs),
                         f"{t['base']}/careers/job/{pid}", posted, "", None,
                         {"displayJobId": p.get("displayJobId"), "department": p.get("department"),
@@ -2109,7 +2144,8 @@ def conversion_read(row, g, ledger=None):
     if s["level_up"]:
         out.append(f"level-up title ({s['level_up']})")
     if s["days_posted"] is not None:
-        out.append(f"posted {s['days_posted']}d ago"
+        # -1 is date-line skew (see days_since), displayed as 0; the stored signal keeps its value.
+        out.append(f"posted {0 if s['days_posted'] == -1 else s['days_posted']}d ago"
                    +(" (past 14 days: a drag)" if s["days_posted"] > 14 else ""))
     if s["flooded_board"]:
         out.append("flooded board (hundreds of applicants per posting)")
@@ -2349,14 +2385,28 @@ def cmd_set_score(entries, g):
     dupes = sorted({k for k in keys if keys.count(k) > 1})
     if dupes:
         sys.exit(f"--set-score REJECTED, nothing written: key given twice: {', '.join(dupes)}")
+    # All or nothing. Saving once per entry meant an entry that failed validation (an empty verdict
+    # on an unscored key) left the entries before it written. Every entry is now checked, then
+    # applied to one in-memory copy, and the file is written once, only if all of them held.
+    scored_before = load_scored()
+    d = json.loads(json.dumps(scored_before))
+    bad = [f"{key} has no stored verdict to keep; give one"
+           for key, _s, verdict, _b, _c in parsed if verdict is None and "verdict" not in scored_before.get(key, {})]
+    if bad:
+        sys.exit("--set-score REJECTED, nothing written: " + "; ".join(bad))
     rows = load_json(DATA / "latest.json", {}).get("rows") or {}
     seen = load_json(DATA / "seen.json", {})
-    scored_before = load_scored()
-    for key, score, verdict, built_flag, conv in parsed:
+    written = []
+    try:
+        for key, score, verdict, built_flag, conv in parsed:
+            jdh = (rows.get(key) or {}).get("jd_hash")
+            written.append((key, apply_score(d, key, score, verdict, built=built_flag, conversion=conv,
+                                             jdh=jdh if jdh and jdh != jd_hash("") else None)))
+    except ValueError as ex:
+        sys.exit(f"--set-score REJECTED, nothing written: {ex}")
+    save_scored(d)
+    for key, e in written:
         snap_row = rows.get(key) or {}
-        jdh = snap_row.get("jd_hash")
-        e = set_score(key, score, verdict, built=built_flag, conversion=conv,
-                      jdh=jdh if jdh and jdh != jd_hash("") else None)
         print(f"scored.json: {key} -> {e}")
         if key not in scored_before and key not in seen:
             print(f"WARNING: {key} is not a req the sweep has ever seen. Fine for a pasted JD off a board "
@@ -2376,7 +2426,14 @@ def set_score(key, score, verdict, built=None, jdh=None, conversion=None):
     """Record a score so a standing target is not re-litigated every day. verdict=None keeps the
     stored verdict (marking a row :built after delivery should not blank its reasons)."""
     d = load_scored()
-    e = d.get(key, {})
+    e = apply_score(d, key, score, verdict, built=built, jdh=jdh, conversion=conversion)
+    save_scored(d)
+    return e
+
+def apply_score(d, key, score, verdict, built=None, jdh=None, conversion=None):
+    """set_score's change, made to the scored dict d in memory; nothing is written. Raises ValueError
+    (leaving d untouched) when verdict is None and nothing is stored to keep."""
+    e = dict(d.get(key, {}))
     if verdict is None:
         if "verdict" not in e:
             raise ValueError(f"{key} has no stored verdict to keep; give one")
@@ -2387,7 +2444,6 @@ def set_score(key, score, verdict, built=None, jdh=None, conversion=None):
     if conversion: e["conversion"] = conversion
     e.setdefault("built", False)
     d[key] = e
-    save_scored(d)
     return e
 
 # ----------------------------------------------------------------------------- snapshot / diff
@@ -2639,6 +2695,11 @@ def placeholder_location_fail(row, verdict, g=None):
                      or bool(g and (g.get("bare_remote") or {}).get("body_check") and bare_remote_only(loc, g))))
 
 RESCUE_RECHECK_DAYS = 30
+# A rescue body fetch that failed (a 403 on the detail page, say) is a req-level FAIL, never an
+# employer coverage hole: the rescue read is budgeted and optional, and the board itself was read.
+# The failure is stamped on the row and the fetch is retried after this many days, so the budget does
+# not spend itself on the same refusal every run.
+RESCUE_FAIL_RETRY_DAYS = 7
 
 def _rescue_lexicon_sig(gates):
     return jd_hash(json.dumps(gates.get("prerank") or {}, sort_keys=True))
@@ -2652,6 +2713,11 @@ def rescue_stamp_verdict(r, p, gates, lex):
     budget every run and the backlog would never advance. The score is kept on the row instead; it
     stands until the list read, the lexicon or 30 days change, or the floor drops to where it would pass."""
     st = (p or {}).get("_rescue")
+    if st and st.get("failed") and st.get("sig") == r.get("_list_sig"):
+        age = days_since(st.get("on"))
+        if age is None or age >= RESCUE_FAIL_RETRY_DAYS: return None
+        r["_rescue"] = st
+        return "FAIL", [f"title out of lane: rescue fetch failed {st['on']}, retried after {RESCUE_FAIL_RETRY_DAYS} days"]
     if not st or st.get("sig") != r.get("_list_sig") or st.get("lex") != lex: return None
     age = days_since(st.get("on"))
     if age is None or age >= RESCUE_RECHECK_DAYS: return None
@@ -2682,7 +2748,8 @@ def gate_all(rows, prev, gates, fetch=True):
     """
     verdicts, failed, healed = {}, set(), set()
     stats = {"fetched": 0, "failed": 0, "inherited": 0, "rebanded": 0, "reused": 0,
-             "rescue_candidates": 0, "rescue_fetched": 0, "rescue_skipped": 0, "rescue_known": 0}
+             "rescue_candidates": 0, "rescue_fetched": 0, "rescue_skipped": 0, "rescue_known": 0,
+             "rescue_failed": 0, "rescue_fail_wait": 0}
     todo, rescue_pool = [], []
     lex = _rescue_lexicon_sig(gates)
     for k, r in rows.items():
@@ -2710,7 +2777,7 @@ def gate_all(rows, prev, gates, fetch=True):
             # the run. Whatever the budget does not reach stays FAIL and is counted, not silent.
             known = rescue_stamp_verdict(r, prev.get(k), gates, lex)
             if known:
-                stats["rescue_known"] += 1
+                stats["rescue_fail_wait" if (r.get("_rescue") or {}).get("failed") else "rescue_known"] += 1
                 verdicts[k] = known
             elif reuse_detail(r, prev.get(k)):
                 stats["reused"] += 1
@@ -2762,11 +2829,14 @@ def gate_all(rows, prev, gates, fetch=True):
                 # Paid for once: the score outlives the body that strip_irrelevant_text is about to blank.
                 rows[k]["_rescue"] = {"score": prerank(rows[k], gates, None), "sig": rows[k].get("_list_sig"),
                                       "lex": lex, "on": TODAY.isoformat()}
+        elif k in rescued_now:
+            # Req-level FAIL, stamped so the budget does not spend itself on the same refusal every run.
+            verdicts[k] = ("FAIL", [f"title out of lane: rescue fetch failed: {str(err)[:160]}"])
+            rows[k]["_rescue"] = {"score": None, "failed": str(err)[:160], "sig": rows[k].get("_list_sig"),
+                                  "lex": lex, "on": TODAY.isoformat()}
+            stats["rescue_failed"] += 1
         else:
-            if verdicts[k][0] == "RESCUE-FETCH":
-                verdicts[k] = ("FAIL", [f"title out of lane: body fetch failed: {err}"])
-            else:
-                verdicts[k][1].append(f"detail fetch failed: {err}")
+            verdicts[k][1].append(f"detail fetch failed: {err}")
             stats["failed"] += 1; failed.add(k)
     for k, r in rows.items():
         p = prev.get(k)
@@ -2776,6 +2846,7 @@ def gate_all(rows, prev, gates, fetch=True):
         if not r.get("comp"):   r["comp"]   = p.get("comp")
         stats["inherited"] += 1; healed.add(k)
     for k in healed:
+        if (rows[k].get("_rescue") or {}).get("failed"): rows[k].pop("_rescue")   # the old body decides
         verdicts[k] = gate(rows[k], gates)
     # Comp re-derivation for EVERY detail board. norm() runs the band fallback at list time, when a
     # detail-board row has no body yet, so those rows would otherwise never carry a band. One pass

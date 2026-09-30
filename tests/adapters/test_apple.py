@@ -5,7 +5,7 @@ page 2 repeats one page-1 row, the shape a req posted mid-walk produces under so
 """
 import copy, importlib.util, re, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 spec = importlib.util.spec_from_file_location("adapter_apple", ROOT / "adapters" / "apple.py")
 apple = importlib.util.module_from_spec(spec); spec.loader.exec_module(apple)
@@ -45,7 +45,7 @@ class AppleListTest(unittest.TestCase):
         r = next(r for r in self.rows if r["id"] == "741203958-2210")
         self.assertEqual(r["title"], "Program Manager, Data Platform Reliability")
         self.assertEqual(r["location"], "Denver, United States")
-        self.assertEqual(r["posted"], "2026-09-14")
+        self.assertEqual(r["posted"], local_date("2026-09-14T17:47:36.982Z"))
         self.assertTrue(r["url"].startswith("https://jobs.apple.com/en-us/details/741203958-2210/"))
         for r in self.rows:
             if r["posted"]: self.assertRegex(r["posted"], r"^\d{4}-\d{2}-\d{2}$")

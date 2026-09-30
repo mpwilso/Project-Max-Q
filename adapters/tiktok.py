@@ -69,7 +69,7 @@ def location(j):
 
 def id_date(jid):
     try:
-        return dt.datetime.fromtimestamp(int(jid) >> 32, dt.timezone.utc).date().isoformat()
+        return dt.datetime.fromtimestamp(int(jid) >> 32, dt.timezone.utc).astimezone().date().isoformat()
     except (TypeError, ValueError, OverflowError, OSError):
         return None
 

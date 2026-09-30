@@ -1,5 +1,5 @@
 """Offline test helpers. No test in tests/ may touch the network or write under data/ or reports/."""
-import json, sys
+import datetime as dt, json, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -8,6 +8,15 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import sweep  # noqa: E402
+
+
+def local_date(ts):
+    """The local calendar date of a board timestamp (ISO 8601 with Z or an offset, or epoch seconds).
+    The sweep dates a moment in the time zone it runs in, so a fixture's expected date depends on
+    where the tests run; computing it here keeps every adapter test true in any time zone."""
+    t = (dt.datetime.fromtimestamp(ts, dt.timezone.utc) if isinstance(ts, (int, float))
+         else dt.datetime.fromisoformat(ts))
+    return t.astimezone().date().isoformat()
 
 
 def fixture(*parts, as_json=True):

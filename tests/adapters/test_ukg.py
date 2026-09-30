@@ -1,6 +1,6 @@
 import importlib.util, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 NAME = "ukg"
 BASE = "https://wideworld.rec.pro.ukg.net/WWI1000WWIMP/JobBoard/0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
@@ -57,7 +57,7 @@ class UkgTest(unittest.TestCase):
     def test_detail_fills_text_and_true_posted_date(self):
         row = {r["id"]: r for r in self.m.list_jobs(T, self.h)}[self.first]
         r = self.m.detail(T, row, self.h)
-        self.assertEqual(r["posted"], "2026-09-07")
+        self.assertEqual(r["posted"], local_date("2026-09-07T15:00:18.553Z"))
         self.assertEqual(r["extra"]["date_kind"], "posted")
         self.assertTrue(len(r["description"]) > 1000)
         self.assertNotIn("<p>", r["description"])

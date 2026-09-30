@@ -1,6 +1,6 @@
 import importlib.util, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 NAME = "directemployers"
 
@@ -13,6 +13,8 @@ def load():
 
 T = {"company": "Northwind Traders", "ats": NAME, "base": "https://careers.northwindtraders.example"}
 GUID = "5B2E91C47D0A4F3E8C61A9D27E4B3F05"
+# date_new is a moment in time, dated in the time zone the sweep runs in.
+POSTED = local_date("2026-06-17T00:24:25Z")
 
 
 class Status404(Exception):
@@ -89,8 +91,8 @@ class DirectEmployersTest(unittest.TestCase):
         self.assertEqual(row["title"], "Manager, AI")
         self.assertEqual(row["extra"]["title_source"], "detail")
         self.assertEqual(row["location"], "Denver, CO")
-        self.assertEqual(row["posted"], "2026-06-17")          # date_new, not date_added
-        self.assertEqual(row["extra"]["added"], "2026-07-24")
+        self.assertEqual(row["posted"], POSTED)                # date_new, not date_added
+        self.assertEqual(row["extra"]["added"], local_date("2026-07-24T19:02:03.590Z"))
         self.assertEqual(row["extra"]["date_kind"], "posted")
         self.assertEqual(row["extra"]["reqid"], "2026-20417")
         self.assertEqual(row["extra"]["job_type"], "Full-Time")
@@ -102,7 +104,7 @@ class DirectEmployersTest(unittest.TestCase):
         row = self.m.lookup(T, GUID, self.h)
         self.assertEqual(row["id"], GUID)
         self.assertEqual(row["title"], "Manager, AI")
-        self.assertEqual(row["posted"], "2026-06-17")
+        self.assertEqual(row["posted"], POSTED)
         self.assertEqual(row["url"], f"https://careers.northwindtraders.example/denver-co/manager-ai/{GUID}/job/")
 
         gone = dict(fixture(NAME, "job.json")); gone["deleted_at"] = "2026-09-18T00:00:00Z"

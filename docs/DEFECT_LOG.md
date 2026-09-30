@@ -99,3 +99,33 @@ Each entry: what it looked like, why it happened, what changed, and where it is 
 - **Fix:** a pre-commit check compares each staged file with HEAD and refuses a line-ending flip or a
   JSON file where most lines changed. An environment variable overrides it, and only the maintainer sets it.
 - **Pinned by:** `tests/test_guard_rewrite.py`.
+
+### 13. Postings dated tomorrow
+- **Symptom:** a sweep run in the evening stored many postings with tomorrow's date, and their age
+  printed as "-1d".
+- **Cause:** the date was sliced off UTC timestamps and epoch values (`2030-03-01T01:15:00Z` became
+  March 1), while "today" is the local date. West of Greenwich, an evening posting is already
+  tomorrow in UTC.
+- **Fix:** a timestamp with a clock time and a zone (Z or an offset), and every epoch value, is converted
+  to the local date before it is stored. A bare date keeps its date, and so does a timestamp at exactly
+  midnight, which is how some boards write a plain date. A posting one day in the future is displayed
+  as 0 days old. Adapter tests compute their expected dates the same way, so they hold in any time zone.
+- **Pinned by:** `tests/test_discovery_fixes.py::UtcDatesAreLocal`.
+
+### 14. A rejected score batch that had already written half
+- **Symptom:** a `--set-score` command with several entries exited with an error, and the entries before
+  the bad one were in the ledger anyway.
+- **Cause:** parsing checked every entry up front, but an empty verdict on a key with no stored verdict
+  only failed when that entry was applied, and each entry was saved as it went.
+- **Fix:** every entry is validated before anything is written, all of them are applied to one
+  in-memory copy, and the ledger is saved once, only if every entry held.
+- **Pinned by:** `tests/test_discovery_fixes.py::SetScoreIsAllOrNothing`.
+
+### 15. One refused page marked a whole employer uncovered
+- **Symptom:** an employer whose board read cleanly was reported UNCOVERED, and the same posting's
+  page was requested, and refused, on every run.
+- **Cause:** the optional description read for an out-of-lane title shared the failure path of a
+  required detail read, which treats a failure as a coverage hole.
+- **Fix:** a failed optional read is a FAIL for that one posting, with the reason stated. The failure
+  is recorded on the row and the read is retried after seven days, and the run summary counts both.
+- **Pinned by:** `tests/test_discovery_fixes.py::RescueFetchFailure`.

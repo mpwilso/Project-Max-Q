@@ -1,6 +1,6 @@
 import importlib.util, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 NAME = "teamtailor"
 
@@ -45,7 +45,7 @@ class TeamtailorTest(unittest.TestCase):
         by = {r["id"]: r for r in self.m.list_jobs(T, self.h)}
         self.assertEqual(by["700102"]["title"], "Head of Engineering")
         self.assertEqual(by["700102"]["location"], "Denver, United States")          # "US" expanded
-        self.assertEqual(by["700102"]["posted"], "2026-08-13")
+        self.assertEqual(by["700102"]["posted"], local_date("2026-08-13T09:17:57-07:00"))
         self.assertEqual(by["700101"]["location"], "")                              # no office on the post
         self.assertEqual(by["700103"]["location"], "United States | Remote")         # TELECOMMUTE
 

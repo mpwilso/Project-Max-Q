@@ -5,7 +5,7 @@ AF_initDataCallback wrapper, with total 6. Page 2 repeats a page-1 job.
 """
 import importlib.util, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 spec = importlib.util.spec_from_file_location("adapter_google", ROOT / "adapters" / "google.py")
 google = importlib.util.module_from_spec(spec); spec.loader.exec_module(google)
@@ -48,8 +48,8 @@ class GoogleListTest(unittest.TestCase):
 
     def test_dates_posted_is_earlier_stamp(self):
         r = self.by["88520193346627105"]
-        self.assertEqual(r["posted"], "2026-09-14")
-        self.assertEqual(r["extra"]["updated"], "2026-09-16")
+        self.assertEqual(r["posted"], local_date(1789405537))
+        self.assertEqual(r["extra"]["updated"], local_date(1789578337))
         for r in self.rows: self.assertRegex(r["posted"], r"^\d{4}-\d{2}-\d{2}$")
 
     def test_description_and_comp_from_list(self):

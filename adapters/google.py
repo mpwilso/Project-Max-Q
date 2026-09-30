@@ -57,7 +57,7 @@ def _html(a, i):
 
 def _date(ts):
     if not (isinstance(ts, list) and ts and isinstance(ts[0], (int, float))): return None
-    return dt.datetime.fromtimestamp(ts[0], dt.timezone.utc).date().isoformat()
+    return dt.datetime.fromtimestamp(ts[0], dt.timezone.utc).astimezone().date().isoformat()
 
 
 def parse_page(markup):

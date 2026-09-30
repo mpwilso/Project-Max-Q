@@ -1,6 +1,6 @@
 import importlib.util, re, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 NAME = "icims_jibe"
 
@@ -48,7 +48,7 @@ class IcimsJibeTest(unittest.TestCase):
         rows = {r["id"]: r for r in self.m.list_jobs(T, self.h)}
         r = rows["40117"]
         self.assertEqual(r["title"], "Financial Analyst, Clinical Operations")
-        self.assertEqual(r["posted"], "2026-08-05")
+        self.assertEqual(r["posted"], local_date("2026-08-05T20:13:00+0000"))
         self.assertIn("United States", r["location"])
         self.assertIn(" | Chicago, Illinois, United States", r["location"])   # additional_locations joined
         self.assertIsNone(r["comp"])                                            # salary_*_value "0" is no band

@@ -1,6 +1,6 @@
 import importlib.util, unittest
 
-from tests.stubs import ROOT, StubH, fixture
+from tests.stubs import ROOT, StubH, fixture, local_date
 
 NAME = "rippling"
 MULTI = "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b"
@@ -47,7 +47,7 @@ class RipplingTest(unittest.TestCase):
         rows = {r["id"]: r for r in self.m.list_jobs(T, self.h)}
         r = self.m.detail(T, rows[MULTI], self.h)
         self.assertRegex(r["posted"], r"^\d{4}-\d{2}-\d{2}$")
-        self.assertEqual(r["posted"], "2026-03-31")
+        self.assertEqual(r["posted"], local_date("2026-03-31T17:37:26.093000-07:00"))
         self.assertTrue(len(r["description"]) > 200)
         self.assertNotIn("<p", r["description"])
         self.assertEqual(r["comp"], "$170,000 - $250,000")
