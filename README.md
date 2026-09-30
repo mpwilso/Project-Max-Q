@@ -1,4 +1,9 @@
-# Project Max Q
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/lockup-animated-dark.svg">
+    <img src="docs/brand/lockup-animated-light.svg" alt="Project Max Q" height="72">
+  </picture>
+</p>
 
 [![tests](https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml/badge.svg)](https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml)
 
