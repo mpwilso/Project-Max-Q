@@ -1456,7 +1456,15 @@ def _loc_segments(original):
     ("Hybrid/Remote"), and "Portland, OR" is uppercase so it is not the word "or"."""
     return [s for s in _LOC_SPLIT.split(original or "") if s and s.strip()]
 
+_COUNTRY_PREFIX = re.compile(r"\s*([A-Z]{2}):\s")
+
 def _has_us_marker(seg, g):
+    # Some boards lead each office with its country code ("AU: Melbourne", "CA: Toronto"). The
+    # prefix names the country, so the rest of the segment never gets a vote: a foreign city that
+    # shares a US city's name, or a code that doubles as a state abbreviation (CA, DE, IN), would
+    # otherwise read as American.
+    m = _COUNTRY_PREFIX.match(seg)
+    if m and m.group(1) != "US": return False
     s = seg.lower()
     return bool(any(_has_word(s, q) for q in g.get("us_qualifiers", []))
                 or any(_has_word(s, st) for st in g.get("us_states_full", []))
@@ -1649,6 +1657,11 @@ NON_EXPERIENCE_YEARS = ("exercise", "option", "vest", "equity", "warranty", " ag
 _COMPANY_HISTORY_HEAD = re.compile(r"(?:\bfor (?:over|more than|nearly|almost|the past|the last)|"
                                    r"\b(?:in|over) the (?:past|last))\s+$")
 
+# Team seniority, not a bar: "our teams average 15+ years of experience" describes the people already
+# there. Read as a bar it would stamp a 15+ tenure fail on a role whose required line is far lower.
+_TEAM_AVERAGE_HEAD = re.compile(r"\b(?:teams?|engineers|people|staff|consultants|employees)\s+"
+                                r"(?:average|averages|averaging|with an average of)\s+$")
+
 # "in business" is there for the company-age idiom ("40 years in business"), but it also matches
 # the FIELD NAME in "10+ years of progressive experience in Business Systems Analysis", which would
 # make a real bar read as no bar at all. Keep the bar when "in business" is heading a field name.
@@ -1730,6 +1743,7 @@ def _bar_figures(desc, g):
         if sup: continue
         if _COMPANY_HISTORY_HEAD.search(desc[max(0, m.start() - 24): m.start()]) \
                 and "experience" not in _same_sentence_context(desc, m, before=0): continue
+        if _TEAM_AVERAGE_HEAD.search(desc[max(0, m.start() - 40): m.start()]): continue
         # "6–10+ years", and the legal style "five (5) to seven (7) years"
         lo = re.search(r"(\d{1,2})\)?\s*(?:-|–|—|to)\s*(?:[a-z]+\s*\()?$", desc[max(0, m.start() - 16): m.start()])
         if lo and int(lo.group(1)) < n: n = int(lo.group(1))          # "6–10+ years": the low end
@@ -2059,12 +2073,14 @@ def conversion_signals(row, g, ledger=None, as_of=None, contacts=None):
         # coverage stamp, not a posting date, so a consumer that learns from this must know.
         if age is not None: age_source = "first_seen"
     co = (row.get("company") or "").lower()
-    flooded = any(b in co for b in g.get("flooded_boards", []))
+    # Whole words, not substrings: as a substring "meta" matches "Metalworks Example", which would then
+    # read as a flooded board and pick up that employer's contacts.
+    flooded = any(_has_word(co, b) for b in g.get("flooded_boards", []))
     if contacts is None: contacts = load_json(CONTACTS, {})
     # Keys starting "_" are the file's own notes, never an employer. Without this an empty
     # company name matched "_comment" (its value is a string, and .get() on it raised).
     known = next((v for k, v in contacts.items()
-                  if not k.startswith("_") and (k.lower() in co or co in k.lower())), None)
+                  if not k.startswith("_") and co and (_has_word(co, k.lower()) or _has_word(k.lower(), co))), None)
     people = [p.get("name", "?") for p in (known or {}).get("people", [])]
     drags = 0
     if gap is not None and gap > 0: drags += 1 if gap < 3 else 2

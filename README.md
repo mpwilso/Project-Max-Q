@@ -84,7 +84,7 @@ flowchart TD
 
 What the sweep does on every run:
 
-- **Reads each employer's own board**, never an aggregator. 13 readers live in `sweep.py`; 25 are
+- **Reads each employer's own board**, never an aggregator. 13 readers live in `sweep.py`; 26 are
   plugins in `adapters/`, each behind one small contract ([adapters/README.md](adapters/README.md)).
 - **Applies hard gates in code**: title lane, a fail-closed location policy (a posting passes only on a
   positive location marker), a required-years bar with degree tiers and escape clauses, and

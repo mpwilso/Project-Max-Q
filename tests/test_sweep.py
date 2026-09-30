@@ -736,6 +736,17 @@ class Tenure(unittest.TestCase):
         self.assertEqual(sweep.experience_years(
             "4+ years of program management. we have been in business 40 years.", G), [4])
 
+    def test_team_average_seniority_is_not_a_bar(self):
+        # "Our teams average 15+ years" describes the people already there; read as a bar it would
+        # stamp a 15+ tenure fail on a role whose required line is 7+.
+        d = ("small and senior by design. our teams average 15+ years of experience. "
+             "we move quickly. required: 7+ years of experience in product management.")
+        self.assertEqual(sweep.experience_years(d, G), [7])
+        self.assertEqual(sweep.experience_years("our engineers averaging 12 years of experience.", G), [])
+        self.assertEqual(sweep.experience_years("consultants with an average of 11 years in the field.", G), [])
+        # A real bar after a team noun still counts.
+        self.assertEqual(sweep.experience_years("the team needs 8+ years of experience in product.", G), [8])
+
 
 class TextAndComp(unittest.TestCase):
     def test_double_escaped_greenhouse_body(self):
@@ -1252,6 +1263,35 @@ class LiveDataRegressions(unittest.TestCase):
                 self.assertIsNone(sweep.jd_text_for("workday:Other:R100200", idx))      # no cross-employer collision
             finally:
                 sweep.JDS = saved
+
+
+class CompanyWholeWords(unittest.TestCase):
+    """The Conversion read matches a company to flooded boards and to contacts on whole words. As
+    substrings, "meta" matched "Code Metallurgy Example" and gave it a flooded-board drag and another
+    employer's contacts."""
+    CONTACTS = {"_comment": "notes", "Meta": {"people": [{"name": "Pat Example"}]},
+                "Globex": {"people": [{"name": "Sam Placeholder"}]}}
+
+    def signals(self, company):
+        return sweep.conversion_signals(row(company=company, title="Senior Product Manager"), G, {},
+                                        contacts=self.CONTACTS)
+
+    def test_a_longer_word_is_not_the_board(self):
+        s = self.signals("Code Metallurgy Example")
+        self.assertFalse(s["flooded_board"])
+        self.assertEqual(s["known_contacts"], [])
+        self.assertEqual(self.signals("Globexia Labs")["known_contacts"], [])
+
+    def test_whole_names_still_match_both_ways(self):
+        s = self.signals("Meta")
+        self.assertTrue(s["flooded_board"])
+        self.assertEqual(s["known_contacts"], ["Pat Example"])
+        self.assertEqual(self.signals("Globex Corporation")["known_contacts"], ["Sam Placeholder"])
+
+    def test_empty_company_matches_nobody(self):
+        s = self.signals("")
+        self.assertEqual(s["known_contacts"], [])
+        self.assertFalse(s["flooded_board"])
 
 
 class AlreadyApplied(unittest.TestCase):

@@ -39,5 +39,25 @@ class ForeignRemoteSegment(unittest.TestCase):
         self.assertFalse(sweep.remote_names_foreign_place("Remote-Friendly (Travel-Required)", G))
 
 
+class CountryPrefixedOffices(unittest.TestCase):
+    """Some boards lead each office with a country code: "AU: Richmond (1 Example Rd)". Richmond is
+    also a US city and CA is also a state code, so without reading the prefix the foreign office
+    carried a US marker and passed beside a bare "Remote"."""
+
+    def test_foreign_prefixed_office_beside_bare_remote_fails(self):
+        for loc in ("AU: Richmond (1 Example Rd) | Remote",
+                    "CA: Richmond (1 Example Rd) | Remote",
+                    "AU: Richmond (1 Example Rd) | NZ: Wellington (2 Example St) | Remote"):
+            self.assertEqual(verdict(loc), "FAIL", loc)
+
+    def test_us_prefix_and_plain_us_offices_still_count(self):
+        self.assertEqual(verdict("US: Austin (1 Example Ave) | Remote"), "PASS")
+        self.assertTrue(sweep._has_us_marker("US: Austin (1 Example Ave)", G))
+        self.assertTrue(sweep._has_us_marker("Richmond, VA", G))
+        self.assertTrue(sweep._has_us_marker("San Diego, CA", G))
+        for seg in ("AU: Richmond (1 Example Rd)", "CA: Toronto", "DE: Berlin", "IN: Bengaluru"):
+            self.assertFalse(sweep._has_us_marker(seg, G), seg)
+
+
 if __name__ == "__main__":
     unittest.main()

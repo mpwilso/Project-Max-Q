@@ -1,0 +1,198 @@
+{
+ "code": 0,
+ "data": {
+  "job_post_list": [
+   {
+    "id": "7000000000000000001",
+    "code": "A10001A",
+    "title": "Senior Product Manager,  Example Creator Tools",
+    "description": "About the team\nThe Example Creator Tools team builds the editing and scheduling features that creators use every day.\nYou will own the roadmap for the draft editor.",
+    "requirement": "Minimum Qualifications:\n- 5+ years of product management experience on consumer or creator products.\n- Experience shipping editing or media workflows.",
+    "recruit_type": {
+     "id": "101",
+     "name": null,
+     "en_name": "Regular",
+     "i18n_name": "Regular"
+    },
+    "job_category": {
+     "id": "6000000000000000102",
+     "name": null,
+     "en_name": "Product manager",
+     "i18n_name": "Product manager",
+     "parent": {
+      "id": "6000000000000000101",
+      "name": null,
+      "en_name": "Product",
+      "i18n_name": "Product",
+      "parent": null
+     }
+    },
+    "city_info": {
+     "code": "CT_921",
+     "location_type": 3,
+     "name": null,
+     "en_name": "Chicago",
+     "i18n_name": "Chicago",
+     "parent": {
+      "code": "ST_911",
+      "location_type": 2,
+      "name": null,
+      "en_name": "Illinois",
+      "i18n_name": "Illinois",
+      "parent": {
+       "code": "CN_901",
+       "location_type": 1,
+       "name": null,
+       "en_name": "United States of America",
+       "i18n_name": "United States of America",
+       "parent": null
+      }
+     }
+    },
+    "tag_list": null,
+    "job_subject": null,
+    "vacancies": null,
+    "department_info": null,
+    "job_post_info": {
+     "min_salary": null,
+     "max_salary": null,
+     "currency": null,
+     "required_degree": null,
+     "experience": null,
+     "sequence": null,
+     "min_level": null,
+     "max_level": null,
+     "highlight_list": null,
+     "job_post_object_value_list": null,
+     "expiry_time": null
+    },
+    "process_type": null,
+    "channel_online_status": null
+   },
+   {
+    "id": "7000000000000000002",
+    "code": "A10002A",
+    "title": "Research Engineer Graduate (Example Lab) - Next Year Start (PhD)",
+    "description": "About the team:\nThe Example Lab studies ranking models for short video.",
+    "requirement": "Minimum Qualifications\n1. Completing or recently completed a PhD in computer science.",
+    "recruit_type": {
+     "id": "201",
+     "name": null,
+     "en_name": "Regular",
+     "i18n_name": "Regular"
+    },
+    "job_category": {
+     "id": "6000000000000000201",
+     "name": null,
+     "en_name": "R&D",
+     "i18n_name": "R&D",
+     "parent": null
+    },
+    "city_info": {
+     "code": "CT_923",
+     "location_type": 3,
+     "name": null,
+     "en_name": "Singapore",
+     "i18n_name": "Singapore",
+     "parent": {
+      "code": "ST_913",
+      "location_type": 2,
+      "name": null,
+      "en_name": "Singapore",
+      "i18n_name": "Singapore",
+      "parent": {
+       "code": "CN_903",
+       "location_type": 1,
+       "name": null,
+       "en_name": "Singapore",
+       "i18n_name": "Singapore",
+       "parent": null
+      }
+     }
+    },
+    "tag_list": null,
+    "job_subject": null,
+    "vacancies": null,
+    "department_info": null,
+    "job_post_info": {
+     "min_salary": null,
+     "max_salary": null,
+     "currency": null,
+     "required_degree": null,
+     "experience": null,
+     "sequence": null,
+     "min_level": null,
+     "max_level": null,
+     "highlight_list": null,
+     "job_post_object_value_list": null,
+     "expiry_time": null
+    },
+    "process_type": null,
+    "channel_online_status": null
+   },
+   {
+    "id": "7000000000000000003",
+    "code": "A10003AC",
+    "title": "Strategy and Analytics Manager - Example Commerce",
+    "description": "Join the team that sizes and plans new commerce categories.",
+    "requirement": "Minimum Qualification(s):\n- 4+ years in strategy, analytics or consulting.",
+    "recruit_type": {
+     "id": "101",
+     "name": null,
+     "en_name": "Regular",
+     "i18n_name": "Regular"
+    },
+    "job_category": {
+     "id": "6000000000000000301",
+     "name": null,
+     "en_name": "Operations",
+     "i18n_name": "Operations",
+     "parent": null
+    },
+    "city_info": {
+     "code": "CT_922",
+     "location_type": 3,
+     "name": null,
+     "en_name": "Toronto",
+     "i18n_name": "Toronto",
+     "parent": {
+      "code": "ST_912",
+      "location_type": 2,
+      "name": null,
+      "en_name": "Ontario",
+      "i18n_name": "Ontario",
+      "parent": {
+       "code": "CN_902",
+       "location_type": 1,
+       "name": null,
+       "en_name": "Canada",
+       "i18n_name": "Canada",
+       "parent": null
+      }
+     }
+    },
+    "tag_list": null,
+    "job_subject": null,
+    "vacancies": null,
+    "department_info": null,
+    "job_post_info": {
+     "min_salary": null,
+     "max_salary": null,
+     "currency": null,
+     "required_degree": null,
+     "experience": null,
+     "sequence": null,
+     "min_level": null,
+     "max_level": null,
+     "highlight_list": null,
+     "job_post_object_value_list": null,
+     "expiry_time": null
+    },
+    "process_type": null,
+    "channel_online_status": null
+   }
+  ],
+  "count": 5
+ },
+ "message": "ok"
+}
