@@ -114,15 +114,12 @@ everything else.
 ## How it works
 
 ```mermaid
-flowchart TD
-    T[targets.json: the companies to read] --> A[careers-site readers]
-    A --> G{filters in gates.json}
-    G -->|passes| R[report with a health check]
-    G -->|title doesn't match,<br/>description does| B[flagged for review,<br/>never counted as a pass]
-    B --> R
-    G -->|fails| X[counted, not shown]
-    R --> AI[AI agent sorts and drafts a fit read]
-    AI --> P([a person decides and applies])
+flowchart LR
+    T[targets.json:<br/>companies to read] --> A[careers-site<br/>readers] --> G{filters in<br/>gates.json}
+    G -->|passes| R[report with a<br/>health check]
+    G -->|title off,<br/>description fits| B[review pile,<br/>never a pass] --> R
+    G -->|fails| X[counted,<br/>not shown]
+    R --> AI[AI sorts and<br/>drafts a fit read] --> P([a person<br/>decides and applies])
 ```
 
 | Step | Who decides |
@@ -218,9 +215,9 @@ After the filters, `fitscore.py` ranks what's left by how well each posting fits
 ranking only changes the order: every posting that passed is still listed, and a person still decides.
 
 ```
-python fitscore.py rank                         # keyword baseline, offline
-python fitscore.py rank --scorer claude-code    # Claude, through the Claude Code CLI (no API account)
-python fitscore.py rank --scorer claude         # Claude, through the API
+python fitscore.py rank                        # keyword baseline, offline
+python fitscore.py rank --scorer claude-code   # Claude via Claude Code, no API key
+python fitscore.py rank --scorer claude        # Claude via the API
 ```
 
 The Claude scorer sends the profile and rubric ([examples/john_doe/](examples/john_doe/)) with each
@@ -283,7 +280,7 @@ anything that gets sent. Done so far: the resume check (above). Next:
 
 Tests run with `python -m unittest discover -s tests -t .` and on every push. `.githooks/` holds the
 maintainer's privacy guard: it refuses every commit until `.privacy/config.json` (gitignored) lists the
-names and addresses to block, for example `{"patterns": ["your full name", "you@example\\.com"]}`.
+names and addresses to block, for example `{"patterns": ["your full name"]}`.
 Create that file before running `git config core.hooksPath .githooks`, or leave the hooks off.
 
 ## License
