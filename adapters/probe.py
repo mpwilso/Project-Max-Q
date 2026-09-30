@@ -33,7 +33,7 @@ def main():
     if sweep.PLUGIN_ERRORS:
         print("PLUGIN IMPORT ERRORS:", json.dumps(sweep.PLUGIN_ERRORS, indent=1))
     if a.company:
-        ts = json.loads((ROOT / "targets.json").read_text(encoding="utf-8"))["targets"]
+        ts = sweep.load_targets(ROOT / "targets.json")
         hits = [t for t in ts if a.company.lower() in t["company"].lower()]
         if len(hits) != 1: sys.exit(f"--company matched {len(hits)} entries: {[t['company'] for t in hits]}")
         t = hits[0]
@@ -45,7 +45,7 @@ def main():
         t = json.loads(a.target); t.setdefault("ats", a.ats)
     fn = sweep.ADAPTERS.get(t["ats"])
     if not fn: sys.exit(f"no adapter named {t['ats']!r}. Loaded: {sorted(sweep.ADAPTERS)}")
-    g = json.loads((ROOT / "gates.json").read_text(encoding="utf-8"))
+    g = sweep.load_config(ROOT / "gates.json")
 
     t0 = time.time()
     rows = fn(t, smoke=a.smoke)

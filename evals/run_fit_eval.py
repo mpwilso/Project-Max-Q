@@ -11,7 +11,7 @@ job it would bury (labeled apply, scored skip) and a bad one it would push to th
 scored apply). A data file under evals/local/ writes its report there too, and that folder is
 gitignored, so real postings never reach the public repository.
 """
-import argparse, datetime as dt, json, sys
+import argparse, datetime as dt, json, re, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -98,6 +98,24 @@ def report(name, data_path, rows, m, usage=None, model=None):
     return "\n".join(L) + "\n"
 
 
+RUN_DATE = re.compile(r" Run \d{4}-\d{2}-\d{2}\.")
+
+
+def write_if_changed(path, text):
+    """Write the report only when its results changed. The run date alone is not a change: CI runs
+    this on every push, and rewriting a tracked report with a new date would dirty every checkout.
+    Returns True when the file was written."""
+    path = Path(path)
+    try:
+        old = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        old = None
+    if old is not None and RUN_DATE.sub("", old) == RUN_DATE.sub("", text):
+        return False
+    path.write_text(text, encoding="utf-8", newline="\n")
+    return True
+
+
 def main():
     ap = argparse.ArgumentParser(description="Measure a fit scorer against labeled postings.")
     ap.add_argument("--scorer", default="baseline", choices=["baseline", "claude", "claude-code", "replay"])
@@ -125,8 +143,8 @@ def main():
     out = Path(a.out) if a.out else out_dir / f"fit_{getattr(scorer, 'source', None) or scorer.name}.md"
     out.parent.mkdir(parents=True, exist_ok=True)
     title = f"{scorer.source} (replayed)" if getattr(scorer, "source", None) else scorer.name
-    out.write_text(report(title, a.data, rows, m, getattr(scorer, "usage", None), getattr(scorer, "model", None)),
-                   encoding="utf-8", newline="\n")
+    changed = write_if_changed(out, report(title, a.data, rows, m, getattr(scorer, "usage", None),
+                                           getattr(scorer, "model", None)))
     if a.record:
         rec_dir = ROOT / "evals" / ("local" if local else "recorded")
         rec_dir.mkdir(parents=True, exist_ok=True)
@@ -136,7 +154,7 @@ def main():
         print(f"recorded answers: {rec.relative_to(ROOT)}")
     print(f"\nagreement {pct(m['agreement'])} | apply precision {pct(m['apply_precision'])} | "
           f"apply recall {pct(m['apply_recall'])} | buried {m['buried']} | pushed {m['pushed']} | errors {m['errors']}")
-    print(f"report: {out.relative_to(ROOT)}")
+    print(f"report: {rel(out)}" + ("" if changed else " (results unchanged, file not rewritten)"))
 
 
 if __name__ == "__main__":

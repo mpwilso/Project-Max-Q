@@ -9,7 +9,8 @@ and every push is scanned first.
     python tools/privacy_scan.py --push       # scan everything reachable from any local ref (the pre-push hook)
 
 The patterns live in .privacy/config.json, which is gitignored: a committed list of what must stay
-private would publish it. A missing or unreadable config fails CLOSED (exit 2), never open.
+private would publish it. A missing or unreadable config fails CLOSED (exit 2), never open; a missing
+one prints how to create it, or how to turn the hooks off (git config --unset core.hooksPath).
 
 config.json:
     {"patterns": ["regex", ...],                     # case-insensitive
@@ -119,6 +120,15 @@ def main():
     mode.add_argument("--staged", action="store_true")
     mode.add_argument("--push", action="store_true")
     a = ap.parse_args()
+    if not CONFIG.exists():
+        # Still fail closed: a guard that passes when its blocklist is missing guards nothing. But say
+        # what to do, because a contributor who turned the hooks on has never seen this file.
+        print(f"privacy_scan: {CONFIG.relative_to(ROOT).as_posix()} not found, so this scan refuses to pass.\n"
+              "  It is the maintainer's guard against publishing personal data; its blocklist is gitignored.\n"
+              "  To use it, create that file with your own case-insensitive regexes, for example:\n"
+              "      {\"patterns\": [\"your full name\", \"you@example\\\\.com\"]}\n"
+              "  To commit without it, turn the repo hooks off: git config --unset core.hooksPath")
+        return 2
     try:
         pats, allow = load_config()
     except Exception as ex:

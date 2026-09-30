@@ -9,7 +9,8 @@ bullet is then checked against the facts of the claims it cites:
     titles    every role heading must be a title the candidate actually held
 
 A single failing line blocks the whole resume (exit code 1). The report names the line and the reason,
-so the fix is to change the wording or add a verified claim, never to argue with the check.
+so the fix is to change the wording or add a verified claim, never to argue with the check. A missing
+or unreadable input file exits 2 with a one-line error.
 
     python claimcheck.py examples/john_doe/resume.md
     python claimcheck.py examples/john_doe/resume_blocked.md      # shows what gets blocked
@@ -72,8 +73,19 @@ def main():
     ap.add_argument("resume")
     ap.add_argument("--claims", default=str(CLAIMS))
     a = ap.parse_args()
-    cfg = json.loads(Path(a.claims).read_text(encoding="utf-8"))
-    results = check(Path(a.resume).read_text(encoding="utf-8"), cfg)
+    try:
+        cfg = json.loads(Path(a.claims).read_text(encoding="utf-8-sig"))
+        resume = Path(a.resume).read_text(encoding="utf-8-sig")
+    except FileNotFoundError as e:
+        print(f"claimcheck: file not found: {e.filename}", file=sys.stderr)
+        return 2
+    except json.JSONDecodeError as e:
+        print(f"claimcheck: {a.claims}: invalid JSON at line {e.lineno}, column {e.colno}: {e.msg}", file=sys.stderr)
+        return 2
+    except (OSError, UnicodeDecodeError) as e:
+        print(f"claimcheck: cannot read input ({e})", file=sys.stderr)
+        return 2
+    results = check(resume, cfg)
     blocked = [r for r in results if r[2]]
     for n, line, reasons in results:
         mark = "BLOCK" if reasons else "ok   "

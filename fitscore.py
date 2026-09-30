@@ -13,10 +13,11 @@ still shown, and a person still decides. Three scorers share one interface:
 
     python fitscore.py rank                       # baseline ranking of the last sweep's passes
     python fitscore.py rank --scorer claude       # the same, scored by Claude (cached per posting)
+    python fitscore.py rank --scorer claude --profile me/profile.md --rubric me/rubric.md   # your own
 
 How well each scorer agrees with a person is measured by evals/run_fit_eval.py, not assumed.
 """
-import argparse, json, re, sys
+import argparse, hashlib, json, re, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -127,6 +128,10 @@ class ClaudeScorer:
             f"<profile>\n{Path(profile).read_text(encoding='utf-8')}\n</profile>\n\n"
             f"<rubric>\n{Path(rubric).read_text(encoding='utf-8')}\n</rubric>")
         self.usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0}
+        # Cached scores are keyed by posting; a profile or rubric other than the example also keys them
+        # by the prompt, so switching profiles never serves another profile's scores.
+        example = (Path(profile).resolve(), Path(rubric).resolve()) == (PROFILE.resolve(), RUBRIC.resolve())
+        self.cache_tag = "" if example else ":" + hashlib.sha256(self.system.encode("utf-8")).hexdigest()[:12]
 
     def score(self, p):
         r = self.client.beta.messages.create(
@@ -209,11 +214,13 @@ class ReplayScorer:
         return validate(a) if a.get("areas") else a
 
 
-def make_scorer(name, replay=None):
+def make_scorer(name, replay=None, profile=PROFILE, rubric=RUBRIC):
     if name == "baseline": return BaselineScorer()
-    if name == "claude": return ClaudeScorer()
-    if name == "claude-code": return ClaudeCodeScorer()
-    if name == "replay": return ReplayScorer(replay)
+    if name == "claude": return ClaudeScorer(profile=profile, rubric=rubric)
+    if name == "claude-code": return ClaudeCodeScorer(profile=profile, rubric=rubric)
+    if name == "replay":
+        if not replay: raise SystemExit("--scorer replay needs --replay <recorded answers file>")
+        return ReplayScorer(replay)
     raise SystemExit(f"unknown scorer {name!r}")
 
 
@@ -221,7 +228,7 @@ def rank(scorer):
     """Score every gate-passing and review posting in the last snapshot and print them best first.
     Nothing is dropped: a posting that could not be scored is listed at the end with the reason."""
     import sweep
-    g = json.loads((ROOT / "gates.json").read_text(encoding="utf-8"))
+    g = sweep.load_config(ROOT / "gates.json")
     snap = sweep.load_json(sweep.DATA / "latest.json", None)
     if not snap:
         sys.exit("no data/latest.json yet: run a sweep first (see Quick start)")
@@ -230,7 +237,7 @@ def rank(scorer):
     rows = [r for r in snap["rows"].values() if sweep.gate(r, g)[0] in ("PASS", "REVIEW")]
     scored, failed = [], []
     for r in rows:
-        ck = f"{r['key']}:{sweep.jd_hash(r.get('description'))}"
+        ck = f"{r['key']}:{sweep.jd_hash(r.get('description'))}{getattr(scorer, 'cache_tag', '')}"
         try:
             res = cache.get(ck) or scorer.score({**r, "id": r["key"]})
         except ValueError as e:
@@ -256,9 +263,18 @@ def main():
     rk = sub.add_parser("rank", help="rank the last sweep's passing postings by fit")
     rk.add_argument("--scorer", default="baseline", choices=["baseline", "claude", "claude-code", "replay"])
     rk.add_argument("--replay", help="recorded answers file for --scorer replay")
+    rk.add_argument("--profile", default=str(PROFILE),
+                    help="candidate profile the claude scorers read (default: the John Doe example)")
+    rk.add_argument("--rubric", default=str(RUBRIC),
+                    help="scoring rubric the claude scorers read (default: the John Doe example)")
     a = ap.parse_args()
     if a.cmd == "rank":
-        rank(make_scorer(a.scorer, a.replay))
+        if a.scorer == "replay" and not a.replay:
+            rk.error("--scorer replay needs --replay <recorded answers file>")
+        for flag, path in (("--replay", a.replay), ("--profile", a.profile), ("--rubric", a.rubric)):
+            if path and not Path(path).is_file():
+                rk.error(f"{flag}: file not found: {path}")
+        rank(make_scorer(a.scorer, a.replay, a.profile, a.rubric))
 
 
 if __name__ == "__main__":

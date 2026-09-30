@@ -524,7 +524,12 @@ ONSITE_PATTERNS = [
     r"(\d{1,3}\s*%[^.]{0,80}?(?:in[- ]office|in one of our offices|onsite|on-site|in the office))",
     r"((?:in[- ]office|onsite|on-site|in the office|in office)[^.]{0,60}?\d{1,2}\s*(?:\+)?\s*days?\s*(?:per|a|each)\s*week)",
     r"(\d{1,2}\s*(?:\+)?\s*days?\s*(?:per|a|each)\s*week[^.]{0,60}?(?:in[- ]office|onsite|on-site|in the office|in office))",
-    r"((?:expect|require)[a-z]{0,3}\s+[^.]{0,80}?(?:to be in|in one of our offices)[^.]{0,60})",
+    # "to be in" only when a workplace follows: in person, an office / hub / campus / HQ, a days-per-week
+    # cadence, or a "City, ST" place. A bare "to be in" also matched "to be intellectually curious",
+    # "to be in the range of $X" and "to be in the room", flagging remote postings as onsite.
+    r"((?:expect|require)[a-z]{0,3}\s+[^.]{0,80}?"
+    r"(?:to be in\b(?:[- ]person\b|[^.]{0,40}?\b(?:offices?|hub|campus|headquarters|hq|days?\s*(?:/|a|per|each)\s*week)\b"
+    r"|\s+[a-z .]{2,30},\s*[a-z]{2}\b)|in one of our offices)[^.]{0,60})",
 ]
 
 def onsite_terms(desc):
@@ -2138,7 +2143,7 @@ def conversion_read(row, g, ledger=None):
     if s["years_bar"] is None:
         out.append("no years bar stated")
     elif s["years_gap"] > 0:
-        out.append(f"years gap +{s['years_gap']:.0f} ({s['years_bar']}+ {s['years_bar_kind']} vs {held:g} held)")
+        out.append(f"years gap +{s['years_gap']:.1f} ({s['years_bar']}+ {s['years_bar_kind']} vs {held:g} held)")
     else:
         out.append(f"years bar {s['years_bar']}+ ({s['years_bar_kind']}) cleared")
     if s["level_up"]:
@@ -2459,6 +2464,37 @@ def load_json(p, default):
             return json.load(f)
     return json.loads(p.read_text(encoding="utf-8-sig"))
 
+def load_config(path):
+    """A hand-edited config file (gates.json, a targets file). A missing file or a JSON syntax error
+    stops the run with one line naming the file, line and column, exit code 2, instead of a traceback.
+    utf-8-sig for the same BOM reason as load_json."""
+    p = Path(path)
+    try:
+        return json.loads(p.read_text(encoding="utf-8-sig"))
+    except FileNotFoundError:
+        msg = f"{p}: file not found"
+    except json.JSONDecodeError as e:
+        msg = f"{p}: invalid JSON at line {e.lineno}, column {e.colno}: {e.msg}"
+    except (OSError, UnicodeDecodeError) as e:
+        msg = f"{p}: cannot read ({e})"
+    print(f"config error: {msg}", file=sys.stderr)
+    raise SystemExit(2)
+
+def resolve_targets(arg):
+    """--targets: a relative path is looked up from the current directory first, then the repo root,
+    so `--targets my_targets.json` works from anywhere and the default still finds the repo's file."""
+    p = Path(arg)
+    if p.is_absolute(): return p
+    here = Path.cwd() / p
+    return here if here.exists() else ROOT / p
+
+def load_targets(arg):
+    d = load_config(resolve_targets(arg))
+    if not isinstance(d, dict) or not isinstance(d.get("targets"), list):
+        print(f"config error: {resolve_targets(arg)}: expected an object with a \"targets\" list", file=sys.stderr)
+        raise SystemExit(2)
+    return d["targets"]
+
 def snapshot_dates():
     """Dates with a dated snapshot on disk, raw or gzipped, each counted once."""
     out = set()
@@ -2726,6 +2762,32 @@ def rescue_stamp_verdict(r, p, gates, lex):
     r["_rescue"] = st
     return "FAIL", [f"title out of lane: body scored {st['score']} (floor {floor}; body read {st['on']})"]
 
+# A full sweep spends most of its time in the detail and rescue fetches after the list reads, and
+# printed nothing there. FetchProgress is the heartbeat: at most one line per PROGRESS_EVERY_S, so a
+# short pass prints nothing and every other line of the output is unchanged.
+PROGRESS_EVERY_S = 30
+
+class FetchProgress:
+    def __init__(self, n_detail, n_rescue, every=None, clock=time.monotonic,
+                 out=lambda s: print(s, flush=True)):
+        self.total = {"detail": n_detail, "rescue": n_rescue}
+        self.done = {"detail": 0, "rescue": 0}
+        self.every = PROGRESS_EVERY_S if every is None else every
+        self.clock, self.out = clock, out
+        self.start = self.last = clock()
+        self.lock = __import__("threading").Lock()
+
+    def __call__(self, rescue):
+        with self.lock:
+            self.done["rescue" if rescue else "detail"] += 1
+            now = self.clock()
+            if now - self.last < self.every: return
+            self.last = now
+            parts = [f"{name} pass fetched {self.done[name]} of {self.total[name]}"
+                     for name in ("detail", "rescue") if self.total[name]]
+            secs = int(now - self.start)
+            self.out(f"  progress: {'; '.join(parts)} ({secs // 60}m {secs % 60:02d}s)")
+
 def gate_all(rows, prev, gates, fetch=True):
     """Gate every row, filling in the JD text a board withholds at list level.
 
@@ -2811,6 +2873,7 @@ def gate_all(rows, prev, gates, fetch=True):
         todo += picked
     rescued_now = set(rescue_pool) & set(todo)
 
+    tick = FetchProgress(len(todo) - len(rescued_now), len(rescued_now))
     def _detail(k):
         r = rows[k]
         try:
@@ -2818,6 +2881,8 @@ def gate_all(rows, prev, gates, fetch=True):
             return k, None
         except Exception as e:
             return k, e
+        finally:
+            tick(k in rescued_now)
     # Detail fetches run one lane per ATS in parallel (run_laned), sequential inside a lane, so
     # each vendor sees the same polite pace it always did.
     for k, err in run_laned(todo, lambda k: lane_key(rows[k]["_target"]), _detail):
@@ -3738,6 +3803,8 @@ def became(rows, verdicts, new_keys, prev_verdicts, labels):
                   if k not in newk and verdicts[k][0] in labels
                   and prev_verdicts.get(k) is not None and prev_verdicts[k] != verdicts[k][0])
 
+CONSOLE_PASS_MAX = 25   # new PASS reqs echoed to the terminal; the report file always has all of them
+
 def write_report(rows, verdicts, new_keys, closed, ledger, coverage, g, reports_dir=None, jds_dir=None,
                  changed_jds=None, digest=False, prev=None, reposts=None, health=None,
                  prev_verdicts=None):
@@ -3870,11 +3937,14 @@ def write_report(rows, verdicts, new_keys, closed, ledger, coverage, g, reports_
     # is the terminal view, where OSC 8 makes the title itself clickable.
     if passing:
         print(f"\nNew and gate-passing ({len(passing)}):")
-        for k in sorted(passing, key=lambda k: rows[k]["company"]):
+        # The console shows the first CONSOLE_PASS_MAX; the report file written above lists every one.
+        for k in sorted(passing, key=lambda k: rows[k]["company"])[:CONSOLE_PASS_MAX]:
             r = rows[k]
             risks = risk_signals(r, ledger, prev.get(k))
             print("  " + link(f"{r['company']} · {r['title']}", r["url"])
                   + (f"   [risk: {', '.join(risks)}]" if risks else ""))
+        if len(passing) > CONSOLE_PASS_MAX:
+            print(f"  ... {len(passing) - CONSOLE_PASS_MAX} more in the report ({out.name})")
 
 # ----------------------------------------------------------------------------- window query
 def show_comp(comp):
@@ -4049,7 +4119,8 @@ def yield_report(gates, min_rows_noisy=500):
     print(f"snapshot {snap.get('date')}: {len(per)} employers, {len(snap['rows'])} reqs\n")
     print("TOP YIELD (PASS / gate-relevant / rows)")
     for c, e in top: print(f"  {e['pass']:4} / {e['relevant']:4} / {e['rows']:6}  {c} [{e['ats']}]")
-    print(f"\nNOISY: {min_rows_noisy}+ reqs read, at most 2 gate-relevant (scope with a category filter or drop)")
+    if noisy:
+        print(f"\nNOISY: {min_rows_noisy}+ reqs read, at most 2 gate-relevant (scope with a category filter or drop)")
     for c, e in noisy: print(f"  {e['rows']:6} rows, {e['relevant']} relevant  {c} [{e['ats']}]")
     print(f"\nZERO YIELD TODAY: {len(zero)} employer(s) with no gate-relevant or scored req "
           f"({sum(e['rows'] for _, e in zero)} rows read for nothing). One day is not a trend; "
@@ -4058,6 +4129,11 @@ def yield_report(gates, min_rows_noisy=500):
     if len(zero) > 60: print(f"  ... and {len(zero) - 60} more")
 
 # ----------------------------------------------------------------------------- selftest
+def fmt_verdict(v):
+    """('FAIL', ['a', 'b']) -> 'FAIL: a; b'; a verdict with no reasons is just its label."""
+    label, reasons = v
+    return f"{label}: {'; '.join(reasons)}" if reasons else label
+
 def selftest(g):
     fake = [norm("TestCo", "greenhouse", 1, "Technical Program Manager, Finance Systems", "Remote, United States",
                  "https://x/1", TODAY.isoformat(), "Own ERP adoption programs. 5+ years of program management. Many candidates do not meet every requirement."),
@@ -4066,7 +4142,7 @@ def selftest(g):
             norm("TestCo", "greenhouse", 4, "Senior Program Manager, Business Systems", "Chicago, IL", "https://x/4", None,
                  "10+ years in business systems delivery; people management of 6 direct reports."),
             norm("Jobgether", "greenhouse", 5, "Product Manager", "Remote", "https://x/5", None, "")]
-    for r in fake: print(f"{r['title'][:45]:45} -> {gate(r, g)}")
+    for r in fake: print(f"{r['title'][:45]:45} -> {fmt_verdict(gate(r, g))}")
     rows = {r["key"]: r for r in fake}; verd = {k: gate(r, g) for k, r in rows.items()}
     # Synthetic data never touches reports/ or data/jds/: a selftest run must not be able to
     # overwrite a live sweep report or a real JD file.
@@ -4080,7 +4156,8 @@ def selftest(g):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--targets", default="targets.json",
-                    help="employer list to read (default targets.json); point it at a smaller file for a quick run")
+                    help="employer list to read (default targets.json); point it at a smaller file for a quick run. "
+                         "A relative path is read from the current directory first, then the repo root")
     ap.add_argument("--only", help="read one employer live and print a summary; stored state is not changed")
     ap.add_argument("--merge", help="read one employer live and MERGE into the snapshot; "
                                     "other employers' rows and first_seen dates are left untouched")
@@ -4111,7 +4188,7 @@ if __name__ == "__main__":
     ap.add_argument("--prerank-check", action="store_true",
                     help="recompute the pre-rank hint's rank correlation against scored.json, then exit")
     a = ap.parse_args()
-    g = json.loads((ROOT / "gates.json").read_text(encoding="utf-8"))
+    g = load_config(ROOT / "gates.json")
     if a.set_score: cmd_set_score(a.set_score, g); sys.exit()
     if a.show_cadence:
         rl = load_json(READLOG, {})
@@ -4121,7 +4198,7 @@ if __name__ == "__main__":
         print(f"snapshot: {snap.get('date','none')} ({fmt_age(hours_since(snap.get('ts')))}), "
               f"{snapshot_count()} snapshot(s) on disk, "
               f"first_seen is {'PRIMARY' if diff_is_meaningful() else 'NOT yet a signal'}")
-        for t in json.loads((ROOT / a.targets).read_text(encoding="utf-8"))["targets"]:
+        for t in load_targets(a.targets):
             live, why = should_read_live(t, None, rl, a.fresh)
             print(f"  {t['company']:34} tier {(t.get('tier') or 'C'):2}  {'LIVE ' if live else 'CACHE'}  {why}")
         sys.exit()
@@ -4133,6 +4210,6 @@ if __name__ == "__main__":
     if requests is None: sys.exit("pip install requests")
     # Live by default: a requested sweep is a fresh read. Cache is opt-in.
     fresh = a.fresh or a.resume or not a.cached
-    run(json.loads((ROOT / a.targets).read_text(encoding="utf-8"))["targets"], g,
+    run(load_targets(a.targets), g,
         only=a.only, smoke=a.smoke, merge=a.merge, digest=a.digest, force=a.force or a.resume, fresh=fresh,
         resume=a.resume, full=a.full)
