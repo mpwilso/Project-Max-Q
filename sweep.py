@@ -16,6 +16,7 @@ data/jds/<date>/. Scoring is out of scope; scores are recorded back into data/sc
     python sweep.py --report-only        # rebuild the report from data/latest.json, no network
     python sweep.py --window 7d          # gate-relevant reqs inside a window (--company, --floor)
     python sweep.py --set-score KEY=80:Apply[:built][:conv=HIGH]
+    python sweep.py --set-score-file scores.jsonl   # a batch of scores, one JSON object per line
     python sweep.py --yield              # which employers earn their read
     python sweep.py --prerank-check      # validate the lane pre-rank against recorded scores
     python sweep.py --selftest           # gates and report on synthetic data, no network
@@ -1702,6 +1703,13 @@ _COMPANY_HISTORY_HEAD = re.compile(r"(?:\bfor (?:over|more than|nearly|almost|th
 _TEAM_AVERAGE_HEAD = re.compile(r"\b(?:teams?|engineers|people|staff|consultants|employees)\s+"
                                 r"(?:average|averages|averaging|with an average of)\s+$")
 
+# Someone else's career, not a bar: "before founding the company, she spent 18 years at <employer>" in
+# an About section describes a founder. Read as a bar it would stamp REACH and two Conversion drags on
+# a req whose JD states no years line at all. "You" as the subject ("you have spent 6 years at a SaaS
+# company") is still a requirement.
+_THIRD_PERSON_SPENT_HEAD = re.compile(r"^(?!.*\byou(?:'ve|['’]ve)?\b).*\bspent\s+"
+                                      r"(?:over |more than |nearly |almost )?$", re.I)
+
 # "in business" is there for the company-age idiom ("40 years in business"), but it also matches
 # the FIELD NAME in "10+ years of progressive experience in Business Systems Analysis", which would
 # make a real bar read as no bar at all. Keep the bar when "in business" is heading a field name.
@@ -1784,6 +1792,8 @@ def _bar_figures(desc, g):
         if _COMPANY_HISTORY_HEAD.search(desc[max(0, m.start() - 24): m.start()]) \
                 and "experience" not in _same_sentence_context(desc, m, before=0): continue
         if _TEAM_AVERAGE_HEAD.search(desc[max(0, m.start() - 40): m.start()]): continue
+        if _THIRD_PERSON_SPENT_HEAD.search(desc[max(0, m.start() - 30): m.start()]) \
+                and re.match(r"\s+at\s", desc[m.end(): m.end() + 5]): continue
         # "6–10+ years", and the legal style "five (5) to seven (7) years"
         lo = re.search(r"(\d{1,2})\)?\s*(?:-|–|—|to)\s*(?:[a-z]+\s*\()?$", desc[max(0, m.start() - 16): m.start()])
         if lo and int(lo.group(1)) < n: n = int(lo.group(1))          # "6–10+ years": the low end
@@ -2063,6 +2073,11 @@ def risk_signals(row, ledger, prev_row=None, repost_of=None):
 # never folded into it. Every signal is stated so the reader can see which one is the drag. Held
 # years come from gates.json candidate_years_total.
 CONTACTS = DATA / "contacts.json"
+# A section HEADING, not the bare word: "master's degree ... preferred" mid-sentence can sit right
+# above a real bar. A JD whose only years figure sits under "Preferred Qualifications", with none in
+# its required block, states no required bar, and charging the read a years gap for it is wrong.
+_PREFERRED_HEADING = re.compile(r"preferred (?:qualifications|skills|experience|requirements)|preferred:"
+                                r"|nice[- ]to[- ]haves?|bonus points|additional qualifications")
 
 def stated_years_bar(desc, g):
     """The years bar that decides the knockout: the smallest figure inside a REQUIRED /
@@ -2075,7 +2090,8 @@ def stated_years_bar(desc, g):
         ctx = desc[max(0, m.start() - 400): m.start()]
         cut = max(ctx.rfind("preferred"), ctx.rfind("nice to have"), ctx.rfind("bonus"), ctx.rfind("additional qualifications"))
         head = max(ctx.rfind("required"), ctx.rfind("minimum"), ctx.rfind("basic qualifications"), ctx.rfind("must have"))
-        anywhere.append(n)
+        heads = [h.end() for h in _PREFERRED_HEADING.finditer(ctx)]
+        if not (heads and heads[-1] > head): anywhere.append(n)
         if head > cut:
             req.append(n)
             # Microsoft-style degree tiers: "Bachelor's AND 6+ ... OR Master's AND 4+ ... OR
@@ -2086,7 +2102,7 @@ def stated_years_bar(desc, g):
     if bach: return min(bach), "required, Bachelor's tier"
     if req: return min(req), "required"
     if anywhere: return max(anywhere), "stated"
-    return None, None
+    return None, None                        # nothing, or only bars under a Preferred heading
 
 def conversion_signals(row, g, ledger=None, as_of=None, contacts=None):
     """The Conversion read as data. conversion_read() formats THIS and nothing else, so the
@@ -2378,12 +2394,65 @@ def parse_set_score(arg):
         raise ValueError(f"the built flag is inside the verdict text ({verdict!r}): write it as :built")
     return key, score, verdict or None, built, conversion
 
-def cmd_set_score(entries, g):
-    """--set-score, one or more entries. Every entry is parsed before any is written, so one
-    malformed entry writes nothing. With a single-valued flag, only the last of several --set-score
-    flags was stored and the rest vanished without a word. Exits with a message on a rejected run."""
+SCORE_FILE_FIELDS = ("key", "score", "verdict", "conv", "built")
+
+def parse_score_file(path):
+    """--set-score-file: one JSON object per line, {"key", "score", "verdict", "conv"?, "built"?}, into the
+    same (key, score, verdict, built, conversion) tuples parse_set_score returns.
+
+    A batch of long verdicts does not survive the shell: an apostrophe, a quote or a $ in a verdict breaks
+    the heredoc or the command line that carries it, and a long batch runs into the Windows command-line
+    limit. A file has no quoting layer at all, and JSON fields need no suffix parsing."""
+    p = Path(path)
+    try:
+        text = p.read_text(encoding="utf-8-sig")
+    except OSError as ex:
+        raise ValueError(f"{path}: {ex.strerror or ex}")
+    out = []
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip(): continue
+        where = f"{p.name} line {n}"
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError as ex:
+            raise ValueError(f"{where}: not a JSON object ({ex.msg}); one object per line")
+        if not isinstance(r, dict):
+            raise ValueError(f"{where}: not a JSON object; one object per line")
+        extra = sorted(set(r) - set(SCORE_FILE_FIELDS))
+        if extra:
+            raise ValueError(f"{where}: unknown field(s) {', '.join(extra)}; fields are {', '.join(SCORE_FILE_FIELDS)}")
+        key = r.get("key")
+        if not isinstance(key, str) or not key.strip():
+            raise ValueError(f"{where}: no key")
+        score = r.get("score")
+        if isinstance(score, bool) or not isinstance(score, int):
+            raise ValueError(f"{where}: score {score!r} is not a whole number")
+        if not 0 <= score <= 100:
+            raise ValueError(f"{where}: score {score} is outside 0 to 100")
+        verdict = r.get("verdict")
+        if verdict is not None and not isinstance(verdict, str):
+            raise ValueError(f"{where}: verdict is not text")
+        conv = r.get("conv")
+        if conv is not None:
+            conv = str(conv).strip().upper()
+            if conv not in CONVERSION_LABELS:
+                raise ValueError(f"{where}: conv {r.get('conv')!r} is not one of {'|'.join(CONVERSION_LABELS)}")
+        built = r.get("built")
+        if built is not None and not isinstance(built, bool):
+            raise ValueError(f"{where}: built must be true or false")
+        out.append((key.strip(), score, (verdict or "").strip() or None, built, conv))
+    if not out:
+        raise ValueError(f"{p.name}: no entries")
+    return out
+
+def cmd_set_score(entries, g, files=()):
+    """--set-score and --set-score-file, one or more entries. Every entry is parsed before any is
+    written, so one malformed entry writes nothing. With a single-valued flag, only the last of several
+    --set-score flags was stored and the rest vanished without a word. Exits with a message on a
+    rejected run."""
     try:
         parsed = [parse_set_score(x) for x in entries]
+        for f in files: parsed += parse_score_file(f)
     except ValueError as ex:
         sys.exit(f"--set-score REJECTED, nothing written: {ex}")
     keys = [p[0] for p in parsed]
@@ -3214,6 +3283,7 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
                      "merge_authoritative": authoritative})
         write_json_atomic(DATA / "latest.json", snap)
         write_json_atomic(DATA / "seen.json", seen_ledger, indent=0)
+        stamp_eligible({k: v for k, v in verdicts_all.items() if k in rows})
         write_json_atomic(READLOG, readlog, indent=1)
         # Prove, do not assert: every other employer's first_seen must be byte-identical.
         # A recovered scored req is in the ledger but not in prev; classify it by its merged row.
@@ -3366,6 +3436,7 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
     # the recovery is --report-only.
     write_json_atomic(DATA / "seen.json", seen_ledger, indent=0)
     write_json_atomic(DATA / "latest.json", snap)
+    stamp_eligible(verdicts)
     for f in ckdir.glob("*.json"): f.unlink()
     try:
         write_dated_snapshot()
@@ -3738,6 +3809,9 @@ def report_only(gates, digest=False):
     before = snap.get("verdicts", {})
     moved = sum(1 for k in verdicts if before.get(k) != verdicts[k][0])
     print(f"re-gated {len(rows)} rows against current gates.json: {moved} verdict(s) changed")
+    # A gate edit's blast radius is owed scores, not only a read: stamp it so --window lists it today.
+    n = stamp_eligible(verdicts)
+    if n: print(f"{n} req(s) became eligible under the current gates.json; --window lists them as FREED today")
     ledger = load_json(DATA / "seen.json", {})
     cov = [tuple(c) for c in snap.get("coverage", [])]
     if not cov:
@@ -3970,6 +4044,58 @@ def parse_window(s):
     n = int(m.group(1))
     return n if m.group(2) == "h" else n * 24
 
+# The eligibility ledger. --window ages a req by first_seen or its board date, so a req that a gate
+# edit (or a later detail read) freed after it was first seen was never in any window: the report
+# announced it once as newly eligible, and a same-day re-run overwrote that report. A gate change can
+# free thousands of reqs at once this way, and none of them would ever be owed a score.
+# data/eligible.json keeps key -> the first day the req was PASS or REVIEW; --window lets a freed req
+# in on that day while its posting is still young.
+ELIGIBLE_LABELS = ("PASS", "REVIEW")
+FREED_MAX_AGE_DAYS = 30      # a freed req older than this is pipeline, not a lead (gates.json freed_max_age_days)
+
+def stamp_eligible(verdicts):
+    """Stamp TODAY on every PASS/REVIEW key the eligibility ledger has not seen. Earliest date wins, so
+    a req that drops out and comes back keeps its first day. Returns the number stamped."""
+    p = DATA / "eligible.json"
+    led = load_json(p, {})
+    if not led:
+        # Never seed from today's verdicts: every open PASS row would read as freed today.
+        print("(data/eligible.json missing: run `python sweep.py --backfill-eligible` once; "
+              "--window cannot see gate-freed reqs until it exists)")
+        return 0
+    today = TODAY.isoformat(); n = 0
+    for k, v in verdicts.items():
+        label = v[0] if isinstance(v, (tuple, list)) else v
+        if label in ELIGIBLE_LABELS and k not in led:
+            led[k] = today; n += 1
+    if n: write_json_atomic(p, led, indent=0)
+    return n
+
+def backfill_eligible():
+    """Build data/eligible.json from the dated snapshots: each key's first snapshot as PASS/REVIEW.
+    Merges into an existing ledger keeping the earlier date. Read-only on everything else."""
+    p = DATA / "eligible.json"
+    led = load_json(p, {})
+    dates = snapshot_dates()
+    for d in dates:
+        s = load_json(snapshot_path(d), {})
+        for k, v in (s.get("verdicts") or {}).items():
+            if v in ELIGIBLE_LABELS and (k not in led or d < led[k]): led[k] = d
+        del s
+    latest = load_json(DATA / "latest.json", {})
+    for k, v in (latest.get("verdicts") or {}).items():
+        if v in ELIGIBLE_LABELS and k not in led: led[k] = latest.get("date") or TODAY.isoformat()
+    write_json_atomic(p, led, indent=0)
+    seen = load_json(DATA / "seen.json", {})
+    freed = sum(1 for k, d in led.items() if seen.get(k) and d > seen[k])
+    print(f"eligible.json: {len(led)} key(s) from {len(dates)} snapshot(s); {freed} became eligible after "
+          f"they were first seen (a gate change or a later detail read freed them)")
+
+def freed_on(k, ledger, elig):
+    """The day a req became eligible, when that is LATER than the day it was first seen; else None."""
+    e, s = elig.get(k), ledger.get(k)
+    return e if (e and s and e > s) else None
+
 def window_query(gates, window="48h", company=None, floor=None, show_all=False):
     """The candidate set behind the shortlist: everything gate-passing inside the window.
 
@@ -4002,6 +4128,9 @@ def window_query(gates, window="48h", company=None, floor=None, show_all=False):
     for k, r in rows.items():
         d = ledger.get(k)
         if d and (r["company"] not in first_cov or d < first_cov[r["company"]]): first_cov[r["company"]] = d
+    elig = load_json(DATA / "eligible.json", {})
+    freed_max = int(gates.get("freed_max_age_days", FREED_MAX_AGE_DAYS))
+    freed_in = {}                                   # key -> day it became eligible, for reqs in by that alone
     print()
     hits, ageless, stamped = [], [], 0
     for k, r in rows.items():
@@ -4020,10 +4149,22 @@ def window_query(gates, window="48h", company=None, floor=None, show_all=False):
             if older is not None: age_seen = max(age_seen or 0, older)
         age = age_seen if (diff_is_meaningful() and not is_stamp) else age_post
         if is_stamp: stamped += 1
-        if age is None:
+        # A req a gate edit (or a later detail read) freed is new to the reader on the day it was
+        # freed. The eligibility ledger is written by the sweep and --report-only; a PASS row it has
+        # not seen yet was freed by an edit since then, so it counts as freed today.
+        fd = freed_on(k, ledger, elig) if elig else None
+        if elig and fd is None and k not in elig and v in ELIGIBLE_LABELS and ledger.get(k) \
+                and ledger[k] < TODAY.isoformat():
+            fd = TODAY.isoformat()
+        fd_age = days_since(fd) if fd else None
+        young = age_post if age_post is not None else age_seen
+        freed = (fd_age is not None and fd_age <= cutoff_days and young is not None and young <= freed_max)
+        if age is None and not freed:
             ageless.append((k, r, v, why))       # unknown age, never silently "fresh"
             continue
-        if age > cutoff_days and not show_all: continue
+        if (age is None or age > cutoff_days) and not show_all:
+            if not freed: continue
+            freed_in[k] = fd
         hits.append((k, r, v, why, age_post, age_seen))
     if stamped:
         print(f"({stamped} gate-relevant req(s) carry a first-coverage stamp; board date decided their age)\n")
@@ -4049,6 +4190,9 @@ def window_query(gates, window="48h", company=None, floor=None, show_all=False):
     pre = {k: prerank(r, gates, jd_text_for(k, jds)) for k, r, *_ in hits} if gates.get("prerank") else {}
     if pre:
         print("pre = lane hint for unscored reqs (checked against past scores); a sort order, not a verdict.\n")
+    if freed_in:
+        print(f"({len(freed_in)} req(s) are here because they became eligible inside the window, by a gate change "
+              f"or a later detail read, while posted {freed_max} days ago or less. They are new; marked FREED.)\n")
     print(f"{len(hits)} candidate(s) in window:\n")
     for k, r, v, why, age_post, age_seen in sorted(
             hits, key=lambda x: (x[4] if x[4] is not None else 999,
@@ -4059,6 +4203,9 @@ def window_query(gates, window="48h", company=None, floor=None, show_all=False):
         print(link(f"{r['company']} · {r['title']}", r["url"]))
         print(f"    verdict={v}  loc={(r['location'] or 'not stated')[:110]}  comp={show_comp(r.get('comp'))}")
         print(f"    dates: {freshness_line(r, k, ledger, gates)}")
+        if k in freed_in:
+            print(f"    FREED {freed_in[k]}: eligible since then, first seen {ledger.get(k)}; in this window "
+                  "for that, not for its posting date")
         print(f"    conversion: {conv_label} · " + " · ".join(conv))
         print(f"    key={k}")
         if r.get("_carried_since"):
@@ -4181,15 +4328,22 @@ if __name__ == "__main__":
                     help="record a score (and the conversion read) in data/scored.json so standing targets are not "
                          "re-litigated. The verdict may contain colons; an empty verdict keeps the stored one; "
                          "one malformed entry rejects the whole run and nothing is written. Repeat the flag to record several")
+    ap.add_argument("--set-score-file", metavar="FILE.jsonl", action="append",
+                    help="record scores from a file, one JSON object per line: {\"key\", \"score\", \"verdict\", "
+                         "\"conv\", \"built\"} (conv and built optional). The way to record a batch: no verdict "
+                         "goes through shell quoting. Repeatable, combines with --set-score, all or nothing")
     ap.add_argument("--show-cadence", action="store_true", help="print per-employer tier and cache age, then exit")
     ap.add_argument("--window", help="list gate-passing reqs inside a window (24h/48h/7d/14d) for the shortlist")
     ap.add_argument("--company", help="restrict --window to one employer (substring)")
     ap.add_argument("--floor", type=int, help="score floor, for the --window note only; filters nothing here")
+    ap.add_argument("--backfill-eligible", action="store_true",
+                    help="build data/eligible.json (first day each req was PASS/REVIEW) from the dated snapshots")
     ap.add_argument("--prerank-check", action="store_true",
                     help="recompute the pre-rank hint's rank correlation against scored.json, then exit")
     a = ap.parse_args()
     g = load_config(ROOT / "gates.json")
-    if a.set_score: cmd_set_score(a.set_score, g); sys.exit()
+    if a.set_score or a.set_score_file:
+        cmd_set_score(a.set_score or [], g, files=a.set_score_file or []); sys.exit()
     if a.show_cadence:
         rl = load_json(READLOG, {})
         snap = load_json(DATA / "latest.json", {})
@@ -4203,6 +4357,7 @@ if __name__ == "__main__":
             print(f"  {t['company']:34} tier {(t.get('tier') or 'C'):2}  {'LIVE ' if live else 'CACHE'}  {why}")
         sys.exit()
     if a.prerank_check: prerank_check(g); sys.exit()
+    if a.backfill_eligible: backfill_eligible(); sys.exit()
     if a.window: window_query(g, a.window, a.company, a.floor); sys.exit()
     if a.yield_report: yield_report(g); sys.exit()
     if a.selftest: selftest(g); sys.exit()

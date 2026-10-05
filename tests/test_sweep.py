@@ -687,6 +687,18 @@ class Tenure(unittest.TestCase):
              "Preferred qualifications: 12+ years of experience.")
         self.assertEqual(sweep.stated_years_bar(d.lower(), G)[0], 4)
 
+    def test_a_bar_only_under_a_preferred_heading_is_no_bar(self):
+        # The only years figure sits under "Preferred Qualifications" and the basic block names none.
+        # The Conversion read charged it as a required gap (two drags) on a req with no required bar.
+        d = ("Preferred Qualifications: 10+ years of project/program management experience. "
+             "Basic Qualifications: BA/BS degree. Experience managing large programs.")
+        self.assertEqual(sweep.stated_years_bar(d.lower(), G), (None, None))
+        s = sweep.conversion_signals(dict(row(desc=d), key="k:A:1"), G, contacts={})
+        self.assertIsNone(s["years_gap"])
+        # "preferred" inside a sentence is not a heading: the bar after it stays.
+        d = "Master's degree in a relevant discipline preferred. 8+ years of product management experience."
+        self.assertEqual(sweep.stated_years_bar(d.lower(), G), (8, "stated"))
+
     def test_qualifier_between_the_number_and_years_still_reads_as_a_bar(self):
         # "12+ overall years of program management experience": a word between the figure and
         # "years" must not hide the bar, or a 12+ req reads as having no bar at all.
@@ -746,6 +758,17 @@ class Tenure(unittest.TestCase):
         self.assertEqual(sweep.experience_years("consultants with an average of 11 years in the field.", G), [])
         # A real bar after a team noun still counts.
         self.assertEqual(sweep.experience_years("the team needs 8+ years of experience in product.", G), [8])
+
+    def test_founder_bio_spent_n_years_at_is_not_a_bar(self):
+        # A founder's bio in the About section read as an 18+ bar and put REACH and two Conversion
+        # drags on every req from that employer, none of which stated a years line.
+        d = ("Before founding Globex, our CEO spent 18 years at Initech, where she most recently led research. "
+             "What you'll bring: customer obsession and technical aptitude.")
+        self.assertEqual(sweep.experience_years(d, G), [])
+        self.assertEqual(sweep.experience_years("he had spent over 12 years at umbrella corp.", G), [])
+        # The candidate as the subject is still a bar.
+        self.assertEqual(sweep.experience_years("you have spent 6 years at a saas company in product.", G), [6])
+        self.assertEqual(sweep.experience_years("you've spent 7+ years at enterprise software companies.", G), [7])
 
 
 class TextAndComp(unittest.TestCase):
@@ -1423,6 +1446,51 @@ class SetScore(unittest.TestCase):
         self.assertIn(f"conv={other} but the sweep computes {computed}", out)
         _, out = self._cli(["k:A:1=82:Apply"], rows={"k:A:1": r})
         self.assertIn(f"Add :conv={computed}", out)
+
+    def _file_cli(self, lines, entries=()):
+        """cmd_set_score with a --set-score-file holding `lines` (dicts are JSON-encoded, str kept as is)."""
+        import contextlib, io
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "scores.jsonl"
+            f.write_text("\n".join(x if isinstance(x, str) else json.dumps(x) for x in lines), encoding="utf-8")
+            saved = sweep.SCORED, sweep.DATA
+            sweep.DATA, sweep.SCORED = Path(d), Path(d) / "scored.json"
+            (Path(d) / "latest.json").write_text(json.dumps({"rows": {}}), encoding="utf-8")
+            (Path(d) / "seen.json").write_text("{}", encoding="utf-8")
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    sweep.cmd_set_score(list(entries), G, files=[f])
+                return sweep.load_scored()
+            finally:
+                self.wrote = sweep.SCORED.exists()
+                sweep.SCORED, sweep.DATA = saved
+
+    def test_score_file_carries_verdicts_the_shell_could_not(self):
+        # Apostrophes, quotes and $ in a verdict break the shell quoting that carries a batch of
+        # --set-score flags. A file has no quoting layer and no suffix parsing.
+        v = "Apply (the candidate's lane: \"finance systems\", $150-190K; ratio 8:1; conv= stays text)"
+        d = self._file_cli([{"key": "k:A:1", "score": 84, "verdict": v, "conv": "medium", "built": True}, "",
+                            {"key": "k:A:2", "score": 40, "verdict": "Skip (contract)"}],
+                           entries=["k:A:3=70:Apply"])
+        self.assertEqual(d["k:A:1"]["verdict"], v)
+        self.assertEqual((d["k:A:1"]["conversion"], d["k:A:1"]["built"]), ("MEDIUM", True))
+        self.assertEqual({k: e["score"] for k, e in d.items()}, {"k:A:1": 84, "k:A:2": 40, "k:A:3": 70})
+
+    def test_score_file_rejects_a_bad_line_and_writes_nothing(self):
+        good = {"key": "k:A:1", "score": 80, "verdict": "Apply"}
+        for bad in ('{"key": "k:A:2", "score": "80", "verdict": "Apply"}',     # score as text
+                    '{"key": "k:A:2", "score": 80, "verdict": "Apply", "conv": "OK"}',
+                    '{"key": "k:A:2", "score": 80, "verdict": "Apply", "built": "yes"}',
+                    '{"key": "k:A:2", "score": 80, "verdit": "Apply"}',          # misspelled field
+                    '{"key": "", "score": 80, "verdict": "Apply"}',
+                    '{"key": "k:A:2", "score": 180, "verdict": "Apply"}',
+                    '["k:A:2", 80]', "k:A:2=80:Apply", json.dumps(good)):        # last: key twice
+            with self.subTest(bad=bad):
+                with self.assertRaises(SystemExit):
+                    self._file_cli([good, bad])
+                self.assertFalse(self.wrote)                                    # not even the good line
+        with self.assertRaises(SystemExit):                                     # an empty file
+            self._file_cli(["", "  "])
 
 
 class StateCodeMarkets(unittest.TestCase):

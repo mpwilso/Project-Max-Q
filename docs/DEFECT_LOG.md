@@ -129,3 +129,33 @@ Each entry: what it looked like, why it happened, what changed, and where it is 
 - **Fix:** a failed optional read is a FAIL for that one posting, with the reason stated. The failure
   is recorded on the row and the read is retried after seven days, and the run summary counts both.
 - **Pinned by:** `tests/test_discovery_fixes.py::RescueFetchFailure`.
+
+### 16. Postings a gate edit freed were never owed a score
+- **Symptom:** a posting first seen as out of lane, then passing a few days later after the lane
+  learned its wording, never appeared in any `--window` and was never scored. It turned up again weeks
+  later as a repost, and scored well.
+- **Cause:** `--window` aged a posting by the day the sweep first saw it or by its board date. On the day
+  a gate edit freed it, it was already older than any short window. The report named it once as newly
+  eligible, and a same-day re-run overwrote that report.
+- **Fix:** `data/eligible.json` records the first day each posting was PASS or REVIEW; the sweep,
+  `--merge` and `--report-only` stamp it, and `--backfill-eligible` builds it from the dated snapshots.
+  `--window` lets a posting in on the day it was freed while it was posted 30 days ago or less, and
+  marks it FREED.
+- **Pinned by:** `tests/test_freed_reqs.py`.
+
+### 17. A founder's career read as the job's years bar
+- **Symptom:** every posting from one employer carried an 18+ years REACH label and two Conversion
+  drags, though none of them stated a years requirement.
+- **Cause:** the About section said a founder "spent 18 years at" a previous employer, and the years
+  pattern read it as a bar.
+- **Fix:** a third-person "spent N years at" is skipped. "You have spent N years at" is still a bar.
+- **Pinned by:** `tests/test_sweep.py::Tenure::test_founder_bio_spent_n_years_at_is_not_a_bar`.
+
+### 18. A preferred-only years figure charged as a required gap
+- **Symptom:** a posting whose only years figure, 10+, sat under "Preferred Qualifications" got a
+  years-gap drag of two in the Conversion read, and a LOW label.
+- **Cause:** with no figure in the required block, the Conversion read fell back to the largest figure
+  anywhere in the description, preferred section included.
+- **Fix:** the fallback skips a figure that sits under a Preferred section heading. The bare word
+  "preferred" mid-sentence ("master's degree preferred") is not a heading, so a bar after it still reads.
+- **Pinned by:** `tests/test_sweep.py::Tenure::test_a_bar_only_under_a_preferred_heading_is_no_bar`.
