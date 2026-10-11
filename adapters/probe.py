@@ -28,7 +28,10 @@ def main():
                                           "argument at spaces)")
     ap.add_argument("--detail", type=int, default=3, help="detail-fetch this many gate-relevant rows")
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--allow-browser-impersonation", action="store_true",
+                    help="off by default; same opt-in as sweep.py (the Meta reader needs it)")
     a = ap.parse_args()
+    if a.allow_browser_impersonation: sweep.ALLOW_BROWSER_IMPERSONATION = True
 
     if sweep.PLUGIN_ERRORS:
         print("PLUGIN IMPORT ERRORS:", json.dumps(sweep.PLUGIN_ERRORS, indent=1))
@@ -48,7 +51,11 @@ def main():
     g = sweep.load_config(ROOT / "gates.json")
 
     t0 = time.time()
-    rows = fn(t, smoke=a.smoke)
+    try:
+        rows = fn(t, smoke=a.smoke)
+    except sweep.OptInRequired as e:
+        print(f"{t['company']} [{t['ats']}]  {sweep.skip_status(e)}")
+        return
     secs = time.time() - t0
     keys = [r["key"] for r in rows]
     dup = len(keys) - len(set(keys))

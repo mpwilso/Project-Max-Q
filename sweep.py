@@ -37,8 +37,13 @@ Design principles:
     (--only) never writes state.
   - Adapters share one HTTP retry policy and are polite: one lane per host, a fixed delay per call.
 
+Every request names the tool in its User-Agent (UA below). Browser impersonation is off by default:
+the Meta reader (it must look like Chrome to be answered) and Workday calls through curl_cffi run only
+with --allow-browser-impersonation or MAXQ_ALLOW_BROWSER_IMPERSONATION=1. Without it, Meta is
+SKIPPED with that reason in coverage.
+
 Dependencies: requests. Optional: curl_cffi (pip install curl_cffi) if a Workday tenant refuses
-plain requests; set USE_CURL_CFFI=1 to route Workday calls through it.
+plain requests; with the opt-in above, USE_CURL_CFFI=1 routes Workday calls through it.
 """
 import argparse, functools, json, os, re, sys, time, html, tempfile, hashlib, datetime as dt
 from pathlib import Path
@@ -116,8 +121,23 @@ def jd_hash(desc):
     """Stable hash of JD text, so a quietly rewritten req stops looking unchanged."""
     return hashlib.sha256(re.sub(r"\s+", " ", (desc or "")).strip().encode("utf-8")).hexdigest()[:16]
 
-UA = "maxq-sweep/0.1 (job-search research tool; polite; 150ms delay)"
+VERSION = "0.1"
+UA = f"maxq-sweep/{VERSION} (+https://github.com/mpwilso/Project-Max-Q)"
 DELAY = 0.15
+# Browser impersonation is opt-in (--allow-browser-impersonation, or this env var set to 1). Off, the
+# Meta reader skips with OptInRequired and USE_CURL_CFFI is ignored, so every request carries UA.
+ALLOW_BROWSER_IMPERSONATION = False
+OPT_IN_HINT = "opt in with --allow-browser-impersonation or MAXQ_ALLOW_BROWSER_IMPERSONATION=1"
+
+def browser_impersonation_allowed():
+    return ALLOW_BROWSER_IMPERSONATION or os.environ.get("MAXQ_ALLOW_BROWSER_IMPERSONATION", "").strip() == "1"
+
+class OptInRequired(RuntimeError):
+    """A board this run chose not to read: it needs browser impersonation and the run did not opt in.
+    Coverage shows it as SKIPPED, never as an ERROR, and it is not retried."""
+
+def skip_status(e):
+    return f"SKIPPED: {e}"
 TODAY = dt.date.today()
 # Amazon is SCOPED, not enumerated: its board is too large to walk, and broad title queries return
 # thousands of AWS infrastructure, logistics, devices and retail reqs that pass the title gate and
@@ -169,7 +189,7 @@ def _request(method, url, headers, attempts=4, **kw):
     for attempt in range(attempts):
         time.sleep(DELAY)
         try:
-            if method == "POST" and os.environ.get("USE_CURL_CFFI"):
+            if method == "POST" and os.environ.get("USE_CURL_CFFI") and browser_impersonation_allowed():
                 from curl_cffi import requests as cr
                 r = cr.post(url, headers=headers, impersonate="chrome", timeout=30, **kw)
             else:
@@ -1195,6 +1215,8 @@ def radancy_detail(t, row):
 # The GraphQL call needs an LSD token and doc_id, both scraped from the jobs page and its Relay
 # bundle. doc_id is pinned below; if Meta ships a new Relay build it changes and the call starts
 # returning an error payload rather than failing loudly, so the adapter raises on an empty board.
+# All of that is browser impersonation, so this reader runs only on a run that opted in (see
+# browser_impersonation_allowed); otherwise the board is SKIPPED with the reason, before any request.
 _META_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
             "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
 _META_NAV = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -1207,6 +1229,8 @@ _meta_sess = None
 def _meta_session():
     """One session for the whole run: the LSD token and the datr cookie are bootstrapped once."""
     global _meta_sess
+    if not browser_impersonation_allowed():
+        raise OptInRequired(f"Meta's careers site needs browser impersonation ({OPT_IN_HINT})")
     if _meta_sess is not None: return _meta_sess
     s = requests.Session()
     s.headers.update({"User-Agent": _META_UA, "Accept-Language": "en-US,en;q=0.9"})
@@ -3529,6 +3553,11 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
                 if log:
                     log.update(etag_log_fields(t, prior))
                     if t.get("_scope"): log["scope"] = t["_scope"]
+        except OptInRequired as e:
+            # Not read by choice: SKIPPED, not ERROR, so the retry pass leaves it alone. Its rows are
+            # carried like any board not read cleanly.
+            uniq, log = {}, None
+            cov = (t["company"], t["ats"], skip_status(e), 0)
         except Exception as e:
             uniq, log = {}, None
             cov = (t["company"], t["ats"], f"ERROR {type(e).__name__}: {str(e)[:120]}", 0)
@@ -3543,7 +3572,8 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
             done[0] += 1
             if not smoke:
                 print(f"  [{done[0]:3}/{total}] {t['company'][:30]:30} {t['ats']:15} {cov[3]:5}  "
-                      f"{cov[2][:70]}  ({time.time() - started:.0f}s)", flush=True)
+                      f"{cov[2] if cov[2].startswith('SKIPPED') else cov[2][:70]}  ({time.time() - started:.0f}s)",
+                      flush=True)
         return t, uniq, cov, log
 
     def _absorb(results):
@@ -4192,7 +4222,9 @@ def sweep_health(rows, verdicts, new_keys, coverage, prev_counts, snap_prev, dst
     vc = Counter(v for v, _ in verdicts.values())
     reasons = Counter((why[0].split(":")[0] if why else "unspecified")
                       for v, why in verdicts.values() if v == "FAIL")
-    errors = [(c, s) for c, a, s, n in coverage if not (s.startswith("OK") or s.startswith("CACHED"))]
+    skipped = [(c, s) for c, a, s, n in coverage if s.startswith("SKIPPED")]
+    errors = [(c, s) for c, a, s, n in coverage
+              if not (s.startswith("OK") or s.startswith("CACHED") or s.startswith("SKIPPED"))]
     drops = count_drops(coverage, prev_counts, prev_scopes)
     new_pass = sum(1 for k in new_keys if verdicts[k][0] == "PASS")
     prev_pass = sum(1 for v in (snap_prev.get("verdicts") or {}).values() if v == "PASS")
@@ -4202,6 +4234,9 @@ def sweep_health(rows, verdicts, new_keys, coverage, prev_counts, snap_prev, dst
     w = []
     if errors:
         w.append(f"{len(errors)} employer(s) UNCOVERED this run: " + ", ".join(c for c, _ in errors))
+    if skipped:
+        w.append(f"{len(skipped)} employer(s) skipped by setting, not read: " + "; ".join(
+            f"{c} ({s[len('SKIPPED: '):]})" for c, s in skipped))
     for c, s in migrated:
         w.append(f"{c}: {s} on a board that read cleanly before; the tenant may have migrated hosts, "
                  f"re-resolve from a live job URL")
@@ -5412,7 +5447,15 @@ if __name__ == "__main__":
     ap.add_argument("--dry-run", action="store_true", help="with --form-check: print, write nothing")
     ap.add_argument("--prerank-check", action="store_true",
                     help="recompute the pre-rank hint's rank correlation against scored.json, then exit")
+    ap.add_argument("--allow-browser-impersonation", action="store_true",
+                    help="off by default. Lets the Meta reader run (it sends a Chrome user agent and browser "
+                         "headers) and, with USE_CURL_CFFI=1, routes Workday calls through curl_cffi as Chrome. "
+                         "Same as MAXQ_ALLOW_BROWSER_IMPERSONATION=1")
     a = ap.parse_args()
+    if a.allow_browser_impersonation: ALLOW_BROWSER_IMPERSONATION = True
+    if os.environ.get("USE_CURL_CFFI") and not browser_impersonation_allowed():
+        print(f"USE_CURL_CFFI is set but browser impersonation is off, so Workday calls use plain requests "
+              f"({OPT_IN_HINT})")
     g = load_config(ROOT / "gates.json")
     if a.set_score or a.set_score_file:
         cmd_set_score(a.set_score or [], g, files=a.set_score_file or []); sys.exit()

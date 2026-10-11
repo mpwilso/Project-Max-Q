@@ -1925,6 +1925,24 @@ class SweepSandbox(unittest.TestCase):
         report = (sweep.REPORTS / "SWEEP_REPORT_2026-09-02.md").read_text(encoding="utf-8")
         self.assertIn("## Sweep health", report)
 
+    def test_an_opt_in_skip_is_reported_not_retried_and_carries_rows(self):
+        """A board that needs browser impersonation, on a run that did not opt in, is skipped with its
+        reason: not an ERROR, not retried, its rows carried (not closed), and named in the health
+        block as skipped by setting rather than lumped in with boards that failed."""
+        self.day_one()
+        self.boards["FlakyCo"] = sweep.OptInRequired("FlakyCo needs browser impersonation (opt in with "
+                                                     "--allow-browser-impersonation)")
+        s2 = self.sweep_day(2)
+        cov = {c: s for c, a, s, n in s2["coverage"]}
+        self.assertTrue(cov["FlakyCo"].startswith("SKIPPED: FlakyCo needs browser impersonation"), cov["FlakyCo"])
+        self.assertNotIn("retrying", self.out)
+        self.assertIn("--allow-browser-impersonation", self.out)       # the reason is printed whole
+        for k in ("fake_enum:FlakyCo:1", "fake_enum:FlakyCo:2"):
+            self.assertEqual(s2["rows"][k]["_carried_reason"], sweep.CARRY_ERROR)
+        w = s2["health"]["warnings"]
+        self.assertFalse(any("UNCOVERED" in x and "FlakyCo" in x for x in w), w)
+        self.assertTrue(any("skipped by setting" in x and "FlakyCo" in x for x in w), w)
+
     def test_carry_expires(self):
         self.day_one()
         self.boards["QueryCo"] = self.rows_for("QueryCo", "fake_query", [9])
