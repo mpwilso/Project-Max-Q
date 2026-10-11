@@ -22,8 +22,9 @@ held it to one standard: any bug we found in real data got a test before we move
   review, and every company was read.
 - A Claude-based scorer ranks the short list. On a 24-posting test set it matched the expected answer
   79% of the time, against 46% for plain keyword matching.
-- A resume check blocks any line that isn't backed by a verified claim about the candidate.
-- 400+ automated tests run on every change.
+- A resume check blocks any line that isn't backed by a verified claim about the candidate, and the
+  same check holds interview prep to those claims.
+- 600+ automated tests run on every change.
 
 Max Q is the moment a rocket takes the most stress on the way up; job searching felt about the same.
 
@@ -107,7 +108,7 @@ What it does not do: apply to jobs, log in anywhere, read LinkedIn or job-listin
 model unless you choose the Claude scorer.
 
 **Reading the code?** Start small: [adapters/tiktok.py](adapters/tiktok.py) is one careers-site reader
-(126 lines), [claimcheck.py](claimcheck.py) is the resume check (89 lines), and
+(126 lines), [claimcheck.py](claimcheck.py) is the resume check (334 lines; [spokencheck.py](spokencheck.py) runs it on interview prep), and
 [fitscore.py](fitscore.py) is the scorer. [sweep.py](sweep.py) is the 4,000-line engine that runs
 everything else.
 
@@ -279,12 +280,34 @@ The blocked example shows each rule catching something: an inflated number (600 
 line with no source at all. One blocked line blocks the whole resume, so the fix is always to change
 the wording or add a verified claim, never to talk the check out of it.
 
+The same check runs on rules that hold for any candidate: management phrasing that implies direct
+reports ("six analysts reported to me", "led a pod of 4"), hedged figures ("some 400", "400 or so"),
+AI-tell words with or without their hyphen, em-dashes and invisible characters, and title-cased titles
+the candidate does not hold.
+
+## Interview prep
+
+What is said in an interview gets the same rule as the page. `claimcheck.py --spoken` checks prep packs,
+story files and mock transcripts against the same claims: every figure must come from a claim the answer
+cites, an estimate keeps its "estimated", a claim marked interview-only is never volunteered in the intro,
+and nothing implies people management or a title he never held. It also times each answer and flags one
+told in "we" instead of "I".
+
+```
+python claimcheck.py --spoken examples/john_doe/stories/   # the story bank: passes
+python claimcheck.py --spoken examples/john_doe/prep/      # a prep pack and one interviewer's sheet
+```
+
+The workflow (a pack per role, a one-page sheet per interviewer, one approved intro, mock interviews held
+to the pack's claims, and a debrief that feeds a question bank) is in
+[docs/INTERVIEW_PREP.md](docs/INTERVIEW_PREP.md).
+
 ## Roadmap
 
 Finding and filtering postings is done. The current phase is the checks between a tailored resume and
-anything that gets sent. Done so far: the resume check (above). Next:
+anything that gets sent. Done so far: the resume check and the interview-prep check (above). Next:
 - a second, independently labeled set to confirm the fit scorer's numbers;
-- more page checks before any reviewer sees a draft (one page, no hedged or unsupported metrics);
+- more page checks before any reviewer sees a draft (one page, unsupported metrics);
 - an independent review pass and a person's approval before a file is released.
 
 ## Contributing

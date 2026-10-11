@@ -36,3 +36,19 @@ the project as much as the code is: an agent that is fast is only useful if its 
 ## Honesty in what gets written
 - Output states what the code measured and what it did not. A sort order is never presented as a
   verdict, and a heuristic is labelled as one.
+
+## Interview prep, mock interviews and debriefs
+- Every spoken line traces to a verified claim and agrees with the resume the interviewer holds. A claim
+  marked spoken is said, never printed; one marked interview waits to be asked; an estimate keeps its word.
+  `claimcheck.py --spoken` passes before a pack reaches the candidate, and every warning is fixed or
+  explained.
+- The intro starts from the one the candidate approved. Only the closing line changes per role; anything
+  else is shown to the candidate as a before and after, and goes into the canonical intro on a yes.
+- A sheet for the next interviewer is built from the pack, never edited from the last interviewer's sheet.
+- The check sees figures and phrases, not invented habits. An independent read of the pack against the
+  claims, the lines with no number first, happens before the candidate sees it.
+- A detail that comes out in a mock and is not in the claims is asked about, yes or no, and not reused
+  until it is verified. Mock transcripts carry the pack's header so their answers are held to its claims.
+- A booking and a round held are recorded as separate events. Interviewers are not referrals.
+- Thank-you notes are replies, short, in the candidate's voice; his own draft is polished, not replaced.
+- No help during an interview, ever. The pack is for before.

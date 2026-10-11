@@ -21,3 +21,5 @@ jobs:
       - run: python sweep.py --selftest
       - run: python evals/run_fit_eval.py
       - run: python claimcheck.py examples/john_doe/resume.md
+      - run: python claimcheck.py --spoken examples/john_doe/stories/
+      - run: python claimcheck.py --spoken examples/john_doe/prep/

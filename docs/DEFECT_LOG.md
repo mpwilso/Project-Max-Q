@@ -293,3 +293,54 @@ Each entry: what it looked like, why it happened, what changed, and where it is 
   never a certification; acknowledging a role's location is the onsite question, not a residence
   question; a question that asks whether sponsorship is required is the sponsorship question.
 - **Pinned by:** `tests/test_greenhouse_form.py::LiveMisreads`, `::RealForms::test_years_buckets_and_a_specialty_question`.
+
+### 32. A word boundary that was a backspace
+- **Symptom:** a rule barring one claim never fired, on the page or aloud, though its pattern looked
+  right in the file.
+- **Cause:** the pattern was written `"\bword\b"` in JSON, and JSON decodes `\b` to a backspace
+  character. The regex compiled and matched nothing. Porting the check here, it happened again: claim
+  patterns written through a script came out as backspaces, and the new check refused the file on its
+  first run.
+- **Fix:** claimcheck refuses a claims file whose `patterns` or `requires` hold a control character, and
+  says to write `"\b"`. A spoken or interview claim, or one with `requires`, must carry patterns.
+- **Pinned by:** `tests/test_claimcheck_rules.py::ClaimsFile`.
+
+### 33. An allowed number hid a real claim
+- **Symptom:** a prep pack that allowed a posted pay band's figure also passed an unrelated "95+"
+  claim the candidate could not back.
+- **Cause:** `untraced-ok` entries were compared as bare numbers across the whole file, so allowing
+  "95" for "$95K" allowed every 95.
+- **Fix:** an entry allows a figure only where the entry itself is said, as a phrase with its unit or
+  symbol: "$95K" never allows "95+", and a bare "95" never allows "1,095".
+- **Pinned by:** `tests/test_spoken.py::UntracedOk`.
+
+### 34. A note under an answer counted as part of it
+- **Symptom:** a three-sentence answer was flagged as over two minutes, with a figure no claim stated.
+- **Cause:** only the next `## ` heading ended an answer, so a `### Notes` block under it was read as
+  something said aloud.
+- **Fix:** any heading ends the answer above it, and nothing is read until the next `## `. A `# ` title
+  that is the intro makes its `## Short` and `## Full` answers the intro, so the volunteered and timing
+  rules still apply to them.
+- **Pinned by:** `tests/test_spoken.py::Timing::test_a_heading_note_after_an_answer_is_not_counted_in_it`,
+  `::Volunteered::test_short_and_full_under_an_intro_title_are_the_intro`.
+
+### 35. A common number always traced to something
+- **Symptom:** in a mock interview, a figure said off the cuff passed the trace, because an unrelated
+  claim happened to contain the same number.
+- **Cause:** figures were looked up in the whole claims file, and any small number matches some claim.
+- **Fix:** answers cite claims (`traces:` for the file, `cites:` for one answer), and a figure must be in
+  a claim its answer cites. A mock transcript carries the pack's header, so it is held to the pack's
+  claims. An answer with no citations is still checked against every claim, and the report says so.
+- **Pinned by:** `tests/test_spoken.py::FigureTrace`, `::MockTranscripts`.
+
+### 36. Word lists that missed the obvious variants
+- **Symptom:** "Managed 8 engineers", "Supervised four developers", "Six analysts reported to me", "Led
+  a pod of 4", "some 400 requesters", "400 or so", an approximate sign before a figure, "cutting edge"
+  without its hyphen, "robustly", and an em-dash typed as "--" all passed the page checks.
+- **Cause:** each rule was a list of exact phrases, written from the first case that turned up.
+- **Fix:** management is caught by verb and object, and from the other end of the reporting line, with
+  negated sentences passing ("I have no direct reports" is the truthful answer); hedges add "some",
+  "upward of", the approximate signs, fractions in words and "or so"; AI-tell hyphens are optional and
+  the adverb forms are listed; U+2015, "--" and zero-width characters count as dashes and hidden text.
+  Titles the candidate does not hold are blocked title-cased, case-sensitive, anywhere on the page.
+- **Pinned by:** `tests/test_claimcheck_rules.py`.
