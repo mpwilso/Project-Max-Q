@@ -1,0 +1,527 @@
+{
+ "id": 1000001,
+ "title": "Senior Product Manager, Retailer App Platform & Insights",
+ "updated_at": "2026-10-09T11:00:28-04:00",
+ "location": {
+  "name": "United States - Remote"
+ },
+ "questions": [
+  {
+   "description": null,
+   "label": "First Name",
+   "required": true,
+   "fields": [
+    {
+     "name": "first_name",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Last Name",
+   "required": true,
+   "fields": [
+    {
+     "name": "last_name",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Email",
+   "required": true,
+   "fields": [
+    {
+     "name": "email",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Phone",
+   "required": true,
+   "fields": [
+    {
+     "name": "phone",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Resume/CV",
+   "required": true,
+   "fields": [
+    {
+     "name": "resume",
+     "type": "input_file",
+     "values": []
+    },
+    {
+     "name": "resume_text",
+     "type": "textarea",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Cover Letter",
+   "required": false,
+   "fields": [
+    {
+     "name": "cover_letter",
+     "type": "input_file",
+     "values": []
+    },
+    {
+     "name": "cover_letter_text",
+     "type": "textarea",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Are you currently, or have you previously, worked for ExampleCo?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69727534",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Yes",
+       "value": 1
+      },
+      {
+       "label": "No",
+       "value": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "How did you hear about this job?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69727535",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": "<p>Description trimmed.</p>",
+   "label": "LinkedIn Profile:",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69727536",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Are you legally entitled to work in Canada?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69727537",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Yes",
+       "value": 1
+      },
+      {
+       "label": "No",
+       "value": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Are you authorized to work in the United States?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69727538",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Yes",
+       "value": 1
+      },
+      {
+       "label": "No",
+       "value": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Which state or province do you currently live in?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69727539",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "(US) Alabama",
+       "value": 755104852
+      },
+      {
+       "label": "(US) Alaska",
+       "value": 755104853
+      },
+      {
+       "label": "(US) Arizona",
+       "value": 755104854
+      },
+      {
+       "label": "(US) Arkansas",
+       "value": 755104855
+      },
+      {
+       "label": "(US) California",
+       "value": 755104856
+      },
+      {
+       "label": "(US) Colorado",
+       "value": 755104857
+      },
+      {
+       "label": "(US) Connecticut",
+       "value": 755104858
+      },
+      {
+       "label": "(US) Delaware",
+       "value": 755104859
+      },
+      {
+       "label": "(US) Florida",
+       "value": 755104860
+      },
+      {
+       "label": "(US) Georgia",
+       "value": 755104861
+      },
+      {
+       "label": "(US) Hawaii",
+       "value": 755104862
+      },
+      {
+       "label": "(US) Idaho",
+       "value": 755104863
+      },
+      {
+       "label": "(US) Illinois",
+       "value": 755104864
+      },
+      {
+       "label": "(US) Indiana",
+       "value": 755104865
+      },
+      {
+       "label": "(US) Iowa",
+       "value": 755104866
+      },
+      {
+       "label": "(US) Kansas",
+       "value": 755104867
+      },
+      {
+       "label": "(US) Kentucky",
+       "value": 755104868
+      },
+      {
+       "label": "(US) Louisiana",
+       "value": 755104869
+      },
+      {
+       "label": "(US) Maine",
+       "value": 755104870
+      },
+      {
+       "label": "(US) Maryland",
+       "value": 755104871
+      },
+      {
+       "label": "(US) Massachusetts",
+       "value": 755104872
+      },
+      {
+       "label": "(US) Michigan",
+       "value": 755104873
+      },
+      {
+       "label": "(US) Minnesota",
+       "value": 755104874
+      },
+      {
+       "label": "(US) Mississippi",
+       "value": 755104875
+      },
+      {
+       "label": "(US) Missouri",
+       "value": 755104876
+      },
+      {
+       "label": "(US) Montana",
+       "value": 755104877
+      },
+      {
+       "label": "(US) Nebraska",
+       "value": 755104878
+      },
+      {
+       "label": "(US) Nevada",
+       "value": 755104879
+      },
+      {
+       "label": "(US) New Hampshire",
+       "value": 755104880
+      },
+      {
+       "label": "(US) New Jersey",
+       "value": 755104881
+      },
+      {
+       "label": "(US) New Mexico",
+       "value": 755104882
+      },
+      {
+       "label": "(US) New York",
+       "value": 755104883
+      },
+      {
+       "label": "(US) North Carolina",
+       "value": 755104884
+      },
+      {
+       "label": "(US) North Dakota",
+       "value": 755104885
+      },
+      {
+       "label": "(US) Ohio",
+       "value": 755104886
+      },
+      {
+       "label": "(US) Oklahoma",
+       "value": 755104887
+      },
+      {
+       "label": "(US) Oregon",
+       "value": 755104888
+      },
+      {
+       "label": "(US) Pennsylvania",
+       "value": 755104889
+      },
+      {
+       "label": "(US) Rhode Island",
+       "value": 755104890
+      },
+      {
+       "label": "(US) South Carolina",
+       "value": 755104891
+      },
+      {
+       "label": "(US) South Dakota",
+       "value": 755104892
+      },
+      {
+       "label": "(US) Tennessee",
+       "value": 755104893
+      },
+      {
+       "label": "(US) Texas",
+       "value": 755104894
+      },
+      {
+       "label": "(US) Utah",
+       "value": 755104895
+      },
+      {
+       "label": "(US) Vermont",
+       "value": 755104896
+      },
+      {
+       "label": "(US) Virginia",
+       "value": 755104897
+      },
+      {
+       "label": "(US) Washington",
+       "value": 755104898
+      },
+      {
+       "label": "(US) Washington, D.C.",
+       "value": 755104899
+      },
+      {
+       "label": "(US) West Virginia",
+       "value": 755104900
+      },
+      {
+       "label": "(US) Wisconsin",
+       "value": 755104901
+      },
+      {
+       "label": "(US) Wyoming",
+       "value": 755104902
+      },
+      {
+       "label": "(CAN) Alberta",
+       "value": 755104903
+      },
+      {
+       "label": "(CAN) British Columbia",
+       "value": 755104904
+      },
+      {
+       "label": "(CAN) Manitoba",
+       "value": 755104905
+      },
+      {
+       "label": "(CAN) New Brunswick",
+       "value": 755104906
+      },
+      {
+       "label": "(CAN) Newfoundland and Labrador",
+       "value": 755104907
+      },
+      {
+       "label": "(CAN) Nova Scotia",
+       "value": 755104908
+      },
+      {
+       "label": "(CAN) Ontario",
+       "value": 755104909
+      },
+      {
+       "label": "(CAN) Prince Edward Island",
+       "value": 755104910
+      },
+      {
+       "label": "(CAN) Quebec",
+       "value": 755104911
+      },
+      {
+       "label": "(CAN) Saskatchewan",
+       "value": 755104912
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Will you now or in the future require immigration sponsorship to work for ExampleCo?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69727540",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Yes",
+       "value": 1
+      },
+      {
+       "label": "No",
+       "value": 0
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "location_questions": [
+  {
+   "description": null,
+   "label": "Longitude",
+   "required": true,
+   "fields": [
+    {
+     "name": "longitude",
+     "type": "input_hidden",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Latitude",
+   "required": true,
+   "fields": [
+    {
+     "name": "latitude",
+     "type": "input_hidden",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Location",
+   "required": true,
+   "fields": [
+    {
+     "name": "location",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  }
+ ],
+ "pay_input_ranges": [
+  {
+   "min_cents": 22100000,
+   "max_cents": 23300000,
+   "currency_type": "USD",
+   "title": "CA, NY, CT, NJ",
+   "blurb": "<p>Pay range blurb.</p>"
+  },
+  {
+   "min_cents": 21200000,
+   "max_cents": 22350000,
+   "currency_type": "USD",
+   "title": "WA",
+   "blurb": "<p>Pay range blurb.</p>"
+  },
+  {
+   "min_cents": 20300000,
+   "max_cents": 21400000,
+   "currency_type": "USD",
+   "title": "OR, DE, ME, MA, MD, NH, RI, VT, DC, PA, VA, CO, TX, IL, HI",
+   "blurb": "<p>Pay range blurb.</p>"
+  },
+  {
+   "min_cents": 18400000,
+   "max_cents": 19400000,
+   "currency_type": "USD",
+   "title": "All other states",
+   "blurb": "<p>Pay range blurb.</p>"
+  }
+ ],
+ "absolute_url": "https://example.test/",
+ "company_name": "ExampleCo"
+}

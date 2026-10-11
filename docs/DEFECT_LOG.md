@@ -269,3 +269,27 @@ Each entry: what it looked like, why it happened, what changed, and where it is 
   the row closed, as designed.
 - **Fix:** the date is relative to today.
 - **Pinned by:** `tests/test_workday_close.py`.
+
+### 30. Knockout questions found only at the end of the application
+- **Symptom:** a posting that passed every filter and scored well asked, on its application form, "Are
+  you legally entitled to work in Canada?" or "Do you have 7+ years ...?", and the truthful answer
+  would likely get it rejected. Nothing showed that before the time was spent.
+- **Cause:** the list read never sees the form; Greenhouse returns it only from the job-detail call.
+- **Fix:** for scored Greenhouse postings the sweep reads the form (once per description version) and
+  classifies each question against the candidate's facts in `gates.json candidate_profile`: KNOCKOUT,
+  ASK or OK. `--window` prints each knockout. A flag, never a filter or a score. The same call's
+  `pay_input_ranges` fills a missing pay band (USD and annual only; the range's title is not trusted).
+- **Pinned by:** `tests/test_greenhouse_form.py`.
+
+### 31. The classifier's first live misreads
+- **Symptom:** on its first live run over about 300 forms, a sponsorship question that named Canada as
+  the exception, a "Certification and confidentiality" attestation, and "Do you acknowledge that this is
+  a hybrid role based in ..." were all flagged as knockouts. Porting it here found a fourth: "require
+  company sponsorship to retain or extend your work authorization" answered with the first "Yes, I will
+  require sponsorship" option.
+- **Cause:** keyword rules matched the wrong part of the question: "Canada", "certify", "based in",
+  and "work authorization" inside a sponsorship question.
+- **Fix:** a "skip this question if ... Canada" clause is not a Canada question; attestation wording is
+  never a certification; acknowledging a role's location is the onsite question, not a residence
+  question; a question that asks whether sponsorship is required is the sponsorship question.
+- **Pinned by:** `tests/test_greenhouse_form.py::LiveMisreads`, `::RealForms::test_years_buckets_and_a_specialty_question`.

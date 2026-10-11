@@ -3602,6 +3602,9 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
         # Without a detail pass here, `--merge Meta` would re-empty every row it touched. Fetch
         # and inherit here too, before anything is written. Runs while _target is still attached.
         _, dstats = gate_all(rows, prev, gates)
+        # Greenhouse pay bands and forms for the merged employer: without this a --merge would re-empty
+        # the comp that pay_input_ranges filled on the last full run.
+        gh_line = gh_detail_pass(rows, gates, slug_of={t["company"]: t.get("slug") for t in targets if t.get("ats") == "greenhouse"})
         base_rows = {k: v for k, v in prev.items() if v.get("company") not in merged_companies}
         new_against_full = [k for k in rows if k not in prev and k not in recovered]
         for k in rows:                                     # first_seen for THIS employer only
@@ -3663,6 +3666,7 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
               f"from the last snapshot, {dstats['failed']} failed")
         if etag_line: print("  " + etag_line)
         print(f"  new vs last full run: {len(new_against_full)}")
+        if gh_line: print("  " + gh_line)
         if authoritative:
             print(f"  no longer on board  : {len(dropped)} (recorded as closed)")
         else:
@@ -3707,6 +3711,10 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
     rescue_line = rescue_summary(dstats, gates)
     if rescue_line: print(rescue_line)
     if etag_line: print(etag_line)
+    # Greenhouse job detail: pay_input_ranges for PASS/REVIEW rows with no band, and the application
+    # form for scored reqs. A separate pass after gate_all, while _target is attached.
+    gh_line = gh_detail_pass(rows, gates, verdicts, prune=True, slug_of={t["company"]: t.get("slug") for t in targets if t.get("ats") == "greenhouse"}) if not only else None
+    if gh_line: print(gh_line)
     for r in rows.values(): r.pop("_target", None)
     # Repost detection: the same normalized title in the same first location at the
     # same employer, under a NEW id, is a repost. The new id's first_seen is today, which
@@ -3778,7 +3786,7 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
                           prev_scopes=prev_scopes)
     # No sweep log is kept, so the rescue: and etag: lines ride in the health block (and the
     # snapshot) rather than living only in the console scrollback.
-    health["notes"] = [x for x in (rescue_line, etag_line) if x]
+    health["notes"] = [x for x in (rescue_line, etag_line, gh_line) if x]
     print_health(health)
     snap = {"date": TODAY.isoformat(), "ts": iso_now(), "rows": rows,
             "verdicts": {k: v[0] for k, v in verdicts.items()},
@@ -4630,6 +4638,7 @@ def window_query(gates, window="48h", company=None, floor=None, show_all=False):
     # freshness group. A scored req keeps its score, which supersedes any hint. Nothing is filtered:
     # the candidate list is the same list it was, in a different order.
     applied_keys, applied_urls = applied_index()
+    forms = load_forms()
     jds = jd_index()
     pre = {k: prerank(r, gates, jd_text_for(k, jds)) for k, r, *_ in hits} if gates.get("prerank") else {}
     if pre:
@@ -4644,13 +4653,19 @@ def window_query(gates, window="48h", company=None, floor=None, show_all=False):
                                  -(pre.get(x[0]) or 0))):
         risks = risk_signals(r, ledger, None, repost_of=reposts.get(k))
         conv_label, conv = conversion_read(r, gates, ledger)
+        fe = forms.get(k)
+        comp_txt = (show_comp(r.get("comp")) if r.get("comp") or not (fe and fe.get("pay_band"))
+                    else f"{fe['pay_band']} (pay_input_ranges)")
         print(link(f"{r['company']} · {r['title']}", r["url"]))
-        print(f"    verdict={v}  loc={(r['location'] or 'not stated')[:110]}  comp={show_comp(r.get('comp'))}")
+        print(f"    verdict={v}  loc={(r['location'] or 'not stated')[:110]}  comp={comp_txt}")
         print(f"    dates: {freshness_line(r, k, ledger, gates)}")
         if k in freed_in:
             print(f"    FREED {freed_in[k]}: eligible since then, first seen {ledger.get(k)}; in this window "
                   "for that, not for its posting date")
         print(f"    conversion: {conv_label} · " + " · ".join(conv))
+        if fe:
+            # Greenhouse application form: a flag for the knockout questions, never a score input.
+            for line in form_window_lines(fe, r.get("jd_hash")): print("    " + line)
         print(f"    key={k}")
         if r.get("_carried_since"):
             # A carried row must not look like a req read live this run.
@@ -4685,6 +4700,614 @@ def window_query(gates, window="48h", company=None, floor=None, show_all=False):
     if floor:
         print(f"(Score floor {floor} applies to PRESENTATION only. Score every candidate above, then report "
               f"how many fell below the floor and the highest score among them.)")
+
+# ----------------------------------------------------------------------------- greenhouse job detail
+# Greenhouse's documented job-detail endpoint answers two questions the list read cannot.
+# `questions=true` returns the application form (custom questions with label, required and the field
+# type and options), which is where the knockouts live: "Are you legally authorized to work in
+# Canada?", "Do you have 7+ years ...", a required "Do you live within 50 miles of our office?". And
+# `pay_transparency=true` returns `pay_input_ranges` (min_cents, max_cents, currency_type, title), the
+# structured band an employer types into Greenhouse, which never reaches the JD body for about one in
+# eight Greenhouse PASS/REVIEW rows.
+# The form read is a FLAG for the person deciding, never a gate, never a score input and never a
+# Conversion signal. Each question is compared against the candidate's facts in the file gates.json
+# candidate_profile names (examples/john_doe/candidate.json here). Both reads land in
+# data/form_questions.json, keyed by req key, so a req is paid for once per JD version.
+GH_DETAIL_URL = "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs/{id}?questions=true&pay_transparency=true"
+FORM_STALE_DAYS = 14        # a form is re-read when its JD hash moves or it is older than this
+FORM_MIN_SCORE = 60         # forms are read for scored reqs at this Fit or above (gates.json form_min_score)
+GH_DETAIL_BUDGET = 150      # detail fetches per sweep run (gates.json gh_detail_max_fetch overrides)
+FORM_PRUNE_DAYS = 30        # an entry for a req no longer open is dropped after this (full runs only)
+
+_FORM_STANDARD_FIELDS = {"first_name", "last_name", "email", "phone", "resume", "resume_text",
+                         "cover_letter", "cover_letter_text", "preferred_name"}
+_FORM_EEO = re.compile(r"\bgender\b|\brace\b|ethnic|veteran|disabilit|sexual orientation|equal (?:employment )?opportunity"
+                       r"|self[- ]identif|demographic|hispanic|\bpronouns?\b", re.I)
+# Places a relocation question can name that are not the candidate's markets. Generic, not personal.
+_FORM_OTHER_PLACES = re.compile(
+    r"denver|chicago|austin|boston|atlanta|detroit|pittsburgh|lehi|salt lake|dallas|houston|miami|tampa|portland|"
+    r"phoenix|raleigh|minneapolis|philadelphia|washington,? d\.?c|toronto|montr[eé]al|london|dublin|amsterdam|berlin|"
+    r"paris|bangalore|bengaluru|singapore|sydney|tokyo|nashville|columbus|charlotte|st\.? louis|kansas city|"
+    r"san antonio|baltimore|cambridge|ann arbor|boulder|provo|indianapolis|cincinnati|cleveland|milwaukee|"
+    r"jersey city|hoboken|stamford|tel aviv|warsaw|madrid|barcelona|mexico city|s[aã]o paulo|seattle|new york|"
+    r"\bnyc\b|san francisco|los angeles|san diego|san jose|sacramento", re.I)
+_FORM_CANADA_LOC = re.compile(r"(?i:canada|vancouver|toronto|montr[eé]al|ottawa|calgary|british columbia|ontario|quebec|alberta)"
+                              r"|\b(?:BC|AB|ON|QC)\b")
+# "CA" is left out on purpose: boards write Canada as "CA" too, and a Canadian row must stay Canadian.
+_FORM_US_LOC = re.compile(r"(?i:united states|\busa?\b|u\.s\.|california)|\b(?:AL|AK|AZ|AR|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|"
+                          r"KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|"
+                          r"VA|WA|WV|WI|WY|DC)\b")
+_FORM_US_WORDS = re.compile(r"\bUS\b|\bU\.S\.|united states|\bUSA\b|america", re.I)
+_DEGREE_RANK = {"none": 0, "high school": 1, "associate": 2, "bachelor": 3, "master": 4, "doctorate": 5}
+
+_CANDIDATE = {}
+
+def load_candidate(gates=None):
+    """The candidate facts the form classifier compares against: the JSON file gates.json
+    candidate_profile names, relative to the repo root. {} when none is configured or it is missing."""
+    path = (gates or {}).get("candidate_profile")
+    if gates is None:
+        try: path = json.loads((ROOT / "gates.json").read_text(encoding="utf-8")).get("candidate_profile")
+        except (OSError, ValueError): path = None
+    if not path: return {}
+    if path not in _CANDIDATE:
+        try: _CANDIDATE[path] = json.loads((ROOT / path).read_text(encoding="utf-8"))
+        except (OSError, ValueError): _CANDIDATE[path] = {}
+    return _CANDIDATE[path]
+
+def _cand_places(cand):
+    """[(name, regex)]: the candidate's home first, then each market they would relocate to."""
+    out = []
+    home = cand.get("home") or {}
+    if home.get("pattern"): out.append((home.get("city") or "home", re.compile(home["pattern"])))
+    for m in cand.get("relocation_markets") or []:
+        if m.get("pattern"): out.append((m.get("name") or m["pattern"], re.compile(m["pattern"])))
+    return out
+
+def _form_places(text, cand):
+    """Names of the candidate's places (home and relocation markets) found in text, home first."""
+    return [name for name, rx in _cand_places(cand) if rx.search(text or "")]
+
+def _form_canada_job(row):
+    loc = (row or {}).get("location") or ""
+    return bool(_FORM_CANADA_LOC.search(loc)) and not _FORM_US_LOC.search(loc)
+
+def _form_pick(options, *patterns):
+    """The first option matching the first pattern that matches anything, or None."""
+    for p in patterns:
+        for o in options:
+            if re.search(p, o, re.I): return o
+    return None
+
+def _form_relocate_option(options):
+    """An option that says yes-with-relocation ("No, but willing to relocate to Austin", "I am NOT in
+    Chicago but open to relocating", "Yes, I'd relocate prior to the start of the role")."""
+    for o in options:
+        s = o.lower()
+        if "relocat" not in s: continue
+        if re.search(r"not\s+(?:open|willing|able)\s+to\s+relocat|unable to relocate|no relocation", s): continue
+        if s.startswith("no") and not re.search(r"\bbut\b|willing|open to", s): continue
+        return o
+    return None
+
+def _year_bucket(o):
+    """(lo, hi) years an option covers, or None. "4 - 7 years" (4, 7); "8+ years" (8, inf);
+    "Less than 2" (0, 1.999); "No experience" (0, 0)."""
+    s = o.lower().replace("–", "-").replace("—", "-")
+    if re.search(r"\bno(?:ne| experience)\b|^none|do not have|don't have|^0$", s): return (0.0, 0.0)
+    m = re.search(r"(?:less than|under|fewer than|<)\s*(\d+(?:\.\d+)?)", s)
+    if m: return (0.0, float(m.group(1)) - 0.001)
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)", s)
+    if m: return (float(m.group(1)), float(m.group(2)))
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:\+|or more|plus|and (?:above|up|over))", s)
+    if m: return (float(m.group(1)), float("inf"))
+    m = re.search(r"(?:more than|over|greater than|>)\s*(\d+(?:\.\d+)?)", s)
+    if m: return (float(m.group(1)) + 0.001, float("inf"))
+    return None
+
+def _fmt_years(y):
+    return f"{y:g}"
+
+_FORM_YEARS_MIN = re.compile(r"(\d{1,2})\s*(?:\+|plus)?\s*(?:or more\s*)?(?:years?|yrs?)\b", re.I)
+_FORM_YEARS_NOT_A_BAR = re.compile(r"less than \d|out of school|\bgpa\b|(?:last|past|previous|within)\s+(?:the\s+)?"
+                                   r"(?:\d+|few)\s+years|years? ago|of age|years? old|18 years", re.I)
+
+def classify_form_question(label, required, ftype, options, row=None, cand=None):
+    """(verdict, truthful_answer, reason) for one application-form question against the candidate's
+    facts (load_candidate). KNOCKOUT: the truthful answer likely auto-rejects. ASK: needs the
+    candidate's judgment or number. OK: the truthful answer is known and passes. Rules run in order;
+    the first that matches decides. A fact the profile does not state is an ASK, never a guess."""
+    cand = load_candidate() if cand is None else cand
+    label = (label or "").replace("’", "'").replace("‘", "'")
+    l = re.sub(r"\s+", " ", label).strip().lower()
+    opts = [re.sub(r"\s+", " ", str(o).replace("’", "'")).strip() for o in options or []]
+    otext = " | ".join(opts).lower()
+    pick = lambda *p: _form_pick(opts, *p)
+    canada_job = _form_canada_job(row)
+    optional = "" if required else " (optional question: may be left blank)"
+    KO = lambda ans, why: ("KNOCKOUT", ans + optional, why)
+    auth = cand.get("work_authorization") or {}
+    home = cand.get("home") or {}
+    edu = cand.get("education") or {}
+    years = cand.get("years_experience")
+    home_name = home.get("city") or "home"
+    home_label = home.get("label") or home_name
+
+    # Conditional follow-ups to the authorization questions ("If yes, what kind of sponsorship ...").
+    if re.match(r"if (?:yes|so|you (?:are not|aren't|answered yes|do require|require|selected|need)|you're not|not)\b", l) \
+            and re.search(r"sponsor|visa|immigration|authori[sz]|status", l):
+        if auth.get("needs_sponsorship") is False:
+            return "OK", pick(r"not applicable|no sponsorship|^n/?a\b", r"^no\b") or "Not applicable (needs no sponsorship)", "authorization follow-up"
+        return "ASK", "the candidate's visa details", "authorization follow-up"
+    # Any other follow-up ("If yes, please describe", "If you selected Other ...") hangs off the question
+    # before it, which carries the verdict.
+    if re.match(r"(?:if (?:yes|so|applicable)\b|if you (?:answered|selected|chose|have worked)|if you heard)", l):
+        return "OK", pick(r"^n/?a$", r"not applicable") or "only if the question before it calls for it", "follow-up"
+    if ftype == "input_file":
+        return ("ASK", "the candidate's file", f'attachment: "{_form_short(label, 50)}"') if required else ("OK", "optional", "attachment")
+    # "(Skip this question if you are applying to work in Canada or the UK). Do you ... require
+    # sponsorship?" is the US question; naming Canada as the exception does not make it Canada's.
+    if re.search(r"\bcanad", l) and not _FORM_US_WORDS.search(label or "") \
+            and not re.search(r"skip (?:this question )?if[^.)]*canad|unless[^.)]*canad", l) \
+            and re.search(r"authori[sz]|entitled|eligible|permit|legal|right to work|sponsor|visa", l):
+        if auth.get("canada_authorized") is True:
+            return "OK", pick(r"^yes") or "Yes", "Canada work authorization"
+        if auth.get("canada_authorized") is None:
+            return "ASK", "the candidate's Canadian work status", "Canada work authorization"
+        return KO("NO (not authorized to work in Canada)" + ("" if canada_job else
+                  "; the req is not in Canada, so it may only apply to Canadian applicants"), "Canada work authorization")
+    # "Will you ... require company sponsorship to retain or extend your work authorization?" is the
+    # sponsorship question: read as an authorization question it picked the first "Yes" option.
+    sponsor_q = bool(re.search(r"sponsor", l) and re.search(r"\b(?:require|need)", l))
+    if not sponsor_q and re.search(r"\bauthori[sz]ed|eligible to work|entitled to work|legally (?:able|permitted)|right to work|"
+                                   r"work authori[sz]ation|work permit", l):
+        if canada_job:
+            if auth.get("canada_authorized") is True:
+                return "OK", pick(r"^yes") or "Yes", "Canada work authorization"
+            return KO("NO (the req is in Canada and the candidate is not authorized to work there)", "Canada work authorization")
+        if auth.get("us_authorized") is False:
+            return KO("NO (not authorized to work in the US)", "work authorization")
+        if auth.get("us_authorized") is None:
+            return "ASK", "the candidate's work authorization", "work authorization"
+        return "OK", (pick(r"any employer", r"no restriction", r"^yes(?!.*(?:sponsor|future|renew))", r"^yes")
+                      or ("Yes" if opts else "Authorized to work in the US, needs no sponsorship")), "work authorization"
+    if re.search(r"sponsor|\bvisa\b|immigration|h-?1b", l):
+        if canada_job and auth.get("canada_authorized") is not True:
+            return KO("YES, sponsorship would be needed (no Canadian work authorization)", "Canada sponsorship")
+        if re.search(r"acknowledge|understand", l):
+            return "OK", pick(r"^yes", r"acknowledge") or "Yes", "sponsorship"
+        if auth.get("needs_sponsorship") is True:
+            return KO("YES (needs sponsorship)", "sponsorship")
+        if auth.get("needs_sponsorship") is None:
+            return "ASK", "whether the candidate needs sponsorship", "sponsorship"
+        return "OK", pick(r"^no\b", r"not applicable|no sponsorship|do not and will not") or "No (needs no sponsorship)", "sponsorship"
+    if re.search(r"citizen|u\.s\. person|export control|\bitar\b", l):
+        if not auth.get("us_citizen"):
+            return "ASK", "the candidate's citizenship", "citizenship"
+        return "OK", (pick(r"^yes\b", r"none of (?:the )?(?:above|these)|^none\b|do(?:es)? not apply", r"\bu\.?s\.? citizen|united states citizen")
+                      or "Yes (US citizen)"), "citizenship"
+    if re.search(r"\bopt\b(?![- ]?(?:in|out)\b)|stem[- ]opt|\bcpt\b", l):
+        if auth.get("needs_sponsorship") is False:
+            return "OK", pick(r"^n/?a$", r"not applicable", r"^no$") or "N/A (needs no sponsorship)", "OPT"
+        return "ASK", "the candidate's visa details", "OPT"
+    if re.search(r"18 years|age of 18|years of age|\b18 or older", l):
+        return "OK", pick(r"^yes") or "Yes", "age"
+    if "government official" in l:
+        return "OK", pick(r"^no") or "No", "government official"
+    if re.search(r"\bgpa\b", l):
+        return "ASK", "the candidate's GPA, or not applicable", "GPA"
+
+    # Years. A bucketed dropdown is answered with the bucket holding the candidate's years; a stated
+    # minimum is a yes up to years_bar_cleared.
+    buckets = [(o, _year_bucket(o)) for o in opts]
+    buckets = [(o, b) for o, b in buckets if b is not None]
+    yearsy = "year" in l or "year" in otext
+    if yearsy and not _FORM_YEARS_NOT_A_BAR.search(l) and (len(buckets) >= 2 or re.search(r"how many years|number of years", l)):
+        if years is None:
+            return "ASK", "the candidate's years (not in the candidate profile)", "years"
+        # Whole-year buckets ("3-5", "6-8") can leave a fractional figure between them; whole years decide.
+        chosen = next((o for o, (lo, hi) in buckets if lo <= years <= hi), None) or \
+                 next((o for o, (lo, hi) in buckets if lo <= int(years) <= hi), None)
+        if re.search(r"specifically|specific area|in this specific", l + " " + otext):
+            return "ASK", (f"the candidate's years in that specialty (a total-years bucket would be '{chosen}')" if chosen
+                           else "the candidate's years in that specialty"), "years in a specialty"
+        if chosen: return "OK", chosen, "years"
+        if buckets and all(lo > years for _, (lo, _hi) in buckets):
+            return KO(f"NO ({_fmt_years(years)} years is under the lowest option, '{buckets[0][0]}')", "years")
+        if not buckets: return "OK", f"{int(years)} ({_fmt_years(years)} years)", "years"
+        return "ASK", f"no option holds {_fmt_years(years)} years", "years"
+    m = _FORM_YEARS_MIN.search(l)
+    if m and not _FORM_YEARS_NOT_A_BAR.search(l):
+        if years is None:
+            return "ASK", "the candidate's years (not in the candidate profile)", "years"
+        n = int(m.group(1))
+        cleared = cand.get("years_bar_cleared", int(years))
+        if n <= cleared:
+            return "OK", pick(r"^yes") or "Yes", "years"
+        return KO(f"NO ({_fmt_years(years)} years against a {n}+ bar)", "years")
+
+    if (re.search(r"certif(?:ied|ication|icate)s?\b|\bpmp\b|\bcspo\b|\bcsm\b|scrum master|\bpmi\b|\bitil\b|\bcissp\b|"
+                  r"\bcism\b|comptia|\bccna\b|\bcpa\b", l) or re.search(r"\bSAFe\b", label or "")) \
+            and not re.search(r"\bi (?:hereby )?certify|certify that|certifying|by selecting|by initial|by signing|"
+                              r"confidentiality|attest|acknowledg", l):
+        held = [c for c in cand.get("certifications") or [] if c and re.search(re.escape(c), label or "", re.I)]
+        if held:
+            return "OK", pick(r"^yes") or f"Yes ({held[0]})", "certification"
+        none = pick(r"^none", r"^no\b", r"not applicable")
+        if re.search(r"do you (?:have|hold|possess)|are you (?:a )?certified|\bactive\b|current", l) or required:
+            what = "holds none of the named certifications" if cand.get("certifications") else "holds no certifications"
+            return KO(f"NO ({what})" if not none else f"NO: '{none}' ({what})", "certification")
+        return "OK", none or "None", "certification"
+    if "clearance" in l:
+        if cand.get("security_clearance"):
+            return "OK", pick(r"^yes") or "Yes", "clearance"
+        if re.search(r"obtain|eligib|able to|willing", l):
+            if auth.get("us_citizen"):
+                return "OK", pick(r"^yes") or "Yes (US citizen; holds none today)", "clearance"
+            return "ASK", "the candidate's call (no clearance held)", "clearance"
+        if re.search(r"\b(?:have|hold|possess|active|current)\b", l):
+            return KO("NO (no security clearance)", "clearance")
+        return "ASK", "the candidate's call (no clearance held)", "clearance"
+    if re.search(r"people manag|direct reports|line manag|manag\w*\s+(?:a\s+)?(?:team of\s+)?(?:\d+\s+)?"
+                 r"(?:people|employees|direct|staff|engineers|reports|a team|teams|others)\b|supervis\w*\s+(?:people|"
+                 r"employees|staff|others|a team)", l):
+        if cand.get("people_management"):
+            return "OK", pick(r"^yes") or "Yes", "people management"
+        zero = pick(r"^0\b", r"^none", r"^no\b", r"^n/?a")
+        return KO("NO (no people management)" + (f": '{zero}'" if zero else ""), "people management")
+    if re.search(r"degree|bachelor|master'?s|\bmba\b|\bph\.?d|doctora|education level|level of education", l):
+        rank = _DEGREE_RANK.get(edu.get("level") or "", None)
+        degree = edu.get("degree") or "the candidate's degree"
+        if rank is None:
+            return "ASK", "the candidate's degree (not in the candidate profile)", "degree"
+        if re.search(r"master|\bmba\b|ph\.?d|doctora|advanced degree|graduate degree", l) and not re.search(r"bachelor|highest", l):
+            need = 5 if re.search(r"ph\.?d|doctora", l) else 4
+            if rank < need:
+                return KO(f"NO ({degree} only)", "advanced degree")
+            return "OK", pick(r"^yes") or f"Yes ({degree})", "advanced degree"
+        if opts and re.search(r"highest|level", l):
+            lvl = edu.get("level")
+            return "OK", pick(lvl if lvl != "doctorate" else r"doctor|ph\.?d") or degree, "degree"
+        if re.search(r"\bin (?:computer science|cs\b|engineering|mathematics|statistics)", l):
+            return "ASK", f"{degree}: the candidate's call on the field match", "degree field"
+        if rank < 3 and re.search(r"bachelor|degree", l):
+            return KO(f"NO ({degree})", "degree")
+        return "OK", pick(r"^yes") or f"Yes ({degree})", "degree"
+
+    # Location: home, and the markets the candidate would relocate to (candidate profile).
+    if re.search(r"relocation (?:assistance|package|support|benefit)", l):
+        return "ASK", "the candidate's call", "relocation assistance"
+    # Willingness to be somewhere. "willing" or "open to" alone is not a location question ("Are you willing
+    # to leverage AI in many areas of your role?"); it needs a place, an office or a move beside it.
+    willing = re.search(r"relocat|commut|on-?site|in[- ]office|in[- ]person|hybrid|\boffices?\b|days (?:a|per) week|"
+                        r"\bhq\b|headquarters|available to work|\bcities\b|(?:willing|open|able) to (?:work|come|move) "
+                        r"(?:from|in|at|to|out of)\b|work from", l)
+    if re.search(r"located in the (?:united states|u\.s\.|us)\b|(?:live|reside|based) in the (?:united states|u\.s\.)", l):
+        us_home = re.search(r"united states|\busa?\b", (home.get("country") or ""), re.I)
+        return ("OK", pick(r"^yes") or "Yes", "location") if us_home else ("ASK", "the candidate's call", "location")
+    if re.search(r"\baddress\b|intend to work|plan (?:on|to) work(?:ing)? from", l) and not opts:
+        return "OK", home_label + ('; or "relocating", as the form asks, when the role is elsewhere' if "relocat" in l
+                                   else " (or the posting location, relocating)"), "residence"
+    if re.search(r"(?:what|which) time ?zone|time ?zone (?:are|do) you|^time ?zone", l):
+        tz, tz_name = home.get("timezone_pattern"), home.get("timezone") or "the candidate's time zone"
+        return "OK", (pick(tz) if tz else None) or f"{tz_name} ({home_label})", "residence"
+    if re.search(r"universit|college|school attended", l) and not opts:
+        return ("OK", edu["school"], "education") if edu.get("school") else ("ASK", "the candidate's school", "education")
+    zipq = re.search(r"zip ?code|^zip\b|postal", l)
+    if not willing and (zipq or re.search(r"\bcity\b|\bstate\b|province|country|where are you|where do you live|"
+                                          r"reside|residence|\blocated\b|\blocation\b", l)) \
+            and not re.search(r"within \d+ miles|near", l):
+        state, code, country = home.get("state") or "", home.get("state_code") or "", home.get("country") or ""
+        if opts:
+            ans = ((pick(re.escape(state), rf"\b{re.escape(code)}\b") if state and re.search(r"state|province", l) else None)
+                   or (pick(r"^united states", r"^usa$", r"united states of america", r"^us$", r"^u\.s\.")
+                       if re.search(r"united states|\busa?\b", country, re.I) else (pick(re.escape(country)) if country else None))
+                   or (pick(re.escape(state)) if state else None))
+            return ("OK", ans, "residence") if ans else ("ASK", f"{home_label} is not among the options", "residence")
+        if zipq:
+            return "OK", f"the candidate's {home_label} zip code", "residence"
+        city, st, ctry = (bool(re.search(p, l)) for p in (r"\bcity\b", r"\bstate\b", r"country"))
+        ans = (f"{home_label}, {country}" if city and ctry else home_label if city else
+               (state or home_label) if st and not ctry else (country or home_label) if ctry and not st else home_label)
+        return "OK", ans, "residence"
+    if re.search(r"live (?:in|within|near)|within \d+ miles|currently (?:located|based|reside|living)|based (?:in|near)|"
+                 r"local to|reside (?:in|near|within)|near one of our", l) \
+            and not re.search(r"relocat|plan to (?:move|live)|willing to move", l + " " + otext) \
+            and not re.search(r"(?:role|position|job|team|opportunity) (?:is )?based (?:in|out of)|acknowledge", l):
+        # "Do you acknowledge that this is a hybrid role based in ..." asks whether the onsite terms are
+        # accepted, not where the candidate lives today; the willing branch below answers it.
+        places = _form_places(label, cand)
+        if home_name in places:
+            return "OK", pick(r"^yes") or "Yes", "current residence"
+        named = [p for p in places if p != home_name]
+        return KO(f"NO today (lives in {home_label})" + (f"; open to relocating to {', '.join(named)}: say so where the form allows"
+                  if named else "; the named location is outside the candidate's markets"), "current residence")
+    if willing:
+        named = _form_places(label, cand)
+        other = sorted({m.group(0).title() for m in _FORM_OTHER_PLACES.finditer(label or "")} - set(named))
+        if ftype == "multi_value_multi_select" and opts:
+            ok = [o for o in opts if _form_places(o, cand)]
+            return ("OK", "; ".join(ok), "office locations") if ok else \
+                   ("ASK", "none of the offered locations is one of the candidate's markets", "office locations")
+        if not named and other:
+            return "ASK", f"working from {', '.join(other)} is outside the candidate's markets: the candidate's call", "relocation"
+        if not named:
+            named = _form_places((row or {}).get("location"), cand)
+            if not named and _FORM_OTHER_PLACES.search((row or {}).get("location") or ""):
+                return "ASK", f"the posting location ({(row or {}).get('location')}) is outside the candidate's markets", "relocation"
+        away = [p for p in named if p != home_name]
+        ans = _form_relocate_option(opts) if away else None
+        ans = ans or pick(r"^yes(?!.*(?:currently located|live here|i'?m in|i am in))", r"^yes") or "Yes"
+        return "OK", ans + (f" (with relocation to {', '.join(away)})" if away and "relocat" not in ans.lower() else
+                            " (the candidate's home or a market they would move to)" if not named else ""), "onsite / relocation"
+
+    # The things only the candidate can supply.
+    if re.search(r"salary|compensation|pay (?:expectation|range|requirement)|desired (?:pay|rate|annual)|expected (?:pay|comp)|"
+                 r"expectations? (?:for|of|on) (?:pay|salary|comp)|total rewards", l):
+        return "ASK", cand.get("salary_note") or "the candidate's number", "salary expectation"
+    if re.search(r"start date|earliest .{0,40}start|when (?:can|could|would) you (?:start|begin)|notice period|"
+                 r"available to (?:start|begin)|timeline|deadline", l):
+        return "ASK", "the candidate's call", "start date"
+    if re.search(r"non-?compete|non-?solicit|post-employment|employment agreement|restrictive covenant", l):
+        return "ASK", "the candidate's own agreements", "non-compete / agreements"
+    if re.search(r"(?:previously|ever|before|in the past)\b.{0,60}\b(?:work|employ|interview|consult|appl|contract)|"
+                 r"friends, family|relatives?\b|family members?|related to|close (?:personal )?relationship|"
+                 r"(?:personal|familial) relationships?|know anyone|currently employed by|current or former|"
+                 r"been employed by|currently (?:an )?employee|currently working for|have worked (?:for|at)|"
+                 r"currently (?:or (?:have )?previously )?work(?:ed)? (?:at|for)", l):
+        return "OK", "the candidate's own record", "history with the employer"
+    if re.search(r"\bi (?:hereby )?(?:certify|acknowledge|agree|understand|consent|confirm|accept|attest)|"
+                 r"by (?:clicking|selecting|submitting|checking|agreeing|applying)|you (?:understand|agree|acknowledge)|"
+                 r"consent|privacy|arbitrat|\bpolicy\b|\bterms\b|attestation|e-verify|acknowledg|personal data|"
+                 r"data protection|\bgdpr\b|confidential|background check|\bprohibit", l):
+        return "OK", pick(r"^yes", r"agree|acknowledge|accept|consent|confirm|understand|^i will") or "Yes / I agree", "attestation"
+    if re.search(r"internal (?:posting|candidates?|applicants?) only", l):
+        return "OK", "not applicable (external candidate)", "internal-only question"
+    if re.search(r"talent community|newsletter|keep your (?:details|information)|future (?:job )?opportunit|whatsapp|"
+                 r"text messages|\bsms\b|receive (?:messages|texts|updates)", l):
+        return "OK", "the candidate's pick", "optional consent"
+    links = cand.get("links") or {}
+    if "linkedin" in l:
+        return "OK", links.get("linkedin") or "the candidate's LinkedIn URL", "profile link"
+    if re.search(r"github|website|portfolio|personal site|\burl\b", l):
+        return "OK", links.get("website") or "the candidate's site, if any", "profile link"
+    if re.search(r"how did (?:you|your) (?:\w+ )?(?:hear|find|learn)|hear about|learn(?:ed)? about|"
+                 r"where (?:did|have) you (?:hear|learn)|\bsource\b|referr|refer(?:red)? by", l):
+        return "OK", "the candidate's pick", "source"
+    if re.search(r"(?:current|most recent|previous)\b.{0,25}\b(?:employer|company)", l):
+        return "OK", cand.get("current_employer") or "the candidate's employer", "employer"
+    if not opts and re.search(r"(?:current|most recent|previous)\b.{0,25}\b(?:title|job title)", l):
+        return "OK", cand.get("current_title") or "the candidate's title", "title"
+    if re.search(r"preferred (?:first |last )?name|legal (?:first |last )?name|pronounc|accommodat|adjustment", l):
+        return "OK", "the candidate's own", "personal detail"
+    if ftype in ("textarea", "input_text"):
+        if re.search(r"^why\b|why do you want|why are you|what (?:excites|interests|draws|attracts)|tell us|describe|"
+                     r"share (?:an?|your|how)|explain|what experience|how do you|walk us through|give an example", l):
+            return "ASK", "an essay answer for the candidate to write", f'essay: "{_form_short(label, 50)}"'
+        if required:
+            return "ASK", "the candidate's answer", f'free text: "{_form_short(label, 50)}"'
+        return "OK", "optional", "optional free text"
+    if required:
+        return "ASK", "the candidate's answer", f'screening question: "{_form_short(label, 50)}"'
+    return "OK", "optional", "optional question"
+
+def _form_short(s, n):
+    s = re.sub(r"\s+", " ", strip_html(s or "")).strip()
+    return s if len(s) <= n else s[:n - 3].rstrip() + "..."
+
+def form_questions_from_detail(d, row=None, cand=None):
+    """The classified custom questions of one Greenhouse job-detail response. Identity fields (name,
+    email, phone, resume, cover letter), hidden location fields and voluntary EEO questions are left out:
+    they never decide anything."""
+    out = []
+    for q in d.get("questions") or []:
+        fields = [f for f in q.get("fields") or [] if f.get("type") != "input_hidden"]
+        if not fields or all(f.get("name") in _FORM_STANDARD_FIELDS for f in fields): continue
+        label = _form_short(q.get("label"), 300)
+        if _FORM_EEO.search(label): continue
+        ftype = fields[0].get("type")
+        options = [_no_ctrl(str(v.get("label"))) for f in fields for v in f.get("values") or [] if v.get("label") is not None]
+        verdict, answer, reason = classify_form_question(label, bool(q.get("required")), ftype, options, row, cand)
+        summ = " | ".join(_form_short(o, 40) for o in options[:6]) + (f" (+{len(options) - 6} more)" if len(options) > 6 else "")
+        out.append({"label": label, "required": bool(q.get("required")), "type": ftype, "options_summary": summ,
+                    "verdict": verdict, "truthful_answer": answer, "reason": reason})
+    return out
+
+def pay_band_from_ranges(ranges):
+    """A comp string from pay_input_ranges, or None. USD only, and annual only: a range whose minimum is
+    under $20,000 after cents -> dollars is hourly (or junk) and is ignored, the same 20k-2M annual check
+    comp_from_description applies. The range title is not trusted (an annual band titled "Hourly Rate"
+    has been seen live). Several ranges (per location or zone): the first, plus a count."""
+    bands = []
+    for p in ranges or []:
+        if str(p.get("currency_type") or "").upper() != "USD": continue
+        try:
+            lo, hi = float(p.get("min_cents")) / 100, float(p.get("max_cents")) / 100
+        except (TypeError, ValueError):
+            continue
+        if not (20_000 <= lo <= 2_000_000 and lo <= hi <= 3_000_000): continue
+        bands.append(_band_fmt(f"{lo:,.2f}", f"{hi:,.2f}"))
+    bands = list(dict.fromkeys(bands))
+    if not bands: return None
+    return bands[0] + (f" (+{len(bands) - 1} more ranges)" if len(bands) > 1 else "")
+
+def form_path():
+    return DATA / "form_questions.json"
+
+def load_forms():
+    return load_json(form_path(), {})
+
+def save_forms(d):
+    write_json_atomic(form_path(), d, indent=1, sort_keys=True)
+
+def _row_jdh(r):
+    """The JD hash a form entry is bound to: the live text's hash, else the stored one."""
+    return jd_hash(r["description"]) if r.get("description") else r.get("jd_hash")
+
+def form_stale(entry, jdh, max_days=FORM_STALE_DAYS):
+    """True when a form must be (re)read: no entry, the JD text moved, or the read is too old."""
+    if not entry: return True
+    if jdh and entry.get("jd_hash") and entry["jd_hash"] != jdh: return True
+    age = days_since(entry.get("fetched_on"))
+    return age is None or age > max_days
+
+def form_entry(d, row, jdh, cand=None):
+    qs = form_questions_from_detail(d, row, cand)
+    counts = {v: sum(1 for q in qs if q["verdict"] == v) for v in ("KNOCKOUT", "ASK", "OK")}
+    return {"fetched_on": TODAY.isoformat(), "jd_hash": jdh, "updated_at": d.get("updated_at"),
+            "pay_band": pay_band_from_ranges(d.get("pay_input_ranges")),
+            "pay_ranges": [[p.get("currency_type"), p.get("min_cents"), p.get("max_cents"), _form_short(p.get("title"), 80)]
+                           for p in d.get("pay_input_ranges") or []],
+            "counts": counts, "questions": qs}
+
+def form_check_candidates(rows, scored, forms, min_score=FORM_MIN_SCORE):
+    """Open Greenhouse reqs scored at min_score or above whose form is missing or stale, newest first."""
+    out = []
+    for k, s in scored.items():
+        r = rows.get(k)
+        if not r or r.get("ats") != "greenhouse": continue
+        try:
+            if float(s.get("score") or 0) < min_score: continue
+        except (TypeError, ValueError):
+            continue
+        if form_stale(forms.get(k), _row_jdh(r)): out.append(k)
+    out.sort(key=lambda k: rows[k].get("posted") or "", reverse=True)
+    return out
+
+def gh_detail_fetch(slug, jid):
+    return get(GH_DETAIL_URL.format(slug=slug, id=jid))
+
+def _gh_fetch_all(keys, rows, slug_of):
+    """[(key, detail or None, error or None)] for every key, one polite lane set on boards-api."""
+    def fn(k):
+        r = rows[k]
+        slug = ((r.get("_target") or {}).get("slug")) or slug_of.get(r.get("company"))
+        if not slug: return k, None, "no Greenhouse slug for this employer in the targets file"
+        try:
+            return k, gh_detail_fetch(slug, r["id"]), None
+        except Exception as e:
+            return k, None, f"{type(e).__name__}: {str(e)[:120]}"
+    return run_laned(keys, lambda k: "greenhouse", fn)
+
+def gh_detail_pass(rows, gates, verdicts=None, scored=None, slug_of=None, fetch=True, prune=False):
+    """The live sweep's Greenhouse detail read, after gating. Runs only on rows this run holds.
+
+    1. Pay bands: a Greenhouse PASS/REVIEW row with no comp after comp_from_description gets its band
+       from pay_input_ranges. A cached entry for the same JD hash answers without a fetch, so a row is
+       fetched once per JD version; the rest are fetched newest-posted first.
+    2. Forms: an open Greenhouse req scored form_min_score+ whose form is missing or stale is read (the
+       same call), when gates.json names a candidate_profile to compare the questions against.
+    Forms go first in the budget (GH_DETAIL_BUDGET, gates.json gh_detail_max_fetch); what the budget does
+    not reach is counted and waits for the next run. Returns the one-line summary for the health block."""
+    forms = load_forms()
+    scored = load_scored() if scored is None else scored
+    slug_of = slug_of or {}
+    cand = load_candidate(gates)
+    budget = int(gates.get("gh_detail_max_fetch", GH_DETAIL_BUDGET))
+    min_score = gates.get("form_min_score", FORM_MIN_SCORE)
+    st = {"filled": 0, "cached": 0, "forms": 0, "fetched": 0, "failed": 0, "over": 0}
+    want_form = form_check_candidates(rows, scored, forms, min_score) if cand else []
+    pay_need = []
+    for k, r in rows.items():
+        if r.get("ats") != "greenhouse" or r.get("comp"): continue
+        e, jdh = forms.get(k), _row_jdh(r)
+        if e and (not jdh or e.get("jd_hash") == jdh):
+            if e.get("pay_band"):
+                r["comp"] = e["pay_band"]; st["cached"] += 1
+            continue
+        v = verdicts.get(k) if verdicts is not None else gate(r, gates)
+        if (v[0] if isinstance(v, (tuple, list)) else v) in ELIGIBLE_LABELS:
+            pay_need.append(k)
+    pay_need.sort(key=lambda k: rows[k].get("posted") or "", reverse=True)
+    todo = list(dict.fromkeys(want_form + pay_need))
+    st["over"] = max(0, len(todo) - budget) if fetch else len(todo)
+    todo = todo[:budget] if fetch else []
+    want = set(want_form)
+    for k, d, err in _gh_fetch_all(todo, rows, slug_of):
+        if err:
+            st["failed"] += 1; continue
+        r = rows[k]
+        forms[k] = form_entry(d, r, _row_jdh(r), cand)
+        st["fetched"] += 1
+        if k in want: st["forms"] += 1
+        if not r.get("comp") and forms[k]["pay_band"]:
+            r["comp"] = forms[k]["pay_band"]; st["filled"] += 1
+    pruned = 0
+    if prune:
+        for k in [k for k, e in forms.items() if k not in rows and (days_since(e.get("fetched_on")) or 0) > FORM_PRUNE_DAYS]:
+            del forms[k]; pruned += 1
+    if st["fetched"] or pruned:
+        save_forms(forms)
+    if not (st["fetched"] or st["failed"] or st["cached"] or st["over"]):
+        return None
+    return (f"gh-detail: {st['filled'] + st['cached']} pay band(s) filled from pay_input_ranges ({st['filled']} newly read, "
+            f"{st['cached']} from data/form_questions.json), {st['forms']} form(s) read for scored {min_score}+ reqs, "
+            f"{st['fetched']} detail fetch(es), {st['failed']} failed"
+            + (f", {st['over']} over the {budget}-fetch budget (next run)" if st["over"] else ""))
+
+def form_window_lines(entry, jdh=None):
+    """The --window lines for one req's form read: each knockout, then the count line."""
+    lines = []
+    for q in entry.get("questions") or []:
+        if q.get("verdict") == "KNOCKOUT":
+            lines.append(f'KNOCKOUT (form): "{_form_short(q.get("label"), 110)}" -> truthful {q.get("truthful_answer")}')
+    asks = list(dict.fromkeys(q.get("reason") or _form_short(q.get("label"), 40)
+                              for q in entry.get("questions") or [] if q.get("verdict") == "ASK"))
+    n_ko = sum(1 for q in entry.get("questions") or [] if q.get("verdict") == "KNOCKOUT")
+    note = ""
+    if jdh and entry.get("jd_hash") and entry["jd_hash"] != jdh:
+        note = " [JD changed since the form was read: python sweep.py --form-check to refresh]"
+    elif (days_since(entry.get("fetched_on")) or 0) > FORM_STALE_DAYS:
+        note = f" [form read over {FORM_STALE_DAYS} days ago: python sweep.py --form-check to refresh]"
+    lines.append(f"FORM: {len([q for q in entry.get('questions') or [] if q.get('verdict') == 'ASK'])} ask, {n_ko} knockout"
+                 + (f" (ask: {'; '.join(asks)})" if asks else "") + f" · read {entry.get('fetched_on')}" + note)
+    return lines
+
+def form_check(gates, keys=None, dry_run=False, targets_file="targets.json"):
+    """--form-check [KEY ...]: read the Greenhouse application form for the named reqs, or for every open
+    Greenhouse req scored form_min_score+ whose form is missing or stale, and print what each one
+    implies against the candidate profile. --dry-run prints the same and writes nothing."""
+    cand = load_candidate(gates)
+    if not cand:
+        sys.exit("--form-check needs a candidate profile: set gates.json candidate_profile to a JSON file of the "
+                 "candidate's facts (see examples/john_doe/candidate.json)")
+    snap = load_json(DATA / "latest.json", None)
+    if not snap: sys.exit("no data/latest.json; run a sweep first")
+    rows = snap["rows"]
+    forms = load_forms()
+    slug_of = {t["company"]: t.get("slug") for t in load_targets(targets_file) if t.get("ats") == "greenhouse"}
+    min_score = gates.get("form_min_score", FORM_MIN_SCORE)
+    if keys:
+        todo = []
+        for k in keys:
+            r = rows.get(k)
+            if not r: print(f"{k}: not open in data/latest.json, skipped")
+            elif r.get("ats") != "greenhouse": print(f"{k}: not a Greenhouse req (forms are read from Greenhouse only), skipped")
+            else: todo.append(k)
+    else:
+        todo = form_check_candidates(rows, load_scored(), forms, min_score)
+        print(f"{len(todo)} open Greenhouse req(s) scored {min_score}+ with no form read, or a stale one"
+              f" (JD changed or over {FORM_STALE_DAYS} days old)\n")
+    n = 0
+    for k, d, err in sorted(_gh_fetch_all(todo, rows, slug_of), key=lambda x: todo.index(x[0])):
+        r = rows[k]
+        print(link(f"{r['company']} · {r['title']}", r.get("url") or ""))
+        print(f"    key={k}")
+        if err:
+            print(f"    FORM NOT READ: {err}\n"); continue
+        e = form_entry(d, r, _row_jdh(r), cand)
+        forms[k] = e; n += 1
+        print(f"    pay_input_ranges: {e['pay_band'] or 'none usable (not posted, not USD, or not annual)'}")
+        for line in form_window_lines(e, _row_jdh(r)): print("    " + line)
+        for q in e["questions"]:
+            if q["verdict"] == "ASK":
+                print(f'      ask: "{_form_short(q["label"], 90)}" -> {q["truthful_answer"]}')
+        print()
+    if dry_run:
+        print(f"--dry-run: {n} form(s) read, nothing written")
+    elif n:
+        save_forms(forms)
+        print(f"{n} form(s) written to data/form_questions.json")
 
 # ----------------------------------------------------------------------------- yield report
 def yield_report(gates, min_rows_noisy=500):
@@ -4782,6 +5405,11 @@ if __name__ == "__main__":
     ap.add_argument("--floor", type=int, help="score floor, for the --window note only; filters nothing here")
     ap.add_argument("--backfill-eligible", action="store_true",
                     help="build data/eligible.json (first day each req was PASS/REVIEW) from the dated snapshots")
+    ap.add_argument("--form-check", nargs="*", metavar="KEY",
+                    help="read the Greenhouse application form (knockouts, against gates.json candidate_profile) and "
+                         "pay_input_ranges for the named req keys, or with no keys for every open Greenhouse req scored "
+                         "form_min_score+ whose form is missing or stale; writes data/form_questions.json")
+    ap.add_argument("--dry-run", action="store_true", help="with --form-check: print, write nothing")
     ap.add_argument("--prerank-check", action="store_true",
                     help="recompute the pre-rank hint's rank correlation against scored.json, then exit")
     a = ap.parse_args()
@@ -4801,6 +5429,9 @@ if __name__ == "__main__":
             print(f"  {t['company']:34} tier {(t.get('tier') or 'C'):2}  {'LIVE ' if live else 'CACHE'}  {why}")
         sys.exit()
     if a.prerank_check: prerank_check(g); sys.exit()
+    if a.form_check is not None:
+        if requests is None: sys.exit("pip install requests")
+        form_check(g, a.form_check, dry_run=a.dry_run, targets_file=a.targets); sys.exit()
     if a.backfill_eligible: backfill_eligible(); sys.exit()
     if a.window: window_query(g, a.window, a.company, a.floor); sys.exit()
     if a.yield_report: yield_report(g); sys.exit()

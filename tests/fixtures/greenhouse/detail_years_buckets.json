@@ -1,0 +1,589 @@
+{
+ "id": 1000002,
+ "title": "Product Manager, API Platform",
+ "updated_at": "2026-10-09T16:49:23-04:00",
+ "location": {
+  "name": "United States"
+ },
+ "questions": [
+  {
+   "description": null,
+   "label": "First Name",
+   "required": true,
+   "fields": [
+    {
+     "name": "first_name",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Last Name",
+   "required": true,
+   "fields": [
+    {
+     "name": "last_name",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Email",
+   "required": true,
+   "fields": [
+    {
+     "name": "email",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Phone",
+   "required": true,
+   "fields": [
+    {
+     "name": "phone",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Resume/CV",
+   "required": true,
+   "fields": [
+    {
+     "name": "resume",
+     "type": "input_file",
+     "values": []
+    },
+    {
+     "name": "resume_text",
+     "type": "textarea",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Cover Letter",
+   "required": false,
+   "fields": [
+    {
+     "name": "cover_letter",
+     "type": "input_file",
+     "values": []
+    },
+    {
+     "name": "cover_letter_text",
+     "type": "textarea",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "LinkedIn Profile",
+   "required": false,
+   "fields": [
+    {
+     "name": "question_69689769",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "How did you hear about this job?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69689770",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Company Website (ExampleCo Careers)",
+       "value": 754923515
+      },
+      {
+       "label": "Third-party website or search engine",
+       "value": 754923516
+      },
+      {
+       "label": "Social media (Facebook, LinkedIn, Twitter, Instagram)",
+       "value": 754923517
+      },
+      {
+       "label": "ExampleCo Tech blog post",
+       "value": 754923518
+      },
+      {
+       "label": "ExampleCo.io",
+       "value": 754923519
+      },
+      {
+       "label": "ExampleCo Open Source",
+       "value": 754923520
+      },
+      {
+       "label": "Event (Tech Talk, Meetup, conference)",
+       "value": 754923521
+      },
+      {
+       "label": "ExampleCo Employee",
+       "value": 754923522
+      },
+      {
+       "label": "Friend, family, colleague",
+       "value": 754923523
+      },
+      {
+       "label": "Other",
+       "value": 754923524
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": "<p>Description trimmed.</p>",
+   "label": "U.S. Equal Opportunity Employment Information (Completion is voluntary)",
+   "required": false,
+   "fields": [
+    {
+     "name": "question_69689771[]",
+     "type": "multi_value_multi_select",
+     "values": [
+      {
+       "label": "I decline to answer the following questions.",
+       "value": 754923525
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": "<p>Description trimmed.</p>",
+   "label": "Gender:",
+   "required": false,
+   "fields": [
+    {
+     "name": "question_69689772",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Male",
+       "value": 754923526
+      },
+      {
+       "label": "Female",
+       "value": 754923527
+      },
+      {
+       "label": "Other",
+       "value": 754923528
+      },
+      {
+       "label": "Decline To Self Identify",
+       "value": 754923529
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": "<p>Description trimmed.</p>",
+   "label": "Race:",
+   "required": false,
+   "fields": [
+    {
+     "name": "question_69689773",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "American Indian or Alaskan Native",
+       "value": 754923530
+      },
+      {
+       "label": "Asian",
+       "value": 754923531
+      },
+      {
+       "label": "Black or African American",
+       "value": 754923532
+      },
+      {
+       "label": "Hispanic or Latino",
+       "value": 754923533
+      },
+      {
+       "label": "White",
+       "value": 754923534
+      },
+      {
+       "label": "Native Hawaiian or Other Pacific Islander",
+       "value": 754923535
+      },
+      {
+       "label": "Two or More Races",
+       "value": 754923536
+      },
+      {
+       "label": "Decline to Self Identify",
+       "value": 754923537
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": "<p>Description trimmed.</p>",
+   "label": "Veteran Status: ",
+   "required": false,
+   "fields": [
+    {
+     "name": "question_69689774",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "I am a protected veteran",
+       "value": 754923538
+      },
+      {
+       "label": "I am not a protected veteran",
+       "value": 754923539
+      },
+      {
+       "label": "Decline to Self Identify",
+       "value": 754923540
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Are you legally authorized to work in the country where the job is located?\n",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69689775",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Yes, I am currently legally authorized to work in the country where the job is located.",
+       "value": 754923541
+      },
+      {
+       "label": "No, I am not currently legally authorized to work in the country where the job is located.",
+       "value": 754923542
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Will you now or in the future require company sponsorship to retain or extend your work authorization in the country where the job is located?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69689776",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Yes, I will require immigration sponsorship now to legally work in the country where the job is located.",
+       "value": 754923543
+      },
+      {
+       "label": "Yes, I will require immigration sponsorship in the future to legally work in the country where the job is located.",
+       "value": 754923544
+      },
+      {
+       "label": "No, I do not and will not require immigration sponsorship to legally work in the country where the job is located.",
+       "value": 754923545
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": "<p>Description trimmed.</p>",
+   "label": "ExampleCo Candidate Privacy Policy",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69689777",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "I acknowledge that I have read and understood the ExampleCo Candidate Privacy Policy.",
+       "value": 754923546
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Are you currently subject to any non-compete or non-solicitation agreement that would impact your ability to work at ExampleCo or prevent you from accepting a job offer from ExampleCo? ",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69689778",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Yes",
+       "value": 1
+      },
+      {
+       "label": "No",
+       "value": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Are you currently or have you ever worked for ExampleCo in any capacity? This could include, but is not limited to, a full-time employee, intern, apprentice, or contingent worker.",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69689779",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Yes",
+       "value": 1
+      },
+      {
+       "label": "No",
+       "value": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": "<p>Description trimmed.</p>",
+   "label": "Candidate AI Usage Attestation:",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69689780",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "I agree",
+       "value": 754923547
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "How many years experience do you have as a Product Manager?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69744481",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "No experience",
+       "value": 755210876
+      },
+      {
+       "label": "1 - 3 years",
+       "value": 755210877
+      },
+      {
+       "label": "4 - 7 years",
+       "value": 755210878
+      },
+      {
+       "label": "8+ years",
+       "value": 755210879
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "How many years of Product Management experience do you have specifically designing and building developer platforms or APIs?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69744482",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "I do not have experience in this specific area",
+       "value": 755210880
+      },
+      {
+       "label": "1 - 2 years",
+       "value": 755210881
+      },
+      {
+       "label": "3 - 4 years",
+       "value": 755210882
+      },
+      {
+       "label": "5+ years",
+       "value": 755210883
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Which of the following best describes your experience building and improving API platforms?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69744483",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "My experience is primarily building internal APIs for my own company's engineering teams.",
+       "value": 755210884
+      },
+      {
+       "label": "My experience is primarily integrating external 3rd-party APIs into our consumer-facing app.",
+       "value": 755210885
+      },
+      {
+       "label": "My experience is primarily building and scaling external-facing API platforms for 3rd-party developers and partners to build upon.",
+       "value": 755210886
+      },
+      {
+       "label": "I do not have direct experience building API platforms.",
+       "value": 755210887
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "When developing products or platforms, which user base have you focused on the most?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69744484",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "Purely consumer/end-user (B2C)",
+       "value": 755210888
+      },
+      {
+       "label": "Internal enterprise employees",
+       "value": 755210889
+      },
+      {
+       "label": "Marketplace supply-side, SMBs, or B2B partners (e.g., sellers, merchants, hosts, drivers)",
+       "value": 755210890
+      },
+      {
+       "label": "Hardware or physical product users",
+       "value": 755210891
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Which of the following best describes your experience with product lifecycles in the API / Developer platform space?",
+   "required": true,
+   "fields": [
+    {
+     "name": "question_69744485",
+     "type": "multi_value_single_select",
+     "values": [
+      {
+       "label": "I primarily optimize and maintain existing, mature platforms.",
+       "value": 755210892
+      },
+      {
+       "label": "I focus strictly on the technical execution and leave the Go-To-Market (GTM) strategy to marketing teams.",
+       "value": 755210893
+      },
+      {
+       "label": "I have taken zero-to-one platform concepts to reality, including defining the GTM strategy and product marketing for developers.",
+       "value": 755210894
+      },
+      {
+       "label": "My product lifecycle experience is mostly in consumer products, not developer platforms.",
+       "value": 755210895
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "location_questions": [
+  {
+   "description": null,
+   "label": "Longitude",
+   "required": true,
+   "fields": [
+    {
+     "name": "longitude",
+     "type": "input_hidden",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Latitude",
+   "required": true,
+   "fields": [
+    {
+     "name": "latitude",
+     "type": "input_hidden",
+     "values": []
+    }
+   ]
+  },
+  {
+   "description": null,
+   "label": "Location",
+   "required": true,
+   "fields": [
+    {
+     "name": "location",
+     "type": "input_text",
+     "values": []
+    }
+   ]
+  }
+ ],
+ "pay_input_ranges": [
+  {
+   "min_cents": 20000000,
+   "max_cents": 24000000,
+   "currency_type": "USD",
+   "title": "Pay Range",
+   "blurb": "<p>Pay range blurb.</p>"
+  }
+ ],
+ "absolute_url": "https://example.test/",
+ "company_name": "ExampleCo"
+}

@@ -139,6 +139,13 @@ What the sweep does on every run:
   and out-of-scope fields. Every threshold lives in `gates.json`.
 - **Gives a second look on the description**: a posting whose title is off still runs every other
   filter, and a strong description flags it for review, never as a pass.
+- **Reads the application form** on Greenhouse sites, for postings you scored 60 or more: each question
+  is checked against the candidate's facts (`examples/john_doe/candidate.json`) and marked KNOCKOUT
+  when the truthful answer would likely get the application rejected ("Do you have 7+ years ...?",
+  "Are you authorized to work in Canada?", "Do you live within 50 miles of our office?"), ASK when it
+  needs the candidate's own answer, or OK. It is a flag shown in `--window`, never a filter or a score.
+  The same call fills in a missing pay band. `python sweep.py --form-check [KEY ...]` reads forms on
+  demand.
 - **Reports what it couldn't read**: a company whose site errors is retried once, then reported as
   UNCOVERED. A posting missing from a site that errored is carried forward for up to 14 days, not
   closed. A read that comes back under half its usual size is treated as cut off.
@@ -164,6 +171,7 @@ need them.
 | `blocked_us_markets` | US cities you rule out (also list them in `location_fail_any`) |
 | `endorsed_foreign_markets` | Non-US cities you would take, with the knockout note to show |
 | `candidate_years_total` | Your years of relevant experience, for the years-gap read |
+| `candidate_profile` | Your facts for the application-form check (copy `examples/john_doe/candidate.json`): years, home, places you would move to, work authorization, degree, certifications |
 | `reach_years_from` / `years_hard_fail_over` | A required-years bar from this is labelled REACH; over this it fails |
 | `never_claim_terms_in_requirements` | Phrases that flag a posting (never fail it), such as "security clearance" |
 | `title_hard_exclude` | Title families that fail outright (sales and marketing roles here), each with phrases that spare a title |

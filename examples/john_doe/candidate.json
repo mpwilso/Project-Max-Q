@@ -1,0 +1,37 @@
+{
+  "_comment": "Structured facts about the fictional candidate John Doe (see profile.md). sweep.py --form-check, and the sweep's Greenhouse detail pass, compare each application-form question against these to say which ones knock him out. None of it describes a real person. gates.json candidate_profile points here; copy this file and point it at your own. A fact left out (null) makes the matching questions ASK, never a guess.",
+  "years_experience": 4.5,
+  "years_bar_cleared": 4,
+  "_years_note": "years_bar_cleared: a stated minimum at or under this is a truthful yes ('Do you have 4+ years?'); above it is a knockout.",
+  "home": {
+    "city": "Denver",
+    "label": "Denver, CO",
+    "state": "Colorado",
+    "state_code": "CO",
+    "country": "United States",
+    "pattern": "(?i:denver|aurora|boulder|lakewood|englewood|greenwood village|centennial|broomfield|littleton|golden)|\\bCO\\b",
+    "timezone": "Mountain",
+    "timezone_pattern": "(?i:mountain)|\\bM[SD]?T\\b"
+  },
+  "relocation_markets": [],
+  "_relocation_note": "Markets the candidate would move to, each {\"name\": \"Austin\", \"pattern\": \"(?i:austin)|\\\\bTX\\\\b\"}. John Doe will not relocate.",
+  "work_authorization": {
+    "us_authorized": true,
+    "needs_sponsorship": false,
+    "us_citizen": true,
+    "canada_authorized": false
+  },
+  "education": {
+    "level": "bachelor",
+    "degree": "B.S., Business Administration",
+    "school": "Example State University"
+  },
+  "_education_note": "level is one of: none, high school, associate, bachelor, master, doctorate.",
+  "certifications": [],
+  "security_clearance": false,
+  "people_management": false,
+  "current_employer": "Northwind Traders",
+  "current_title": "Product Owner, Finance Systems",
+  "links": {"linkedin": null, "website": null},
+  "salary_note": "his number (the profile states no floor)"
+}
