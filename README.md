@@ -154,6 +154,27 @@ What the sweep does on every run:
   fell sharply, overall and per kind of careers site, so one site type changing its format cannot hide
   inside normal totals. A detail page that comes back with no description counts as a failed read.
 
+## How it reads sites
+
+- **It says who it is.** Every request carries the user agent
+  `maxq-sweep/0.1 (+https://github.com/mpwilso/Project-Max-Q)`.
+- **It goes slowly.** It waits 0.15 seconds before every request (0.6 seconds on Eightfold's newer
+  sites, which rate-limit hard), and backs off on a 429 or 5xx, honoring `Retry-After`.
+- **One request at a time per site.** Requests are grouped by host. Most hosts get one at a time; a few
+  large shared job-board hosts (Greenhouse, Ashby, Lever, SmartRecruiters, Workday) get two to five.
+- **Public sources only.** It reads public job-board APIs and companies' own careers pages, with no
+  login. It does not read LinkedIn or job-listing aggregators.
+- **robots.txt is not checked.** The code never fetches it. One reader was written around it (the
+  DirectEmployers reader uses the sitemap, not the RSS feeds robots.txt rules out), but there is no
+  general check. That is a known gap.
+
+**Browser impersonation is off by default.** Meta's careers site only answers requests that look like
+Chrome, and a few Workday sites refuse plain requests. `--allow-browser-impersonation` (or
+`MAXQ_ALLOW_BROWSER_IMPERSONATION=1`) lets the Meta reader send a Chrome user agent and browser
+headers, and with `USE_CURL_CFFI=1` (after `pip install curl_cffi`) sends Workday calls through
+curl_cffi as Chrome. It is off because it hides who is asking. Without it, Meta is reported as skipped
+with that reason, never as a quiet empty board.
+
 <details>
 <summary><b>Make it yours: set up your own search</b></summary>
 
