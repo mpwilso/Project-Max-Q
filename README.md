@@ -5,7 +5,13 @@
   </picture>
 </p>
 
-[![tests](https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml/badge.svg)](https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml)
+<p align="center"><b>A slow week and a broken search look the same. Max Q tells them apart.</b></p>
+
+<p align="center"><a href="https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml"><img src="https://github.com/mpwilso/Project-Max-Q/actions/workflows/tests.yml/badge.svg" alt="CI status"></a></p>
+
+Status: A portfolio project, built to show how I design, test and judge an AI tool, and a working tool I use on my own job search. The fit scorer has been measured on one set of 24 made-up postings, labeled by the same model family that does the scoring: it agreed with the label 79% of the time against 46% for keyword matching, under a dealbreaker rule chosen after seeing that set. The results are in [evals/results/](evals/results/), including the misses.
+
+Max Q sits beside [Loupe](https://github.com/mpwilso/loupe), [Parallax](https://github.com/mpwilso/parallax), [ISR](https://github.com/mpwilso/isr), [Polarizer](https://github.com/mpwilso/polarizer) and [Mordecai](https://github.com/mpwilso/mordecai), other tools in the same portfolio, and has no dependency on any of them.
 
 Job hunting at volume is mostly noise. Listing sites are stale and incomplete, and a slow week looks
 exactly like a broken search. I built Max Q to fix that for myself: it reads job postings straight from
@@ -78,10 +84,8 @@ Bad jobs at the top of the list went from 3 to 0. [The numbers and the caveats](
 Python 3.12. About two minutes to a first report. No API key or account needed.
 
 ```
-python -m venv .venv
-.venv\Scripts\activate          # Windows cmd
-# PowerShell: .venv\Scripts\Activate.ps1   Git Bash: source .venv/Scripts/activate
-# macOS/Linux: source .venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate        # Linux and macOS
 pip install -r requirements.txt
 
 # offline: run sample postings through the filters
@@ -93,6 +97,10 @@ python -m unittest discover -s tests -t .
 # live: read three small public careers sites
 python sweep.py --targets examples/targets.quickstart.json
 ```
+
+On Windows, create the environment with `py -m venv .venv` and activate it with
+`.venv\Scripts\activate` (cmd), `.venv\Scripts\Activate.ps1` (PowerShell) or
+`source .venv/Scripts/activate` (Git Bash); the rest is the same.
 
 The last command takes about a second and writes `reports/SWEEP_REPORT_<date>.md`. Open it;
 `reports/SAMPLE_REPORT.md` shows what a larger run looks like. To test one company's careers site
