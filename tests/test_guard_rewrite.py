@@ -20,7 +20,11 @@ class GuardRepo(unittest.TestCase):
         shutil.rmtree(self.dir, ignore_errors=True)
 
     def git(self, *args):
-        subprocess.run(["git", "-C", str(self.dir), *args], check=True, capture_output=True)
+        # Run from a pre-commit hook, git exports GIT_INDEX_FILE (and GIT_DIR in a worktree) as absolute
+        # paths, and the throwaway repo then commits into the outer repo's index: run from a hook in a
+        # git worktree, three of these tests committed their fixtures to the outer repo.
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        subprocess.run(["git", "-C", str(self.dir), *args], check=True, capture_output=True, env=env)
 
     def write(self, rel, data):
         p = self.dir / rel
@@ -34,7 +38,7 @@ class GuardRepo(unittest.TestCase):
         self.git("commit", "-q", "--no-verify", "-m", "fixture")
 
     def guard(self, allow=False):
-        env = {k: v for k, v in os.environ.items() if k != "MAXQ_ALLOW_REWRITE"}
+        env = {k: v for k, v in os.environ.items() if k != "MAXQ_ALLOW_REWRITE" and not k.startswith("GIT_")}
         if allow:
             env["MAXQ_ALLOW_REWRITE"] = "1"
         r = subprocess.run([sys.executable, str(GUARD), "--repo", str(self.dir)],

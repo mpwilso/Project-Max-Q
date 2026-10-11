@@ -85,6 +85,8 @@ def list_jobs(t, h, smoke=False):
         ops = d.get("opportunities") or []
         total = d.get("totalCount") if total is None else total
         if skip == 0 and not ops:
+            if total == 0 and t.get("empty_ok"):
+                return []   # see workable.py: raising here meant the flag never reached sweep.py's guard
             raise RuntimeError(f"ukg {base}: board answered with no opportunities (totalCount={total})")
         for o in ops:
             jid = o.get("Id")

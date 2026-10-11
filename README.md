@@ -143,7 +143,8 @@ What the sweep does on every run:
   UNCOVERED. A posting missing from a site that errored is carried forward for up to 14 days, not
   closed. A read that comes back under half its usual size is treated as cut off.
 - **Prints a health block**: the full funnel, unread companies, big count drops, and a pass volume that
-  fell sharply.
+  fell sharply, overall and per kind of careers site, so one site type changing its format cannot hide
+  inside normal totals. A detail page that comes back with no description counts as a failed read.
 
 <details>
 <summary><b>Make it yours: set up your own search</b></summary>
@@ -165,6 +166,8 @@ need them.
 | `candidate_years_total` | Your years of relevant experience, for the years-gap read |
 | `reach_years_from` / `years_hard_fail_over` | A required-years bar from this is labelled REACH; over this it fails |
 | `never_claim_terms_in_requirements` | Phrases that flag a posting (never fail it), such as "security clearance" |
+| `title_hard_exclude` | Title families that fail outright (sales and marketing roles here), each with phrases that spare a title |
+| `snapshot_keep_days` | How long dated snapshots in `data/` are kept (0 keeps them all) |
 | `prerank` | The lexicon that sorts unscored postings and scores descriptions for rescue |
 
 Two things to know:

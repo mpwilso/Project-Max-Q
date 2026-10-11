@@ -72,6 +72,10 @@ class UkgTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.m.list_jobs(T, h)
 
+    def test_empty_ok_board_returns_nothing_instead(self):
+        h = StubH([("LoadSearchResults", {"opportunities": [], "totalCount": 0})])
+        self.assertEqual(self.m.list_jobs(dict(T, empty_ok=True), h), [])
+
 
 if __name__ == "__main__":
     unittest.main()

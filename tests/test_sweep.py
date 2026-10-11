@@ -879,6 +879,33 @@ class Lanes(unittest.TestCase):
         out = sweep.run_laned(items, lambda x: x[0], lambda x: x)
         self.assertEqual(sorted(out), sorted(items))
 
+    def test_an_idle_lane_takes_the_next_item_from_its_host(self):
+        # Items used to be dealt into fixed lists, so a lane with two slow items ran alone while
+        # its sibling idled. With a shared queue, 2 lanes finish 1 slow + 3 fast in about one slow item.
+        # Fixed dealing put "slow" and "slow2" (items 0 and 4) on the same lane; a shared queue hands
+        # slow2 to whichever lane is free, and the fast lane is free long before "slow" finishes.
+        # An Event, not time.sleep: other tests stub sleep out on the time module itself.
+        import threading
+        from unittest import mock
+        seen, lock, rest_done = {}, threading.Lock(), threading.Event()
+        def fn(x):
+            if x == "slow": rest_done.wait(5)        # blocks its lane until the other lane finishes
+            with lock: seen[x] = threading.get_ident()
+            if x == "slow2": rest_done.set()
+            return x
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("MAXQ_SERIAL", None)
+            out = sweep.run_laned(["slow", "f1", "f2", "f3", "slow2"], lambda x: "h", fn, widths={"h": 2})
+        self.assertEqual(sorted(out), sorted(["slow", "f1", "f2", "f3", "slow2"]))
+        self.assertEqual(len(set(seen.values())), 2, "two lanes for a width-2 host")
+        self.assertNotEqual(seen["slow"], seen["slow2"])
+
+    def test_never_more_lanes_than_items(self):
+        import threading
+        ids = set()
+        sweep.run_laned([1], lambda x: "workday:wd5", lambda x: ids.add(threading.get_ident()))
+        self.assertEqual(len(ids), 1)
+
     def test_serial_mode(self):
         os.environ["MAXQ_SERIAL"] = "1"
         try:
@@ -2074,8 +2101,9 @@ class SweepSandbox(unittest.TestCase):
         self.assertEqual((s2["health"]["carried"], s2["closed"], s2["new_keys"]), (0, {}, []))
         self.assertEqual(s2["verdicts"], s1["verdicts"])
         rl = self.readlog()
+        # etag_304 stays 0: a trusted board's counters are frozen; the etag: line still counts.
         self.assertEqual((rl["last_read"][:10], rl["last_full"][:10], rl["count"], rl["etag_304"]),
-                         ("2026-09-02", "2026-09-02", 2, 1))
+                         ("2026-09-02", "2026-09-02", 2, 0))
         self.assertIn("etag: 1 of 1 conditional reads were 304, 1 board(s) re-stamped from the snapshot", self.out)
         self.assertNotIn("carried forward:", self.out)
         # Req 2 leaves the board but the vendor still says 304. 304 means unchanged: nothing closes.
@@ -2088,7 +2116,7 @@ class SweepSandbox(unittest.TestCase):
         s4 = self.sweep_day(4)
         self.assertEqual(s4["coverage"][0][2], "OK")
         self.assertEqual(list(s4["closed"]), ["fake_etag:EtagCo:2"])
-        self.assertEqual((self.readlog()["etag"], self.readlog()["etag_200"]), ('W/"v2"', 1))
+        self.assertEqual((self.readlog()["etag"], self.readlog()["etag_200"]), ('W/"v2"', 0))   # frozen under trust
 
     def test_etag_trust_restamps_rows_carried_through_an_errored_read(self):
         self.etag_setup(trust=True)

@@ -159,3 +159,113 @@ Each entry: what it looked like, why it happened, what changed, and where it is 
 - **Fix:** the fallback skips a figure that sits under a Preferred section heading. The bare word
   "preferred" mid-sentence ("master's degree preferred") is not a heading, so a bar after it still reads.
 - **Pinned by:** `tests/test_sweep.py::Tenure::test_a_bar_only_under_a_preferred_heading_is_no_bar`.
+
+### 19. A comma that joined two countries
+- **Symptom:** "Canada - Remote, US - Remote" and "United States & Canada | Remote" failed the location
+  gate, though each offers remote work in the US.
+- **Cause:** the location is split into segments on bars and slashes, never on commas, so the Canada
+  half and the US half sat in one segment and the Canada half blocked it.
+- **Fix:** a comma cuts when the text on both sides of it says remote, and an "&" or "and" cuts when one
+  side is just the US. "Remote, Canada" and "San Francisco, CA" stay whole.
+- **Pinned by:** `tests/test_gate_false_rejections.py::CommaAndJoinedCountries`.
+
+### 20. "Dublin, CA" read as Ireland
+- **Symptom:** "Dublin, CA | Remote" hard-failed, and a suburb of an endorsed metro written with no
+  state ("GREENWOOD VILLAGE CAMPUS") failed closed.
+- **Cause:** "dublin" is on the fail list as a foreign city, and the US check did not count the
+  endorsed markets as American.
+- **Fix:** `gates.json us_twin_cities` names foreign cities with US namesakes; such a hit is ignored when
+  the segment names one of the listed states (uppercase codes only, so "Toronto, CA" still fails). An
+  endorsed market counts as a US marker.
+- **Pinned by:** `tests/test_gate_false_rejections.py::EndorsedCitiesAndTwins`.
+
+### 21. "New York - Hybrid" was not "New York"
+- **Symptom:** with "new york" endorsed as an exact segment, "New York, US, 10003", "New York - Hybrid"
+  and "NY New York 30 Hudson Yards" were sent for approval as unendorsed markets.
+- **Cause:** the exact-segment test compared the whole segment, so a ZIP, a street address or a
+  work-style word made it a different place.
+- **Fix:** the comparison strips ZIPs, street addresses, work-style and country words and state codes
+  first; anything else left over still keeps the segment out ("New York - Albany"). Optional
+  `endorsed_exact_zip_prefixes` lets a segment that is only a ZIP match.
+- **Pinned by:** `tests/test_gate_false_rejections.py::ExactSegments`.
+
+### 22. "Virtual" and "U.S. Anywhere" were not remote
+- **Symptom:** "Virtual" and "Remote/Road/Home Office" hard-failed, "U.S. Anywhere" was treated as an
+  onsite market, and "North America | Remote" failed.
+- **Cause:** the remote words were a short list, and the description was consulted only when every
+  location segment was exactly a remote marker.
+- **Fix:** "anywhere", "virtual" and "home based" are remote words; remote across North America
+  includes the US. The description decides any location that names no place once remote and
+  placeholder words are removed. A bare "Remote" beside named foreign places ("Singapore | Remote") is
+  let through only by an explicit "the role is based in the US", because one board type appends
+  "Remote" to every remote posting and boilerplate often mentions US pay or US customers.
+- **Pinned by:** `tests/test_gate_false_rejections.py::RemoteSynonyms`, `::BodyCheck`.
+
+### 23. Years bars read from the wrong line
+- **Symptom:** postings failed TENURE on 10+ or 12+ years that sat under a preferred heading; a
+  two-level posting was gated on its senior level's bar; "in absence of a degree, 12 years" counted as
+  the bar; and "operators who have been doing it one way for 30 years" read as a 30-year requirement.
+- **Cause:** "Required:", "Additional Qualifications" and "Qualifications We Prefer" were not
+  recognised as headings, a preferred-only figure was used as the bar, the lower level's figure was not
+  preferred, and a third party's "for N years" looked like the candidate's.
+- **Fix:** the headings are recognised; a figure found only under a preferred heading gives a REACH
+  label, never TENURE; a dual-level posting uses its lowest level's figure; the no-degree tier and
+  "University Degree" (a bachelor's) are tiers; a third-party "for N years" with no "experience" or
+  "you" in the sentence is skipped.
+- **Pinned by:** `tests/test_gate_false_rejections.py::PreferredYears`, `::DualLevelDegreeAndHistory`.
+
+### 24. "Backend" in a program manager's title
+- **Symptom:** "Business Program Manager - Capacity Automation & Backend Tools" and "Group Product
+  Manager, AI-Native Data Warehouse" failed on title.
+- **Cause:** engineering and physical-operations terms ("backend", "warehouse") match anywhere in a
+  title, including where they name the product area.
+- **Fix:** `title_exclude_skip_if_pm` skips stack words in a title that names product or program
+  management; "data warehouse" joins `title_noise_override`.
+- **Pinned by:** `tests/test_gate_false_rejections.py::TitleSubstrings`.
+
+### 25. The pay band in a section nobody read
+- **Symptom:** many Lever postings showed no pay band although the posting page stated one, and a
+  posting with location "Any State" and country US failed the location gate.
+- **Cause:** the closing "additional" section and the structured `salaryRange` were never read, and
+  Lever's `country` and Ashby's `addressCountry` were dropped.
+- **Fix:** the additional section is part of the description; an annual USD `salaryRange` becomes the
+  band; a US country is appended to the location (US only: a bare "CA" would read as California).
+- **Pinned by:** `tests/test_board_reads.py::LeverRows`, `::AshbyCountry`.
+
+### 26. A flag that never took effect, and a retry that could not help
+- **Symptom:** three board types reported an empty board as an error even when the target was marked
+  `empty_ok`, and the end-of-run retry spent 20 seconds plus a full re-read on boards that answer 404.
+- **Cause:** those adapters raised before the sweep's empty-board guard could read the flag, and the
+  retry pass retried every error.
+- **Fix:** the adapters return an empty list for an `empty_ok` target; the retry skips 401, 403, 404,
+  410 and empty-board errors, which a second read cannot change.
+- **Pinned by:** `test_empty_ok_board_returns_nothing_instead` in `tests/adapters/` (gem, ukg,
+  workable), `tests/test_board_reads.py::RetryOnlyWhatCanSucceed`.
+
+### 27. A posting passed with no description at all
+- **Symptom:** after a gate edit widened the title list, `--report-only` passed postings whose years,
+  contract and people-management checks had never run. Separately, a few detail pages that returned no
+  text left their postings as PASS.
+- **Cause:** descriptions of out-of-lane postings are stripped to keep snapshots small, and a re-gate
+  ran on the empty text; and some detail readers returned the row untouched instead of raising, which
+  counted as a successful fetch.
+- **Fix:** a stripped row that would pass is REVIEW with a "body not read" note until a live read
+  refills it. Every detail call is checked centrally: an empty description is a failed read, counted in
+  the detail-failed health warning, and the stored body is used when there is one.
+- **Pinned by:** `tests/test_board_reads.py::StrippedBodyIsNotAPass`, `tests/test_empty_detail.py`.
+
+### 28. One vendor broke and the totals looked normal
+- **Symptom:** none yet; found by asking what the health block would miss. One board type serves about
+  a quarter of the passing postings, so a renamed location field there would fail every row it serves
+  and stay under the board-wide 40% warning.
+- **Fix:** the health block warns per board type when its passes fall by half (from 30 or more), when
+  60% or more of its rows have an empty location, title or expected description, or when its share of
+  empty locations rises 30 points.
+- **Pinned by:** `tests/test_ats_health.py`.
+
+### 29. A test that failed on a date
+- **Symptom:** a Workday carry-forward test started failing with no code change.
+- **Cause:** its fixture hard-coded a carried-since date, and once that date was more than 14 days old
+  the row closed, as designed.
+- **Fix:** the date is relative to today.
+- **Pinned by:** `tests/test_workday_close.py`.

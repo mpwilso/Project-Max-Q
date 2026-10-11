@@ -60,6 +60,10 @@ def list_jobs(t, h, smoke=False):
     slug = t["slug"]
     d = h.get(f"{API}/{h.quote(slug)}?details=true")
     jobs = d.get("jobs") if isinstance(d, dict) else None
+    # An empty_ok target (the account proved live, simply no openings) returns [] so sweep.py's
+    # empty-board guard can stamp it "OK (empty board)"; raising here meant the flag never took effect.
+    if jobs == [] and t.get("empty_ok"):
+        return []
     if not jobs:
         raise RuntimeError(f"workable {slug}: widget answered with no jobs")
     # One widget entry per posting LOCATION on some tenants (e.g. D4E5F6A7B8: same shortcode, JD and

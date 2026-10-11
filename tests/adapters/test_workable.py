@@ -60,6 +60,14 @@ class WorkableTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.m.list_jobs(T, StubH([("widget", {"name": "Initech", "jobs": []})]))
 
+    def test_empty_ok_board_returns_nothing_instead(self):
+        h = StubH([("widget", {"name": "Initech", "jobs": []})])
+        self.assertEqual(self.m.list_jobs(dict(T, empty_ok=True), h), [])
+
+    def test_empty_ok_still_raises_on_a_malformed_answer(self):
+        with self.assertRaises(RuntimeError):
+            self.m.list_jobs(dict(T, empty_ok=True), StubH([("widget", {"error": "not found"})]))
+
 
 if __name__ == "__main__":
     unittest.main()

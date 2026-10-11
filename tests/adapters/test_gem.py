@@ -53,6 +53,10 @@ class GemTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.m.list_jobs(T, StubH([("job_posts", [])]))
 
+    def test_empty_ok_board_returns_nothing_instead(self):
+        # The flag never reached sweep.py's empty-board guard because this raised first.
+        self.assertEqual(self.m.list_jobs(dict(T, empty_ok=True), StubH([("job_posts", [])])), [])
+
 
 if __name__ == "__main__":
     unittest.main()

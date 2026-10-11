@@ -144,6 +144,10 @@ PHENOM_QUERIES = ["program manager", "product manager", "product owner", "techni
 
 # ----------------------------------------------------------------------------- http
 RETRY_STATUS = (429, 500, 502, 503, 504, 520, 521, 522, 523, 524)   # 52x: Cloudflare origin errors (T-Mobile)
+# A coverage ERROR the end-of-read retry pass skips: the board is gone or empty, and reading it again
+# 20 seconds later cannot change that. Anything else (timeouts, drops, 5xx, 429) is still retried.
+PERMANENT_ERROR = re.compile(r"ERROR (?:EmptyBoard|NoAdapter)\b|\b(?:401|403|404|410) Client Error"
+                             r"|answered (?:200 )?with no (?:jobs|job posts|opportunities)")
 _tls = __import__("threading").local()
 
 def http_session():
@@ -272,9 +276,13 @@ def etag_log_fields(t, prior):
     running counters. {} for a board that did not read through etag_get."""
     st = t.get("_etag_stat")
     if st is None: return {}
-    out = {"etag_304": (prior.get("etag_304") or 0) + st["hit"],
-           "etag_200": (prior.get("etag_200") or 0) + st["miss"],
-           "etag_304_mismatch": (prior.get("etag_304_mismatch") or 0) + st.get("mismatch", 0)}
+    # The counters measure whether tags hold, which is the question etag_trust settles. On a trusted
+    # board they are frozen at their last value: nothing reads them once trust is on, and counting on
+    # changed hundreds of read_log.json lines every run. A vendor still under measurement keeps counting.
+    grow = 0 if t.get("_etag_trust") else 1
+    out = {"etag_304": (prior.get("etag_304") or 0) + grow * st["hit"],
+           "etag_200": (prior.get("etag_200") or 0) + grow * st["miss"],
+           "etag_304_mismatch": (prior.get("etag_304_mismatch") or 0) + grow * st.get("mismatch", 0)}
     tags = st["tags"]
     if tags and all(tags):
         stored = tags[0] if len(tags) == 1 else tags
@@ -621,6 +629,11 @@ def ashby(t, smoke=False):
     out = []
     for j in d.get("jobs", []):
         locs = [j.get("location") or ""] + [x.get("location", "") for x in j.get("secondaryLocations", [])]
+        # addressCountry used to be dropped, so a city-only location the API places in the United States
+        # failed closed. US only, for the reason in _lever_rows.
+        country = (((j.get("address") or {}).get("postalAddress") or {}).get("addressCountry") or "").strip()
+        if country in ("United States", "USA", "US") and locs[0] and not _has_us_country(locs[0]):
+            locs[0] = f"{locs[0]}, United States"
         if j.get("isRemote"): locs.append("Remote")
         comp = (j.get("compensation") or {}).get("compensationTierSummary")
         out.append(norm(t["company"], "ashby", j["id"], j.get("title"), " | ".join(x for x in locs if x),
@@ -635,12 +648,34 @@ def _lever_rows(t, d):
         cats = j.get("categories") or {}
         locs = [cats.get("location") or ""] + list(cats.get("allLocations") or [])
         if j.get("workplaceType") == "remote": locs.append("Remote")
+        # The posting's country rides beside the location. Only "US" is appended: a bare "CA" would read
+        # as California, and a foreign row already fails closed without it. Lever's "Any State" with
+        # country US was a silent location FAIL; it now reaches the location policy.
+        if j.get("country") == "US" and locs and locs[0] and not _has_us_country(locs[0]):
+            locs[0] = f"{locs[0]}, US"
         posted = epoch_date(j["createdAt"]) if j.get("createdAt") else None
+        # The closing "additional" section is where about one posting in nine states its only pay band,
+        # and some their only years line; it was never read.
         desc = (j.get("descriptionPlain") or "") + "\n" + "\n".join(
-            f"{l.get('text','')}\n{strip_html(l.get('content',''))}" for l in j.get("lists", []))
+            f"{l.get('text','')}\n{strip_html(l.get('content',''))}" for l in j.get("lists", [])) + \
+            "\n" + (j.get("additionalPlain") or strip_html(j.get("additional") or ""))
         out.append(norm(t["company"], "lever", j["id"], j.get("text"), " | ".join(x for x in locs if x),
-                        j.get("hostedUrl"), posted, desc, None, {"team": cats.get("team")}))
+                        j.get("hostedUrl"), posted, desc.rstrip(), _lever_salary(j.get("salaryRange")),
+                        {"team": cats.get("team")}))
     return out
+
+def _has_us_country(loc):
+    return bool(re.search(r"\b(?:US|USA|U\.S\.A?\.?|United States)\b", loc or ""))
+
+def _lever_salary(sr):
+    """Lever's structured salaryRange, as a band, when it is an annual USD range. Nearly every posting
+    that carries one states no band in the body, so comp read as not posted."""
+    if not isinstance(sr, dict) or sr.get("currency") != "USD" or sr.get("interval") != "per-year-salary":
+        return None
+    lo, hi = sr.get("min"), sr.get("max")
+    if not isinstance(lo, (int, float)) or not isinstance(hi, (int, float)): return None
+    if not (20_000 <= lo <= 2_000_000 and lo <= hi <= 3_000_000): return None
+    return _band_fmt(f"{lo:,.0f}", f"{hi:,.0f}")
 
 def lever(t, smoke=False):
     out, skip, page, unread = [], 0, 0, []
@@ -1487,6 +1522,18 @@ def _has_word(s, term):
     The pattern is compiled once per term: a full gate makes tens of millions of these calls."""
     return _word_re(term).search(s) is not None
 
+@functools.lru_cache(maxsize=None)
+def _words_re(terms):
+    return re.compile(r"(?<![a-z0-9])(?:" + "|".join(re.escape(t) for t in sorted(terms, key=len, reverse=True))
+                      + r")(?![a-z0-9])")
+
+def _has_any_word(s, terms):
+    """any(_has_word(s, t) for t in terms), as one cached alternation. Same lookarounds per term, and the
+    regex backtracks through every alternative at each position, so the answer is identical. The
+    per-term loops made tens of millions of calls on a full gate of a large snapshot."""
+    terms = tuple(terms)
+    return bool(terms) and _words_re(terms).search(s) is not None
+
 _LOC_SPLIT = re.compile(r"[|;\n]|\s/\s|\s+or\s+")
 
 def _loc_segments(original):
@@ -1494,8 +1541,49 @@ def _loc_segments(original):
     lowercase " or " too, because boards write "Jersey City, NJ / Boulder, CO" and
     "San Francisco, CA or Remote, US", and a blocked-market half would otherwise sink the whole
     string. Never commas ('San Francisco, CA' must stay one segment), never an unspaced slash
-    ("Hybrid/Remote"), and "Portland, OR" is uppercase so it is not the word "or"."""
-    return [s for s in _LOC_SPLIT.split(original or "") if s and s.strip()]
+    ("Hybrid/Remote"), and "Portland, OR" is uppercase so it is not the word "or".
+    A comma DOES cut when it joins two remote places, "Canada - Remote, US - Remote": the Canada half
+    used to sink the US half (_split_remote_commas)."""
+    return [q for s in _LOC_SPLIT.split(original or "") if s and s.strip()
+            for p in _split_remote_commas(s) for q in _split_us_and(p)]
+
+_REMOTE_WORD = re.compile(r"remote", re.I)
+_US_ONLY_PIECE = re.compile(r"\W*(?:the\s+)?(?:united states(?: of america)?|usa|u\.s\.(?:a\.)?|us)\W*", re.I)
+
+def _split_us_and(seg):
+    """'United States & Canada' -> ['United States', 'Canada']: the Canada half used to sink the US
+    half. Only when one side of the '&' / 'and' is the US and nothing else."""
+    pieces = re.split(r"\s+(?:&|and)\s+", seg)
+    if len(pieces) > 1 and any(_US_ONLY_PIECE.fullmatch(p) for p in pieces): return pieces
+    return [seg]
+
+def _split_remote_commas(seg):
+    """'Canada - Remote, US - Remote' -> ['Canada - Remote', 'US - Remote']. A new piece starts at a
+    comma only when the text after it says remote AND the piece before it already did, so 'Remote,
+    Canada' and 'San Francisco, CA' stay whole and 'Remote, US, Remote, Canada' cuts in two."""
+    pieces = re.split(r",\s+", seg)
+    if sum(1 for p in pieces if _REMOTE_WORD.search(p)) < 2: return [seg]
+    groups, cur = [], []
+    for p in pieces:
+        if cur and _REMOTE_WORD.search(p) and any(_REMOTE_WORD.search(x) for x in cur):
+            groups.append(", ".join(cur)); cur = []
+        cur.append(p)
+    groups.append(", ".join(cur))
+    return groups
+
+def _fail_hits(seg, g):
+    """location_fail_any terms in a segment, less a foreign city that is also a US town when the segment
+    names that town's state ('Dublin, CA', 'Dublin, Ohio', 'Paris, TX'): gates.json us_twin_cities,
+    codes matched UPPERCASE so 'Toronto, CA' (Canada) is never read as California."""
+    s = seg.lower()
+    if not _has_any_word(s, g["location_fail_any"]): return []
+    hits = [b for b in g["location_fail_any"] if _has_word(s, b)]
+    twins = g.get("us_twin_cities") or {}
+    if hits and twins:
+        codes = set(re.findall(r"(?<![A-Za-z])[A-Z]{2}(?![A-Za-z])", seg))
+        hits = [b for b in hits if not (b in twins and any(
+            (x in codes) if len(x) == 2 and x.isupper() else _has_word(s, x) for x in twins[b]))]
+    return hits
 
 _COUNTRY_PREFIX = re.compile(r"\s*([A-Z]{2}):\s")
 
@@ -1507,9 +1595,12 @@ def _has_us_marker(seg, g):
     m = _COUNTRY_PREFIX.match(seg)
     if m and m.group(1) != "US": return False
     s = seg.lower()
-    return bool(any(_has_word(s, q) for q in g.get("us_qualifiers", []))
-                or any(_has_word(s, st) for st in g.get("us_states_full", []))
-                or any(_has_word(s, c) for c in g.get("us_cities", []))
+    # An endorsed market is American by definition (a suburb of an endorsed metro with no state, or
+    # "SF" when "sf" is in both lists), so it counts as a marker.
+    return bool(_has_any_word(s, g.get("us_qualifiers", []))
+                or _has_any_word(s, g.get("us_states_full", []))
+                or _has_any_word(s, g.get("us_cities", []))
+                or _has_any_word(s, g.get("endorsed_onsite_markets", []))
                 or (set(re.findall(r"(?<![A-Za-z])[A-Z]{2}(?![A-Za-z])", seg)) & set(g.get("us_state_codes", []))))
 
 def remote_beside_blocked_us(original, g):
@@ -1529,8 +1620,7 @@ def remote_beside_blocked_us(original, g):
     # "San Francisco" with no state, so gates.json names the blocked AMERICAN markets outright.
     us_blocked = g.get("blocked_us_markets", [])
     def blocked_and_american(seg):
-        s = seg.lower()
-        hits = [b for b in g["location_fail_any"] if _has_word(s, b)]
+        hits = _fail_hits(seg, g)
         return bool(hits) and all(b in us_blocked for b in hits)
     return any(blocked_and_american(seg) for seg in segs) and any(bare_remote(seg) for seg in segs)
 
@@ -1540,8 +1630,7 @@ def unblocked_segments(original, g):
     check, but it is exactly what makes 'USA | Remote' a remote role under the location policy."""
     out = []
     for seg in _loc_segments(original):
-        s = seg.lower()
-        if any(_has_word(s, b) for b in g["location_fail_any"]): continue
+        if _fail_hits(seg, g): continue
         out.append(seg)
     return out
 
@@ -1556,7 +1645,7 @@ def us_segments(original, g):
     """
     out = []
     for seg in _loc_segments(original):
-        if any(_has_word(seg.lower(), b) for b in g["location_fail_any"]):
+        if _fail_hits(seg, g):
             continue                                   # blocked segment, try the next one
         if _has_us_marker(seg, g):
             out.append(seg)
@@ -1568,7 +1657,18 @@ def us_location_ok(original, g):
         return False, "no location stated"
     if us_segments(original, g): return True, ""
     if remote_beside_blocked_us(original, g): return True, ""
+    if north_america_remote(original, g): return True, ""
     return False, "location gate (fail-closed, no US marker): " + original[:90]
+
+def north_america_remote(original, g):
+    """True for "North America | Remote", "Remote (North America)", "Remote - North America": remote
+    across North America includes the US. A segment that is blocked ("Remote - Canada") or
+    names a foreign place lends nothing, so Canada-only remote still fails."""
+    segs = [s for s in _loc_segments(original) if not _fail_hits(s, g)]
+    markers = g.get("remote_markers", ["remote"])
+    remote = lambda s: any(m in s.lower() for m in markers) and not remote_names_foreign_place(s, g)
+    na = [s for s in segs if _has_word(s.lower(), "north america")]
+    return bool(na) and (any(remote(s) for s in na) or any(remote(s) for s in segs))
 
 def bare_remote_only(original, g):
     """True when every segment is a remote marker plus, at most, a region that may include the US
@@ -1593,22 +1693,70 @@ def bare_remote_us_evidence(row, g):
     A req listed as plain "Remote" fails the fail-closed gate on the list text alone, but the
     body usually says where: "remote
     within the United States", a state list, or a USD pay band (state pay-transparency law). A body
-    that names a foreign country and no US marker still fails; so does no body at all."""
+    that names a foreign country and no US marker still fails; so does no body at all.
+
+    It used to run only when EVERY segment was a bare remote marker, so "Remote | Canada | Tokyo" (body:
+    "based in the US"), "Remote/Road/Home Office", "Virtual" and "BLANK,BLANK,Multiple Locations" (state
+    pay ranges in the body) hard-failed unread. body_check_location says when the body gets a vote.
+    The case-sensitive word "US" ("East Coast US location preferred") counts too, but not in a
+    shouted heading ("ABOUT US", "JOIN US")."""
     if not (g.get("bare_remote") or {}).get("body_check"): return None
     desc = row.get("description") or ""
-    if not desc.strip() or not bare_remote_only(row.get("location") or "", g): return None
+    mode = body_check_location(row.get("location") or "", g) if desc.strip() else None
+    if not mode: return None
     low = desc.lower()
+    if mode == "strong":
+        m = re.search((g.get("bare_remote") or {}).get("us_strong_regex") or r"(?!x)x", low)
+        return f'"{m.group(0)}"' if m else None
     for q in (g.get("bare_remote") or {}).get("us_phrases", []):
         if _has_word(low, q): return f'"{q}"'
     st = next((x for x in g.get("us_states_full", []) if _has_word(low, x) and x != "washington"), None)
     if st: return f"a US state ({st.title()})"
     m = _USD_BAND.search(desc)
     if m: return f"a USD pay band ({m.group(0).strip()[:30]})"
+    for m in _US_CAPS.finditer(desc):
+        prev = re.findall(r"[A-Za-z]+", desc[max(0, m.start() - 20): m.start()])
+        if prev and (prev[-1].isupper() or prev[-1].lower() in _US_PRONOUN_HEADS): continue
+        return '"US"'
+    return None
+
+_US_CAPS = re.compile(r"(?<![A-Za-z])US(?![A-Za-z])")
+_US_PRONOUN_HEADS = {"join", "about", "contact", "with", "for", "to", "email", "call", "reach", "tell", "let",
+                     "help", "give", "send", "ask", "follow", "visit", "find", "message", "lets"}
+
+def body_check_location(original, g):
+    """How far the JD body may decide a location that failed the US check: "any" (every US signal
+    counts), "strong" (only an explicit "the role is based in the US"), or None (no vote).
+
+    "any": every segment is a bare remote marker (the original rule), or names no place at all once remote
+    words, regions and placeholder words are stripped ("Virtual", "Remote/Road/Home Office", "Eastern or
+    Central Timezone", "BLANK,BLANK,Multiple Locations"). "strong": a bare remote segment beside named
+    foreign places ("Remote | Canada | Tokyo"). Ashby appends a bare "Remote" to every remote req, so
+    "Singapore | Remote" is remote in Singapore: on one real snapshot 120+ such rows carried a USD band or
+    the word US in boilerplate, and only an explicit statement lets one through. "Remote - Canada",
+    "London" and "Madrid Office" never get a vote. A req that passes on the body with no remote option
+    meets the location policy as LOCATION-POLICY."""
+    if bare_remote_only(original, g): return "any"
+    segs = _loc_segments(original)
+    if not segs: return None
+    br = g.get("bare_remote") or {}
+    strip = sorted(g.get("remote_markers", ["remote"]) + br.get("region_tokens", []) + br.get("non_place_tokens", []),
+                   key=len, reverse=True)
+    def no_place(seg):
+        s = seg.lower()
+        for t in strip: s = re.sub(r"(?<![a-z])" + re.escape(t) + r"(?![a-z])", " ", s)
+        return all(w in REMOTE_QUALIFIER_WORDS for w in re.findall(r"[a-z]+", s))
+    if all(no_place(s) for s in segs): return "any"
+    markers = g.get("remote_markers", ["remote"])
+    if any(any(m in s.lower() for m in markers) and no_place(s) and not _fail_hits(s, g) for s in segs):
+        return "strong"
     return None
 
 # Words a remote segment can carry that name no place: "Remote-Friendly (Travel-Required)", "Remote/Hybrid".
+# Also "road" and "office" ("Remote/Road/Home Office").
 REMOTE_QUALIFIER_WORDS = ("friendly", "travel", "required", "hybrid", "optional", "eligible", "flexible",
-                          "possible", "preferred", "work", "from", "home", "based", "in", "the", "or", "and")
+                          "possible", "preferred", "work", "from", "home", "based", "in", "the", "or", "and",
+                          "road", "office")
 
 def remote_names_foreign_place(seg, g):
     """True for "Remote - Colombia": a remote segment that names a place with no US marker. It is remote
@@ -1652,6 +1800,7 @@ def location_policy_ok(original, g):
     for seg in us_segments(original, g):
         if any(_has_word(seg.lower(), c) for c in endorsed): return True, "market"
         if re.sub(r"\s+", " ", seg.strip().lower()) in exact: return True, "market"
+        if _exact_segment(seg, exact, g): return True, "market"
         seg_codes = set(re.findall(r"(?<![A-Za-z])[A-Z]{2}(?![A-Za-z])", seg))
         if (codes & seg_codes and not (not_codes & seg_codes) and not _has_word(seg.lower(), "canada")
                 and not endorsed_foreign_market(seg, g)):
@@ -1661,6 +1810,41 @@ def location_policy_ok(original, g):
     if g.get("bare_country_passes") and any(_bare_country(seg, g) for seg in us_segments(original, g)):
         return True, "bare country"
     return False, ("location policy: unendorsed onsite market, needs approval: " + (original or "")[:90])
+
+# An endorsed exact segment written with a ZIP, a street address, a work-style word or a country:
+# "NY New York 30 Hudson Yards", "New York, US, 10003" and "New York - Hybrid" are all the bare "New
+# York" segment, but the exact test saw the extra words and sent them to LOCATION-POLICY. Strip those
+# (and uppercase state codes), then compare. Anything left over keeps the segment out: "New York -
+# Albany" and "Tarrytown, NY 10591" are not "New York". gates.json endorsed_exact_zip_prefixes maps an
+# exact segment to the ZIP prefixes that name it, so "NY 10001" can be the city with no city name.
+_EXACT_NOISE = re.compile(r"\b(?:hybrid|in[- ]office|on[- ]?site|office|hq|headquarters|united states of america|"
+                          r"united states|usa|u\.s\.a?\.?|us|america)\b")
+_ZIP = re.compile(r"(?<!\d)(\d{5})(?:-\d{4})?(?!\d)")
+
+def _exact_norm(seg, codes=()):
+    s = _ZIP.sub(" ", seg)
+    s = re.sub(r"(?<![A-Za-z])[A-Z]{2}(?![A-Za-z])", lambda m: " " if m.group(0) in codes else m.group(0), s).lower()
+    s = re.sub(r"(?<![\w-])\d{1,5}\s+[a-z].*$", " ", s)                  # a street address runs to the end
+    s = re.sub(r"[^a-z]+", " ", _EXACT_NOISE.sub(" ", s)).strip()
+    half = s.split(" ")
+    if len(half) % 2 == 0 and half[:len(half) // 2] == half[len(half) // 2:]:
+        s = " ".join(half[:len(half) // 2])                              # "New York, New York"
+    return s
+
+def _exact_segment(seg, exact, g):
+    """True when a segment is one of the endorsed exact segments once ZIP, street, work style, state
+    code and country are stripped, or carries a ZIP that names one (endorsed_exact_zip_prefixes)."""
+    if not exact: return False
+    codes = set(g.get("us_state_codes", []))
+    s = _exact_norm(seg, codes)
+    normed = {_exact_norm(x, codes): x for x in exact}
+    if s and s in normed: return True
+    zips = [m.group(1) for m in _ZIP.finditer(seg)]
+    for x, prefixes in (g.get("endorsed_exact_zip_prefixes") or {}).items():
+        nx = _exact_norm(x, codes)
+        if nx in normed and s in (nx, "") and any(z.startswith(tuple(prefixes)) for z in zips):
+            return True
+    return False
 
 def _bare_country(seg, g):
     """True when a segment is only the country ('United States', 'US', 'United States, Multiple
@@ -1745,13 +1929,15 @@ def _same_sentence_context(desc, m, after=60, before=40):
 # tier; the Master's/PhD, Associate's, high-school and in-lieu-of-degree tiers do not apply; a
 # range's bar is its low end. Order matters: "in lieu of a BS/BA degree" names a bachelor's but is
 # the no-degree tier.
+# "in absence of a degree, 12 years" is the no-degree tier, and "University Degree" is a bachelor's
+# ("university degree and 8 years, or an advanced degree and 5, or in absence of a degree, 12").
 _DEGREE_TIERS = (
-    ("none", r"in lieu|without a degree|no degree"),
+    ("none", r"in lieu|without a degree|no degree|absence of a (?:university |college |bachelor[’']?s? )?degree"),
     ("hs", r"high school|\bhs\b|\bged\b|secondary school"),
     ("assoc", r"associate[’']?s?\b(?! director| manager| product)|\bas/aa\b|\baa/as\b"),
     ("master", r"(?<!scrum )master(?:[’']?s\b| of| degree)|\bms/ma\b|\bma/ms\b|\bm\.s\.|\bmba\b"),
     ("phd", r"ph\.?\s?d|doctorate|doctoral"),
-    ("bachelor", r"bachelor|\bbs/ba\b|\bba/bs\b|\bb\.s\.|\bb\.a\.|\bbs\b|\bba degree"),
+    ("bachelor", r"bachelor|\bbs/ba\b|\bba/bs\b|\bb\.s\.|\bb\.a\.|\bbs\b|\bba degree|university degree"),
 )
 
 def _degree_tier(text):
@@ -1779,8 +1965,55 @@ def _tier_of_match(desc, m):
         tier = _degree_tier(alts[idx - 1][1])
     return tier
 
-def _bar_figures(desc, g):
-    """(figure, match) for every year figure that plausibly states the JD's experience bar."""
+# Someone else's "for N years": "operators who have been doing it one way for 30 years" read as a
+# 30+ bar on a posting with no years line. A bare "for N years" in a sentence that says neither
+# "experience" nor "you", and names a third party, is never a bar.
+_FOR_HEAD = re.compile(r"\bfor\s+$")
+_THIRD_PARTY = re.compile(r"\b(?:who|we|we['’]ve|our|they|their|its|company|customers?|clients?|operators?)\b")
+
+def _sentence_of(desc, m):
+    s0 = max(desc.rfind(c, 0, m.start()) for c in (";", "\n", ". "))
+    e_cands = [i for i in (desc.find(c, m.end()) for c in (";", "\n", ". ")) if i != -1]
+    return desc[s0 + 1: min(e_cands) if e_cands else len(desc)]
+
+def _third_party_for_years(desc, m):
+    if not _FOR_HEAD.search(desc[max(0, m.start() - 8): m.start()]): return False
+    s = _sentence_of(desc, m)
+    return ("experience" not in s and not re.search(r"\byou(?:r|'ve|’ve)?\b", s)
+            and bool(_THIRD_PARTY.search(s)))
+
+# Dual-level postings: "8-10+ years ... for Delivery Manager, or 10-12+ years for Senior Delivery
+# Manager", or "Basic Qualifications - Senior Product Manager 6+ years ... Basic Qualifications -
+# Principal Product Manager 10+ years", were gated on the higher level's figure. The req is open at
+# the lower level, so its bar is the lowest level's.
+_LEVEL_RANK = {"associate": -1, "senior": 1, "sr": 1, "sr.": 1, "lead": 2, "staff": 2, "principal": 3}
+_LEVEL_HEADING = re.compile(r"qualifications\s*[-–—:]\s*(associate|senior|sr\.?|staff|lead|principal)\b")
+_LEVEL_TAIL = re.compile(r"^[^,;\n]*?(?:\bfor\s+(?:an?\s+|the\s+)?(senior|sr\.?|staff|lead|principal)\b"
+                         r"|\bat\s+(?:the\s+)?(senior|sr\.?|staff|lead|principal)\s+level)")
+
+def _level_of(desc, m):
+    """(heading level, tail level) for a year figure: the level named by the last 'Qualifications -
+    Senior ...' heading before it, and a 'for Senior ...' / 'at the staff level' in its own clause."""
+    head = None
+    for h in _LEVEL_HEADING.finditer(desc, 0, m.start()): head = h.group(1)
+    tail_txt = re.split(r"\s+or\s+|\.\s", desc[m.end(): m.end() + 120], maxsplit=1)[0]
+    t = _LEVEL_TAIL.search(tail_txt)
+    return head, ((t.group(1) or t.group(2)) if t else None)
+
+def _lowest_level(found):
+    """Drop figures tied to a higher level when a lower level's figure exists."""
+    if len(found) < 2: return found
+    heads = {f[3][0] for f in found if f[3][0]}
+    if len(heads) > 1:
+        low = min(_LEVEL_RANK[h] for h in heads)
+        found = [f for f in found if f[3][0] is None or _LEVEL_RANK[f[3][0]] == low]
+    if any(f[3][1] for f in found) and any(not f[3][1] for f in found):
+        found = [f for f in found if not f[3][1]]
+    return found
+
+def _bar_figures_split(desc, g):
+    """(required, preferred): (figure, match) lists. preferred holds the figures inside a labelled
+    preferred-qualifications section of a JD that also labels its required one; required holds the rest."""
     found = []
     for m in re.finditer(g["years_regex"], desc):
         n = int(m.group(1))
@@ -1794,24 +2027,39 @@ def _bar_figures(desc, g):
         if _TEAM_AVERAGE_HEAD.search(desc[max(0, m.start() - 40): m.start()]): continue
         if _THIRD_PERSON_SPENT_HEAD.search(desc[max(0, m.start() - 30): m.start()]) \
                 and re.match(r"\s+at\s", desc[m.end(): m.end() + 5]): continue
+        if _third_party_for_years(desc, m): continue
         # "6–10+ years", and the legal style "five (5) to seven (7) years"
         lo = re.search(r"(\d{1,2})\)?\s*(?:-|–|—|to)\s*(?:[a-z]+\s*\()?$", desc[max(0, m.start() - 16): m.start()])
         if lo and int(lo.group(1)) < n: n = int(lo.group(1))          # "6–10+ years": the low end
-        found.append((n, m, _tier_of_match(desc, m)))
-    tiers = {t for _, _, t in found if t}
+        found.append((n, m, _tier_of_match(desc, m), _level_of(desc, m)))
+    tiers = {f[2] for f in found if f[2]}
     if "bachelor" in tiers and len(tiers) > 1:
         found = [f for f in found if f[2] in (None, "bachelor")]
-    # The bar is the REQUIRED line. Microsoft writes "Required/minimum qualifications ... 5+ years"
+    found = _lowest_level(found)
+    # The bar is the REQUIRED line. Some boards write "Required/minimum qualifications ... 5+ years"
     # then "Additional or preferred qualifications ... 8+ years", and the max over both would read
-    # 8+ where the bar is 5. Only when the JD labels both sections, and never down to nothing.
+    # 8+ where the bar is 5. Only when the JD labels both sections.
     spans = _preferred_spans(desc)
-    if spans:
-        kept = [f for f in found if not any(a <= f[1].start() < b for a, b in spans)]
-        if kept: found = kept
-    return [(n, m) for n, m, _ in found]
+    req = [f for f in found if not any(a <= f[1].start() < b for a, b in spans)]
+    pref = [f for f in found if any(a <= f[1].start() < b for a, b in spans)]
+    return [(f[0], f[1]) for f in req], [(f[0], f[1]) for f in pref]
 
-_REQUIRED_HEAD = re.compile(r"(?:required|minimum|basic)(?:\s*/\s*minimum)?\s+qualifications|requirements\s*:|must[- ]haves?\s*:")
-_PREFERRED_HEAD = re.compile(r"(?:preferred|additional or preferred|desired|bonus)\s+qualifications|nice[- ]to[- ]haves?\s*:|preferred\s*:")
+def _bar_figures(desc, g):
+    """(figure, match) for every year figure that plausibly states the JD's experience bar: the required
+    ones, or the preferred ones when the JD states no required figure. The Conversion read and
+    experience_years use this; the gate uses _bar_figures_split, so a preferred-only figure can give a
+    REACH label and never a TENURE verdict."""
+    req, pref = _bar_figures_split(desc, g)
+    return req or pref
+
+# A bare "Qualifications:" heading is the required block too when a Preferred one follows it, and
+# "Required:", "Qualifications Required:", "Preferred/Additional Qualifications", "Additional
+# Qualifications" and "Qualifications We Prefer" are headings: a preferred 12+ read as the required
+# bar and failed postings whose required bar was 6 or 8.
+_REQUIRED_HEAD = re.compile(r"(?:required|minimum|basic)(?:\s*/\s*minimum)?\s+qualifications|requirements\s*:|must[- ]haves?\s*:"
+                            r"|(?<!preferred )(?<!desired )(?<!bonus )(?<!additional )\bqualifications\s*:|\brequired\s*:")
+_PREFERRED_HEAD = re.compile(r"(?:preferred|additional or preferred|desired|bonus|additional)(?:\s*/\s*additional)?\s+qualifications"
+                             r"|nice[- ]to[- ]haves?\s*:|preferred\s*:|qualifications we prefer")
 
 def _preferred_spans(desc):
     """(start, end) character spans of preferred-qualification sections, each running to the next
@@ -1906,7 +2154,10 @@ def gate(row, g):
     # counts. Everything the core gate checks after the include point stays worded "title out of lane".
     if row["company"].lower() in g["avoid_domain_companies"]: return "FAIL", ["avoid-domain company"]
     # Word boundaries, not substrings: 'intern' must not kill 'Internal Product Manager'.
-    excl = next((x for x in g["title_exclude_any"] if _has_word(title, x.strip())), None)
+    skip = g.get("title_exclude_skip_if_pm") or {}
+    skip_terms = set(skip.get("terms", [])) if any(p in title for p in skip.get("if_title_has", [])) else set()
+    excl = None if not _has_any_word(title, [x.strip() for x in g["title_exclude_any"]]) else next(
+        (x for x in g["title_exclude_any"] if x.strip() not in skip_terms and _has_word(title, x.strip())), None)
     # Any GTM title is out, unless it names a platform in platform_title_exempt ("Senior NetSuite Developer, GTM").
     if not excl and not any(_has_word(title, p) for p in g.get("platform_title_exempt", [])):
         excl = next((x for x in g.get("title_exclude_gtm", []) if _has_word(title, x)), None)
@@ -1929,9 +2180,32 @@ def gate(row, g):
     in_lane = (any(x in title for x in g["title_include_any"])
                or any(_has_word(title, w) for w in g.get("title_include_words", [])))
     v, reasons = _gate_core(row, g)
-    if in_lane: return v, reasons
+    if in_lane:
+        # Titles that ARE an out-of-scope role (gates.json title_hard_exclude: "Field Marketing Manager",
+        # "Growth Marketing Strategy Lead") end here. Only a req the rest of the gate kept is
+        # re-labelled, so every FAIL bucket the health funnel counts is unchanged and the blast radius
+        # is the kept reqs alone.
+        hard = title_hard_exclude(title, g) if v != "FAIL" else None
+        if hard: return "FAIL", [f"title excluded ({hard[0]}): {hard[1]}"]
+        return v, reasons
     if v not in RESCUE_OK: return "FAIL", ["title out of lane"]
     return rescue_verdict(row, g, v, reasons)
+
+@functools.lru_cache(maxsize=None)
+def _title_rx(p):
+    return re.compile(p, re.I)
+
+def title_hard_exclude(title, g):
+    """(family, matched text) for a title gates.json title_hard_exclude ends, or None. Each family is
+    {"family", "patterns", "except"}: regexes on the normalised title; an "except" hit spares it, so
+    product or program work on a marketing team ("Program Manager, Partner Marketing") stays in lane."""
+    t = _norm_title(title)
+    for fam in g.get("title_hard_exclude") or []:
+        if not isinstance(fam, dict): continue
+        m = next((m for m in (_title_rx(p).search(t) for p in fam.get("patterns", [])) if m), None)
+        if m and not any(_title_rx(x).search(t) for x in fam.get("except", [])):
+            return fam.get("family", "hard exclude"), m.group(0).strip()
+    return None
 
 def gate_final(row, g):
     """gate() for every caller that cannot fetch a body (--report-only, --window, --yield, --merge).
@@ -1939,7 +2213,17 @@ def gate_final(row, g):
     the snapshot, counted by no line of the health funnel, and reported by --report-only as a
     changed verdict after every gate edit."""
     v, why = gate(row, g)
-    return ("FAIL", why) if v == "RESCUE-FETCH" else (v, why)
+    if v == "RESCUE-FETCH": return "FAIL", why
+    # strip_irrelevant_text empties the body of a title-FAIL row. Re-gated after a gate edit that puts
+    # the title in lane, the row cleared years, contract and people-management checks on no text at all
+    # (40 of 93 such rows went PASS in a trial edit) and stamp_eligible marked it FREED. It is REVIEW
+    # until a live read refills the body, and says why.
+    if row.get("_text_stripped") and not (row.get("description") or "").strip() and v == "PASS":
+        return "REVIEW", [STRIPPED_BODY_NOTE] + list(why)
+    return v, why
+
+STRIPPED_BODY_NOTE = ("BODY NOT READ: JD text was dropped while this title was out of lane, so years, contract "
+                      "and people-management checks did not run; open the link (the next live read refills it)")
 
 def _gate_core(row, g):
     title = _norm_title(row["title"]); loc = row["location"].lower(); desc = row["description"].lower()
@@ -1985,7 +2269,9 @@ def _gate_core(row, g):
             # Listed in section 2, never built, and never counted as a hard FAIL: the market is
             # a preference that can be overridden, not a disqualification like a non-US location.
             if not ok:
-                if not abroad: return "LOCATION-POLICY", [why]
+                # A body-evidence pass with no remote option ("Eastern or Central Timezone",
+                # "BLANK,BLANK,Multiple Locations") keeps its VERIFY note beside the policy reason.
+                if not abroad: return "LOCATION-POLICY", [why] + (reasons if bare_remote_ev else [])
                 reasons.append(abroad)                 # 'Pleasanton | Toronto': the foreign option carries it
             if why == "bare country":
                 reasons.append("VERIFY LOCATION: the board names only the country (" + row["location"][:60]
@@ -1996,7 +2282,8 @@ def _gate_core(row, g):
                 # It passed on a remote marker. The board says remote; the JD may not agree.
                 terms = onsite_terms(row["description"])
                 if terms: reasons.append("ONSITE TERMS despite remote listing: " + terms)
-                if not us_segments(row["location"], g) and not bare_remote_ev:
+                if not us_segments(row["location"], g) and not bare_remote_ev \
+                        and not north_america_remote(row["location"], g):
                     reasons.append("VERIFY REMOTE: the only named office is a blocked market (" + row["location"][:60]
                                    + "); the board also lists a bare Remote option")
     else:
@@ -2006,7 +2293,14 @@ def _gate_core(row, g):
     if desc:
         nc = [x for x in g["never_claim_terms_in_requirements"] if x in desc]
         if nc: reasons.append("never-claim terms in JD: " + ", ".join(nc))
-        yrs = experience_years(desc, g)
+        req_figs, pref_figs = _bar_figures_split(desc, g)
+        yrs = [n for n, _ in req_figs]
+        if not yrs and pref_figs:
+            # A figure that appears only under a preferred heading ("Preferred Qualifications:
+            # 10 + years") is a stretch, never a hard gate: REACH at most.
+            ptop = max(n for n, _ in pref_figs)
+            if ptop >= g.get("reach_years_from", 6):
+                reasons.append(f"REACH: {ptop}+ years stated (preferred qualifications only)")
         if yrs:
             top = max(yrs)
             escape = bool(ESCAPE_CLAUSES.search(desc))
@@ -2320,7 +2614,11 @@ def applied_index():
     column and can only be matched on url."""
     try:
         apps = load_json(APPLICATIONS, [])
-    except Exception:
+    except Exception as e:
+        # This used to return empty indexes in silence, which switched the ALREADY APPLIED guard off
+        # for every req while --window looked normal.
+        print(f"*** ALREADY-APPLIED CHECK DISABLED: {APPLICATIONS} unreadable ({type(e).__name__}: {e}). "
+              f"Grep it by hand before building anything. ***")
         return {}, {}
     rows = apps if isinstance(apps, list) else list(apps.values())
     by_key, by_url = {}, {}
@@ -2646,10 +2944,39 @@ def compress_old_snapshots(keep_days=SNAPSHOT_RAW_DAYS):
         p.unlink(); n += 1
     return n, saved / 1e6
 
+# Dated snapshots are kept this many days by default (gates.json snapshot_keep_days overrides; 0 keeps
+# them all). A daily gzipped snapshot of a large target list is tens of MB, and nothing deleted them.
+# Nothing in a sweep reads old snapshots; only --backfill-eligible does, and it is a one-off.
+SNAPSHOT_KEEP_DAYS = 60
+
+def prune_old_snapshots(keep_days=SNAPSHOT_KEEP_DAYS):
+    """Delete dated snapshots (raw or gzipped) more than keep_days old. latest.json is never touched, and
+    the two newest dated snapshots always stay, whatever their age. keep_days 0 (or less) deletes
+    nothing. Returns (files, MB freed)."""
+    if not keep_days or keep_days <= 0: return 0, 0.0
+    dated = []
+    for p in list(DATA.glob("snapshot_*.json")) + list(DATA.glob("snapshot_*.json.gz")):
+        try: dated.append((dt.date.fromisoformat(p.name[len("snapshot_"):len("snapshot_") + 10]), p))
+        except ValueError: continue
+    keep_newest = set(sorted({d for d, _ in dated})[-2:])
+    n, freed = 0, 0
+    for d, p in dated:
+        if (TODAY - d).days > keep_days and d not in keep_newest:
+            freed += p.stat().st_size; p.unlink(); n += 1
+    return n, freed / 1e6
+
+_DIFF_MEANINGFUL = set()   # data dirs already known to hold 2+ snapshots
+
 def diff_is_meaningful():
     """first_seen is only a freshness SIGNAL once consecutive runs exist. The first run
-    stamps every key with the same date, so presenting it as signal would be a lie."""
-    return snapshot_count() >= 2
+    stamps every key with the same date, so presenting it as signal would be a lie.
+
+    --window called this once per row, one directory glob each, which cost seconds a run. A True answer
+    is remembered per data dir (snapshots are only ever added or gzipped there); False is re-checked."""
+    if str(DATA) in _DIFF_MEANINGFUL: return True
+    if snapshot_count() >= 2:
+        _DIFF_MEANINGFUL.add(str(DATA)); return True
+    return False
 
 def should_read_live(t, named, readlog, fresh=False):
     """Tiered refresh. Returns (live: bool, why: str)."""
@@ -2683,7 +3010,11 @@ def stale_banner(ts, named=None):
 # Lanes are keyed by HOST, not by ATS: two Eightfold tenants on different hosts should not queue
 # behind each other. Shared multi-tenant APIs (boards-api.greenhouse.io, api.ashbyhq.com) get a few
 # lanes; Workday gets a few lanes per shard (wd1, wd5, ...); every other host gets one.
-LANE_WIDTH = {"greenhouse": 4, "ashby": 4, "lever": 2, "smartrecruiters": 2, "workday": 3}
+# A busy Workday shard (40+ tenants) finished minutes after every other vendor on 3 lanes, and
+# Jobvite's feeds ran on one lane. Both get more lanes; Workday tenants are separate subdomains on
+# the shard, so five readers is still one request per tenant at a time.
+LANE_WIDTH = {"greenhouse": 4, "ashby": 4, "lever": 2, "smartrecruiters": 2, "workday": 3,
+              "workday:wd5": 5, "workday:wd1": 4, "app.jobvite.com": 2}
 MAX_LANES = 40
 
 def lane_key(t):
@@ -2709,17 +3040,29 @@ def run_laned(items, lane_of, fn, widths=None):
     if os.environ.get("MAXQ_SERIAL"):
         return [fn(x) for x in items]
     widths = LANE_WIDTH if widths is None else widths
+    # One shared queue per host, drained by that host's lanes. Items used to be dealt into fixed
+    # per-lane lists up front, so one lane holding two slow tenants ran on alone while its siblings
+    # sat idle.
+    from collections import deque
     queues = {}
     for it in items:
         name = lane_of(it)
         w = widths.get(name) or widths.get(str(name).split(":")[0]) or 1
-        qs = queues.setdefault(name, [[] for _ in range(max(1, w))])
-        min(qs, key=len).append(it)
-    # Longest queues first, so the slow boards start immediately when lanes exceed MAX_LANES.
-    flat = sorted((q for qs in queues.values() for q in qs if q), key=len, reverse=True)
+        queues.setdefault(name, [deque(), max(1, w)])[0].append(it)
+
+    def drain(dq):
+        res = []
+        while True:
+            try: x = dq.popleft()      # deque.popleft is atomic across threads
+            except IndexError: return res
+            res.append(fn(x))
+
+    # Longest hosts first, so the slow boards start immediately when lanes exceed MAX_LANES.
+    lanes = sorted(((dq, len(dq)) for dq, w in queues.values() for _ in range(min(w, len(dq)))),
+                   key=lambda t: t[1], reverse=True)
     out = []
-    with ThreadPoolExecutor(max_workers=min(len(flat), MAX_LANES)) as ex:
-        for f in [ex.submit(lambda q: [fn(x) for x in q], q) for q in flat]:
+    with ThreadPoolExecutor(max_workers=min(len(lanes), MAX_LANES)) as ex:
+        for f in [ex.submit(drain, dq) for dq, _ in lanes]:
             out.extend(f.result())
     return out
 
@@ -2857,6 +3200,24 @@ class FetchProgress:
             secs = int(now - self.start)
             self.out(f"  progress: {'; '.join(parts)} ({secs // 60}m {secs % 60:02d}s)")
 
+EMPTY_DETAIL = "detail page returned no JD text (body not read)"
+
+class EmptyDetail(RuntimeError):
+    """A detail call that came back without raising and without a description."""
+
+def detail_left_empty(row):
+    """The error for a detail call that returned cleanly but left the description empty, else None.
+
+    Some detail readers return the row untouched when the page has no JobPosting block, and others
+    write "" when the payload is empty. gate_all counted each as fetched, so the row stayed PASS with no
+    text (no years, contract or people-management check ran) and the >10% detail-failed warning could
+    not fire. Checked here, once, for every adapter in DETAIL including the plugins, so a new adapter
+    cannot reintroduce it. A req the adapter itself marked closed (taleo_tbe's closed page) is a real
+    answer, not an empty read."""
+    if (row.get("description") or "").strip(): return None
+    if (row.get("extra") or {}).get("closed") is True: return None
+    return EmptyDetail(EMPTY_DETAIL)
+
 def gate_all(rows, prev, gates, fetch=True):
     """Gate every row, filling in the JD text a board withholds at list level.
 
@@ -2947,9 +3308,10 @@ def gate_all(rows, prev, gates, fetch=True):
         r = rows[k]
         try:
             DETAIL[r["ats"]](r["_target"], r)
-            return k, None
         except Exception as e:
             return k, e
+        else:
+            return k, detail_left_empty(r)
         finally:
             tick(k in rescued_now)
     # Detail fetches run one lane per ATS in parallel (run_laned), sequential inside a lane, so
@@ -3195,9 +3557,11 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
     results = run_laned(to_read, lambda item: lane_key(item[0]), _read)
     # One retry pass for employers that errored. Most errors on a long run are transient
     # (dropped connections, a 502), and an ERROR employer is UNCOVERED for the whole run.
+    # Only errors a second read can fix: on one real run every error was a 404 or an empty board that
+    # recurs every run, and the pass spent 20s plus a full re-read on each of them.
     by_co = {item[0]["company"]: item for item in to_read}
     retry = [by_co[t["company"]] for t, uniq, cov, log in results
-             if cov[2].startswith("ERROR") and not smoke]
+             if cov[2].startswith("ERROR") and not PERMANENT_ERROR.search(cov[2]) and not smoke]
     if retry:
         print(f"retrying {len(retry)} errored employer(s) once after a 20s pause: "
               + ", ".join(t["company"] for t, _, _ in retry), flush=True)
@@ -3454,6 +3818,9 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
     try:
         n, mb = compress_old_snapshots()
         if n: print(f"compressed {n} raw dated snapshot(s), {mb:.0f} MB freed")
+        keep = int(gates.get("snapshot_keep_days", SNAPSHOT_KEEP_DAYS))
+        n, mb = prune_old_snapshots(keep)
+        if n: print(f"pruned {n} dated snapshot(s) older than {keep} days, {mb:.0f} MB freed")
     except OSError as e:
         print(f"(snapshot compression skipped: {e})")
 
@@ -3736,6 +4103,79 @@ def workday_total_gaps(totals=None):
             out.append((c, reported, read))
     return out
 
+# Per-vendor health. The PASS-volume check is board-wide, and one vendor can serve a quarter of PASS:
+# that vendor renaming its location field would fail every row it serves on the location gate, take a
+# quarter of PASS with it, stay under the 40% board-wide line, and leave coverage reading OK.
+ATS_PASS_MIN_PREV = 30          # an ATS with at least this many PASS last run ...
+ATS_PASS_DROP = 0.5             # ... warns when it falls by this share or more
+ATS_FIELD_MIN_ROWS = 50         # an ATS with at least this many rows read this run ...
+ATS_EMPTY_SHARE = 0.6           # ... warns when this share or more of them has the field empty
+ATS_EMPTY_LOC_RISE = 30         # ... or when its empty-location share rose this many points
+
+def _verdict_of(v):
+    return v[0] if isinstance(v, (list, tuple)) else v
+
+def ats_pass_counts(verdicts):
+    """PASS per ATS, from this run's (verdict, reasons) pairs or a snapshot's bare verdict strings.
+    The ATS is the key's first field (norm() writes "<ats>:<company>:<id>")."""
+    from collections import Counter
+    return Counter(k.split(":", 1)[0] for k, v in (verdicts or {}).items() if _verdict_of(v) == "PASS")
+
+def ats_field_rates(rows, verdicts):
+    """Per ATS: rows read, and how many came back with an empty location, title or JD text.
+
+    Carried rows are left out (they are last run's values, not this read's). The JD text denominator is
+    the rows where a body is expected: not blanked by strip_irrelevant_text (`_text_stripped`), and on a
+    detail board only the verdicts that earn the detail fetch, since the list read carries no body there."""
+    out = {}
+    for k, r in (rows or {}).items():
+        if r.get("_carried_since"): continue
+        a = r.get("ats") or k.split(":", 1)[0]
+        s = out.setdefault(a, {"rows": 0, "empty_location": 0, "empty_title": 0,
+                               "desc_expected": 0, "empty_description": 0})
+        s["rows"] += 1
+        if not (r.get("location") or "").strip(): s["empty_location"] += 1
+        if not (r.get("title") or "").strip(): s["empty_title"] += 1
+        if r.get("_text_stripped"): continue
+        if a in DETAIL and _verdict_of((verdicts or {}).get(k)) not in DETAIL_VERDICTS + ("REVIEW",): continue
+        s["desc_expected"] += 1
+        if not (r.get("description") or "").strip(): s["empty_description"] += 1
+    return out
+
+def _pct(n, d):
+    return round(100 * n / d) if d else 0
+
+def ats_health_warnings(ats_pass, prev_ats_pass, rates, prev_rates):
+    """WARNING lines for one vendor going wrong while the board-wide numbers still look normal."""
+    w = []
+    for a, p in sorted(prev_ats_pass.items(), key=lambda x: -x[1]):
+        n = ats_pass.get(a, 0)
+        if p >= ATS_PASS_MIN_PREV and n <= (1 - ATS_PASS_DROP) * p:
+            w.append(f"{a}: gate-passing reqs fell to {n} from {p} in the previous snapshot "
+                     f"(-{100 - 100 * n // p}%): suspect a renamed field or parser regression in that adapter "
+                     f"before a quiet market")
+    for a, s in sorted(rates.items()):
+        n = s["rows"]
+        if n < ATS_FIELD_MIN_ROWS: continue
+        blank = []
+        for field in ("location", "title"):
+            if s[f"empty_{field}"] >= ATS_EMPTY_SHARE * n:
+                blank.append(f"{field} {_pct(s[f'empty_{field}'], n)}% of {n} rows")
+        d = s["desc_expected"]
+        if d >= ATS_FIELD_MIN_ROWS and s["empty_description"] >= ATS_EMPTY_SHARE * d:
+            blank.append(f"JD text {_pct(s['empty_description'], d)}% of {d} rows that should carry it")
+        if blank:
+            w.append(f"{a}: empty " + "; empty ".join(blank) + ": suspect a renamed field in that adapter; "
+                     f"those rows fail the gates while coverage still reads OK")
+            continue
+        ps = (prev_rates or {}).get(a)
+        if ps and ps["rows"] >= ATS_FIELD_MIN_ROWS:
+            now_pct, was_pct = _pct(s["empty_location"], n), _pct(ps["empty_location"], ps["rows"])
+            if now_pct - was_pct >= ATS_EMPTY_LOC_RISE:
+                w.append(f"{a}: empty location rose to {now_pct}% of {n} rows from {was_pct}% in the previous "
+                         f"snapshot: suspect a renamed field in that adapter before trusting its location FAILs")
+    return w
+
 def sweep_health(rows, verdicts, new_keys, coverage, prev_counts, snap_prev, dstats, n_live, prev_scopes=None):
     """The funnel and the anomaly checks, on every run. The worst sweep failures look like quiet
     market days: cache gating, a truthiness bug that passes every location, a filter that drops
@@ -3765,6 +4205,9 @@ def sweep_health(rows, verdicts, new_keys, coverage, prev_counts, snap_prev, dst
     if prev_pass >= 50 and vc["PASS"] < 0.6 * prev_pass:
         w.append(f"gate-passing reqs fell to {vc['PASS']} from {prev_pass} in the previous snapshot: "
                  f"suspect a gate or parser regression before a quiet market")
+    ats_pass, rates = ats_pass_counts(verdicts), ats_field_rates(rows, verdicts)
+    w += ats_health_warnings(ats_pass, ats_pass_counts(snap_prev.get("verdicts")), rates,
+                             ats_field_rates(snap_prev.get("rows"), snap_prev.get("verdicts")))
     since_prev = hours_since(snap_prev.get("ts"))
     if n_live >= 100 and diff_is_meaningful() and new_pass < 3 and (since_prev is None or since_prev >= 12):
         w.append(f"only {new_pass} new gate-passing req(s) across {n_live} live employers: check the "
@@ -3776,7 +4219,8 @@ def sweep_health(rows, verdicts, new_keys, coverage, prev_counts, snap_prev, dst
     return {"rows": len(rows), "carried": carried, "employers_live": n_live, "verdicts": dict(vc),
             "fail_reasons": dict(reasons.most_common()), "new": len(new_keys), "new_pass": new_pass,
             "prev_pass": prev_pass, "errors": errors, "count_drops": drops, "detail": dstats,
-            "migrated": migrated, "workday_gaps": wd_gaps, "warnings": w}
+            "migrated": migrated, "workday_gaps": wd_gaps, "ats_pass": dict(ats_pass), "ats_fields": rates,
+            "warnings": w}
 
 def health_lines(h):
     v = h["verdicts"]

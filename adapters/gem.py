@@ -45,6 +45,8 @@ def list_jobs(t, h, smoke=False):
     if not isinstance(d, list):
         raise RuntimeError(f"gem {slug}: expected a JSON array, got {type(d).__name__}")
     if not d:
+        if t.get("empty_ok"):
+            return []   # see workable.py: raising here meant the flag never reached sweep.py's guard
         raise RuntimeError(f"gem {slug}: board answered 200 with no job posts")
     out = []
     for j in d:

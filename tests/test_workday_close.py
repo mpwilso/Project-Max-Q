@@ -4,6 +4,7 @@ A complete walk is a whole-board read. Treated as a query-scoped sample instead,
 carried for 14 days, and reqs that have closed keep appearing in --window as CARRIED.
 
 Offline: carry_forward is called directly on synthetic rows."""
+import datetime as dt
 import unittest
 
 from tests.stubs import sweep
@@ -45,7 +46,9 @@ class CompleteWorkdayWalkCloses(unittest.TestCase):
         self.assertEqual(set(carried.values()), {sweep.CARRY_SCOPE})
 
     def test_scoped_walk_keeps_carrying_rows_already_carried_as_out_of_scope(self):
-        prev = {r["key"]: r for r in (prev_row(1, _carried_reason=sweep.CARRY_SCOPE, _carried_since="2026-09-22"),)}
+        # Relative date: a fixed one ages past CARRY_MAX_DAYS and the row closes (a date bomb).
+        since = (sweep.TODAY - dt.timedelta(days=3)).isoformat()
+        prev = {r["key"]: r for r in (prev_row(1, _carried_reason=sweep.CARRY_SCOPE, _carried_since=since),)}
         carried, _ = run(f"OK ({sweep.WORKDAY_SCOPE_MARK})", {CO: sweep.WORKDAY_SCOPE_LABEL},
                          prev_scopes={CO: sweep.WORKDAY_SCOPE_LABEL}, prev=prev)
         self.assertEqual(set(carried.values()), {sweep.CARRY_SCOPE})

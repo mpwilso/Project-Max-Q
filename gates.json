@@ -161,8 +161,15 @@
     "business systems",
     "business technology",
     "netsuite",
-    "coupa"
+    "coupa",
+    "data warehouse"
   ],
+  "_title_noise_override_note": "'data warehouse' is a data platform, not physical operations: 'Group Product Manager, AI-Native Data Warehouse' failed on the noise term 'warehouse'.",
+  "title_exclude_skip_if_pm": {
+    "terms": ["backend", "back-end", "frontend", "front-end", "full stack", "fullstack"],
+    "if_title_has": ["product manager", "program manager", "product owner", "product management", "program management"]
+  },
+  "_title_exclude_skip_if_pm_note": "These title_exclude_any terms name the stack an engineer works in; in a title that names product or program management or product ownership they name the product area ('Program Manager - Automation & Backend Tools'), so they are skipped there. Every other exclude still applies. Leave terms empty to turn it off.",
   "engineering_title_review": [
     "business systems",
     "business applications",
@@ -264,9 +271,19 @@
       "remote us",
       "remote - us",
       "remote, us",
-      "authorized to work in the us"
-    ]
+      "authorized to work in the us",
+      "national pay range",
+      "anywhere in the world",
+      "based in north america",
+      "anywhere in north america",
+      "within north america",
+      "across north america",
+      "remote in north america"
+    ],
+    "non_place_tokens": ["blank", "multiple", "various", "several", "locations", "location", "timezone", "timezones", "time zone", "time zones", "eastern", "central", "pacific", "mountain", "est", "cst", "pst", "mst", "et", "ct", "pt", "mt", "tbd", "flexible"],
+    "us_strong_regex": "\\b(?:role|position|job) is (?:based|located) in the (?:us|u\\.s\\.|united states)\\b|\\bbased in the (?:us|u\\.s\\.|united states)\\b"
   },
+  "_bare_remote_note": "The JD body decides a location the list text cannot: every US signal counts (us_phrases, a US state, a USD pay band, the case-sensitive word US outside a shouted heading) when every segment is a bare remote marker or names no place once remote words, region_tokens and non_place_tokens are stripped ('Virtual', 'Remote/Road/Home Office', 'Eastern or Central Timezone', 'BLANK,BLANK,Multiple Locations'). A bare 'Remote' beside named foreign places ('Remote | Canada | Tokyo') passes only on us_strong_regex, because Ashby appends 'Remote' to every remote posting and 'Singapore | Remote' is remote in Singapore. A body pass with no remote option is LOCATION-POLICY, never PASS. Set body_check false to turn it off.",
   "endorsed_onsite_markets": [
     "denver",
     "boulder",
@@ -309,8 +326,13 @@
     "remote",
     "remote-friendly",
     "distributed",
-    "work from home"
+    "work from home",
+    "anywhere",
+    "virtual",
+    "home based",
+    "home-based"
   ],
+  "_remote_markers_note": "'U.S. Anywhere' read as an onsite market and 'Virtual' hard-failed. 'anywhere', 'virtual' and 'home based' are remote words: beside a US marker they pass as remote, alone they go to the body check like a bare 'Remote'. Remote across North America ('North America | Remote') includes the US and passes in code; Canada-only remote still fails.",
   "us_qualifiers": [
     "united states",
     "usa",
@@ -485,8 +507,19 @@
     "seattle",
     "st. louis",
     "tampa",
-    "tucson"
+    "tucson",
+    "sf"
   ],
+  "us_twin_cities": {
+    "dublin": ["CA", "california", "OH", "ohio", "GA", "georgia", "VA", "virginia", "PA", "pennsylvania"],
+    "paris": ["TX", "texas", "TN", "tennessee", "KY", "kentucky"],
+    "london": ["KY", "kentucky", "OH", "ohio"],
+    "berlin": ["NH", "new hampshire", "CT", "connecticut", "MD", "maryland", "WI", "wisconsin"],
+    "amsterdam": ["NY"]
+  },
+  "_us_twin_cities_note": "'Dublin, CA | Remote' hard-failed because 'dublin' (Ireland) is in location_fail_any. A fail-list city named here is ignored in a segment that also names one of these US states. Two-letter codes match UPPERCASE only, so 'Toronto, CA' (Canada) never counts, and any other fail-list hit in the segment (a country) still blocks.",
+  "endorsed_exact_zip_prefixes": {},
+  "_endorsed_exact_zip_prefixes_note": "An endorsed exact segment matches after its ZIP, street address, work-style words ('Hybrid', 'Office'), uppercase state code and country words are stripped, so 'New York, US, 10003' and 'New York - Hybrid' are the segment 'new york', while 'New York - Albany' is not. This maps an exact segment to the ZIP prefixes that name it, so a segment holding only a ZIP and a state code can match, for example {\"new york\": [\"100\", \"101\", \"102\", \"103\", \"104\"]}. Empty here because the example candidate endorses no exact segment.",
   "blocked_us_markets": [
     "new york",
     "new york city",
@@ -576,6 +609,14 @@
     "sweden",
     "switzerland"
   ],
+  "title_hard_exclude": [
+    {"family": "sales role", "patterns": ["\\baccount executives?\\b", "\\bsales executives?\\b", "\\bsales representatives?\\b", "\\bsales development (?:reps?|representatives?|managers?|leads?|directors?)\\b", "\\bbusiness development representatives?\\b", "^(?:senior |sr\\.? |lead |principal )?(?:sdr|bdr)s?\\b", "\\bsales engineers?\\b", "\\bsales managers?\\b", "\\bdirector of sales\\b", "\\bsales directors?\\b"], "except": []},
+    {"family": "marketing role", "patterns": ["\\bproduct marketing (?:managers?|leads?|directors?|specialists?|strategists?)\\b", "\\bproduct marketers?\\b", "\\b(?:director|head|vp|manager|lead),? (?:of )?(?:technical )?product marketing\\b", "\\bmarketing managers?\\b", "\\bmarketing directors?\\b", "\\bdirector of marketing\\b", "\\bhead of marketing\\b", "\\bmarketing leads?\\b"], "except": ["\\bmarketing cloud\\b", "\\bmarketing technology\\b", "\\btechnical product marketing\\b"]},
+    {"family": "marketing role", "patterns": ["\\bgrowth marketing\\b", "\\bmarketing programs?\\b", "\\b(?:integrated|field|brand|content|demand(?: gen(?:eration)?)?|lifecycle|performance|partner|event|digital|channel|solutions|email) marketing\\b", "\\bmarketing (?:strategy|strategist|campaigns?|communications|specialists?|analysts?|operations)\\b"], "except": ["\\b(?:product|program|project) (?:managers?|management|owners?|leads?)\\b", "\\btpm\\b", "\\bmarketing cloud\\b", "\\bmarketing technology\\b", "\\bmartech\\b", "\\btechnical product marketing\\b"]}
+  ],
+  "_title_hard_exclude_note": "Titles that ARE an out-of-scope role, as case-insensitive regexes on the normalised title. They run on the in-lane path only, and only when the rest of the gate kept the req, so the blast radius is exactly the kept reqs that now fail (reason 'title excluded (<family>): <match>'). Each family carries its own except list: the second marketing family ('Global Integrated Marketing Programs Lead', 'Growth Marketing Strategy Manager', 'Field Marketing Manager') spares a title that also names product, program or project management or ownership, or TPM ('Program Manager, Partner Marketing', 'Marketing Program Manager'). Whole words: 'Salesforce' never matches 'sales'. Empty the list to turn it off.",
+  "snapshot_keep_days": 60,
+  "_snapshot_keep_days_note": "A full sweep deletes dated snapshots (data/snapshot_<date>.json[.gz]) older than this many days. latest.json and the two newest dated snapshots always stay. 0 keeps every snapshot.",
   "candidate_years_total": 4.5,
   "level_up_title_markers": [
     "principal",
