@@ -30,8 +30,11 @@ def main():
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--allow-browser-impersonation", action="store_true",
                     help="off by default; same opt-in as sweep.py (the Meta reader needs it)")
+    ap.add_argument("--ignore-robots", action="store_true",
+                    help="off by default; skips the robots.txt check, same as sweep.py (MAXQ_IGNORE_ROBOTS=1)")
     a = ap.parse_args()
     if a.allow_browser_impersonation: sweep.ALLOW_BROWSER_IMPERSONATION = True
+    if a.ignore_robots: sweep.ROBOTS_CHECK = False
 
     if sweep.PLUGIN_ERRORS:
         print("PLUGIN IMPORT ERRORS:", json.dumps(sweep.PLUGIN_ERRORS, indent=1))
@@ -55,6 +58,9 @@ def main():
         rows = fn(t, smoke=a.smoke)
     except sweep.OptInRequired as e:
         print(f"{t['company']} [{t['ats']}]  {sweep.skip_status(e)}")
+        return
+    except sweep.RobotsDisallowed as e:
+        print(f"{t['company']} [{t['ats']}]  {sweep.not_read_status(e)}  ({sweep.ROBOTS_OFF_HINT})")
         return
     secs = time.time() - t0
     keys = [r["key"] for r in rows]

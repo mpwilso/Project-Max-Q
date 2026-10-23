@@ -42,6 +42,10 @@ the Meta reader (it must look like Chrome to be answered) and Workday calls thro
 with --allow-browser-impersonation or MAXQ_ALLOW_BROWSER_IMPERSONATION=1. Without it, Meta is
 SKIPPED with that reason in coverage.
 
+robots.txt is checked, on by default: each host's robots.txt is read once per run and a path it
+disallows for this user agent is not fetched; the employer is reported NOT READ with the path, in
+coverage and in the health block. --ignore-robots or MAXQ_IGNORE_ROBOTS=1 turns the check off.
+
 Dependencies: requests. Optional: curl_cffi (pip install curl_cffi) if a Workday tenant refuses
 plain requests; with the opt-in above, USE_CURL_CFFI=1 routes Workday calls through it.
 """
@@ -170,6 +174,90 @@ PERMANENT_ERROR = re.compile(r"ERROR (?:EmptyBoard|NoAdapter)\b|\b(?:401|403|404
                              r"|answered (?:200 )?with no (?:jobs|job posts|opportunities)")
 _tls = __import__("threading").local()
 
+# ----------------------------------------------------------------------------- robots.txt
+# Every URL the shared HTTP layer fetches is checked against its host's robots.txt first, read the way
+# RFC 9309 and urllib.robotparser read it, for the honest UA above (a "User-agent: maxq-sweep" group
+# applies to this tool, "*" to everyone). One fetch per host per run, cached below. A path robots.txt
+# disallows is not fetched: _request raises RobotsDisallowed, the read loop reports the employer as
+# NOT READ with the path, and the health block lists it, so a disallowed board is never a quiet zero.
+# A robots.txt that cannot be fetched (404, a dropped connection) allows everything, as the standard
+# says, and the host is noted in the health block. --ignore-robots or MAXQ_IGNORE_ROBOTS=1 turns the
+# check off for one run; the owner's call, never the agent's.
+ROBOTS_CHECK = True
+ROBOTS_OFF_HINT = "turn the check off with --ignore-robots or MAXQ_IGNORE_ROBOTS=1"
+NOT_READ_ROBOTS = "NOT READ: robots.txt disallows "
+_ROBOTS = {}            # "scheme://host" -> RobotFileParser, or None when no file could be read (allow all)
+_ROBOTS_NOTES = {}      # "scheme://host" -> why it allows without a file ("HTTP 404", "ConnectionError")
+_ROBOTS_LOCKS = {}      # "scheme://host" -> lock, so two lanes on one host fetch its robots.txt once
+_ROBOTS_LOCK = __import__("threading").Lock()
+
+def robots_check_enabled():
+    return ROBOTS_CHECK and os.environ.get("MAXQ_IGNORE_ROBOTS", "").strip() != "1"
+
+class RobotsDisallowed(RuntimeError):
+    """robots.txt on this host disallows the path for our user agent, so the path was not fetched.
+    Coverage shows the employer as NOT READ with the path, never as ERROR, and the read is not retried."""
+
+    def __init__(self, url):
+        self.url = url
+        self.path = __import__("urllib.parse").parse.urlsplit(url).path or "/"
+        super().__init__(f"robots.txt disallows {self.path} for {UA.split('/')[0]} on {url}")
+
+def not_read_status(e):
+    return NOT_READ_ROBOTS + e.path
+
+def robots_reset():
+    """Forget every host's rules: a new run reads each robots.txt again."""
+    with _ROBOTS_LOCK:
+        _ROBOTS.clear(); _ROBOTS_NOTES.clear(); _ROBOTS_LOCKS.clear()
+
+def robots_rules(url):
+    """The parsed robots.txt for url's host, fetched once per host per run through the same HTTP layer
+    as every other read. None when the file could not be fetched, which allows everything."""
+    import urllib.robotparser
+    u = __import__("urllib.parse").parse.urlsplit(url)
+    key = f"{u.scheme}://{u.netloc}"
+    with _ROBOTS_LOCK:
+        lock = _ROBOTS_LOCKS.setdefault(key, __import__("threading").Lock())
+    with lock:
+        if key in _ROBOTS: return _ROBOTS[key]
+        rp, note = None, None
+        try:
+            r = _request("GET", key + "/robots.txt", {"User-Agent": UA, "Accept": "text/plain,*/*;q=0.8"},
+                         attempts=2)
+            rp = urllib.robotparser.RobotFileParser()
+            rp.parse(r.text.splitlines())
+        except Exception as e:
+            code = getattr(getattr(e, "response", None), "status_code", None)
+            rp, note = None, (f"HTTP {code}" if code else type(e).__name__)
+        _ROBOTS[key] = rp
+        if note: _ROBOTS_NOTES[key] = note
+        return rp
+
+def robots_check(url):
+    """Raise RobotsDisallowed when the host's robots.txt rules this URL out for our UA. The robots.txt
+    fetch itself is never checked, and nothing is checked when the run turned the check off."""
+    if not robots_check_enabled(): return
+    if __import__("urllib.parse").parse.urlsplit(url).path == "/robots.txt": return
+    rp = robots_rules(url)
+    if rp is not None and not rp.can_fetch(UA, url):
+        raise RobotsDisallowed(url)
+
+def robots_summary():
+    """One health-block line: hosts checked, hosts whose robots.txt could not be read (allowed, noted)."""
+    if not robots_check_enabled():
+        return f"robots.txt: check OFF this run ({ROBOTS_OFF_HINT.split(' with ')[1]}); no path was checked"
+    with _ROBOTS_LOCK:
+        n, notes = len(_ROBOTS), dict(_ROBOTS_NOTES)
+    if not n: return None
+    line = f"robots.txt: {n} host(s) checked"
+    if notes:
+        shown = sorted(notes.items())
+        line += (f"; {len(notes)} answered with no readable robots.txt, treated as allowing all paths, as the "
+                 f"standard says: " + ", ".join(f"{k.split('://', 1)[1]} ({v})" for k, v in shown[:6])
+                 + (f", and {len(shown) - 6} more" if len(shown) > 6 else ""))
+    return line
+
 def http_session():
     """One requests.Session per thread (each lane is a thread), so repeat calls to a host reuse the
     TCP/TLS connection instead of paying a fresh handshake on every page."""
@@ -185,6 +273,7 @@ def _request(method, url, headers, attempts=4, **kw):
 
     Across hundreds of employers a single RemoteDisconnected or 502 is routine; without a retry
     each one leaves an employer UNCOVERED for the whole run."""
+    robots_check(url)
     last = None
     for attempt in range(attempts):
         time.sleep(DELAY)
@@ -1234,6 +1323,7 @@ def _meta_session():
     if _meta_sess is not None: return _meta_sess
     s = requests.Session()
     s.headers.update({"User-Agent": _META_UA, "Accept-Language": "en-US,en;q=0.9"})
+    robots_check("https://www.metacareers.com/jobs/")      # this session bypasses _request, so check here
     r = s.get("https://www.metacareers.com/jobs/", headers=_META_NAV, timeout=30)
     r.raise_for_status()
     lsd = re.search(r'"LSD",\[\],\{"token":"([^"]+)"', r.text)
@@ -1252,6 +1342,7 @@ def metacareers(t, smoke=False):
             "server_timestamps": "true", "__rev": s._rev, "__a": "1",
             "variables": json.dumps({"isLoggedIn": False, "search_input": {}, "viewasUserID": None})}
     time.sleep(DELAY)
+    robots_check("https://www.metacareers.com/graphql")
     r = s.post("https://www.metacareers.com/graphql", data=body, timeout=45, headers={
         "Content-Type": "application/x-www-form-urlencoded", "X-FB-LSD": s._lsd,
         "Origin": "https://www.metacareers.com", "Referer": "https://www.metacareers.com/jobs/",
@@ -1281,6 +1372,7 @@ def metacareers_detail(t, row):
     """Date, full text and the remote flag all come off the job page's JobPosting block."""
     s = _meta_session()
     time.sleep(DELAY)
+    robots_check(row["url"])
     r = s.get(row["url"], headers=_META_NAV, timeout=30)
     r.raise_for_status()
     for blob in re.findall(r'<script[^>]+type="application/ld\+json"[^>]*>(.*?)</script>', r.text, flags=re.S):
@@ -3394,7 +3486,7 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
     prev = snap_prev.get("rows", {})
     readlog = load_json(READLOG, {})
     named = merge or only
-    WORKDAY_TOTALS.clear(); WORKDAY_COMPLETE.clear()
+    WORKDAY_TOTALS.clear(); WORKDAY_COMPLETE.clear(); robots_reset()
 
     # Snapshot-freshness shortcut. If the last full snapshot is young and no employer
     # was named, there is nothing to learn from refetching every board.
@@ -3558,6 +3650,11 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
             # carried like any board not read cleanly.
             uniq, log = {}, None
             cov = (t["company"], t["ats"], skip_status(e), 0)
+        except RobotsDisallowed as e:
+            # The host's robots.txt rules the path out: NOT READ with the path, not ERROR (a second read
+            # cannot change the answer) and never a quiet zero. Rows are carried like any unread board.
+            uniq, log = {}, None
+            cov = (t["company"], t["ats"], not_read_status(e), 0)
         except Exception as e:
             uniq, log = {}, None
             cov = (t["company"], t["ats"], f"ERROR {type(e).__name__}: {str(e)[:120]}", 0)
@@ -3572,7 +3669,7 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
             done[0] += 1
             if not smoke:
                 print(f"  [{done[0]:3}/{total}] {t['company'][:30]:30} {t['ats']:15} {cov[3]:5}  "
-                      f"{cov[2] if cov[2].startswith('SKIPPED') else cov[2][:70]}  ({time.time() - started:.0f}s)",
+                      f"{cov[2] if cov[2].startswith(('SKIPPED', 'NOT READ')) else cov[2][:70]}  ({time.time() - started:.0f}s)",
                       flush=True)
         return t, uniq, cov, log
 
@@ -3816,7 +3913,7 @@ def run(targets, gates, only=None, smoke=False, merge=None, digest=False, force=
                           prev_scopes=prev_scopes)
     # No sweep log is kept, so the rescue: and etag: lines ride in the health block (and the
     # snapshot) rather than living only in the console scrollback.
-    health["notes"] = [x for x in (rescue_line, etag_line, gh_line) if x]
+    health["notes"] = [x for x in (rescue_line, etag_line, gh_line, robots_summary()) if x]
     print_health(health)
     snap = {"date": TODAY.isoformat(), "ts": iso_now(), "rows": rows,
             "verdicts": {k: v[0] for k, v in verdicts.items()},
@@ -4223,8 +4320,9 @@ def sweep_health(rows, verdicts, new_keys, coverage, prev_counts, snap_prev, dst
     reasons = Counter((why[0].split(":")[0] if why else "unspecified")
                       for v, why in verdicts.values() if v == "FAIL")
     skipped = [(c, s) for c, a, s, n in coverage if s.startswith("SKIPPED")]
+    robots = [(c, s) for c, a, s, n in coverage if s.startswith(NOT_READ_ROBOTS)]
     errors = [(c, s) for c, a, s, n in coverage
-              if not (s.startswith("OK") or s.startswith("CACHED") or s.startswith("SKIPPED"))]
+              if not s.startswith(("OK", "CACHED", "SKIPPED", NOT_READ_ROBOTS))]
     drops = count_drops(coverage, prev_counts, prev_scopes)
     new_pass = sum(1 for k in new_keys if verdicts[k][0] == "PASS")
     prev_pass = sum(1 for v in (snap_prev.get("verdicts") or {}).values() if v == "PASS")
@@ -4237,6 +4335,9 @@ def sweep_health(rows, verdicts, new_keys, coverage, prev_counts, snap_prev, dst
     if skipped:
         w.append(f"{len(skipped)} employer(s) skipped by setting, not read: " + "; ".join(
             f"{c} ({s[len('SKIPPED: '):]})" for c, s in skipped))
+    if robots:
+        w.append(f"{len(robots)} employer(s) not read, robots.txt disallows the path: " + "; ".join(
+            f"{c} ({s[len('NOT READ: '):]})" for c, s in robots) + f"; {ROBOTS_OFF_HINT}")
     for c, s in migrated:
         w.append(f"{c}: {s} on a board that read cleanly before; the tenant may have migrated hosts, "
                  f"re-resolve from a live job URL")
@@ -4261,7 +4362,7 @@ def sweep_health(rows, verdicts, new_keys, coverage, prev_counts, snap_prev, dst
                  f"bands are missing for those reqs")
     return {"rows": len(rows), "carried": carried, "employers_live": n_live, "verdicts": dict(vc),
             "fail_reasons": dict(reasons.most_common()), "new": len(new_keys), "new_pass": new_pass,
-            "prev_pass": prev_pass, "errors": errors, "count_drops": drops, "detail": dstats,
+            "prev_pass": prev_pass, "errors": errors, "robots": robots, "count_drops": drops, "detail": dstats,
             "migrated": migrated, "workday_gaps": wd_gaps, "ats_pass": dict(ats_pass), "ats_fields": rates,
             "warnings": w}
 
@@ -5451,8 +5552,13 @@ if __name__ == "__main__":
                     help="off by default. Lets the Meta reader run (it sends a Chrome user agent and browser "
                          "headers) and, with USE_CURL_CFFI=1, routes Workday calls through curl_cffi as Chrome. "
                          "Same as MAXQ_ALLOW_BROWSER_IMPERSONATION=1")
+    ap.add_argument("--ignore-robots", action="store_true",
+                    help="off by default. Skips the robots.txt check: normally each host's robots.txt is read once "
+                         "per run and a path it disallows for this tool's user agent is not fetched (the employer "
+                         "is reported NOT READ with the path). Same as MAXQ_IGNORE_ROBOTS=1")
     a = ap.parse_args()
     if a.allow_browser_impersonation: ALLOW_BROWSER_IMPERSONATION = True
+    if a.ignore_robots: ROBOTS_CHECK = False
     if os.environ.get("USE_CURL_CFFI") and not browser_impersonation_allowed():
         print(f"USE_CURL_CFFI is set but browser impersonation is off, so Workday calls use plain requests "
               f"({OPT_IN_HINT})")

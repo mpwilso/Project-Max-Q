@@ -45,10 +45,12 @@ class OptInCase(unittest.TestCase):
         self.addCleanup(env.stop)
         for k in ENV_KEYS:
             os.environ.pop(k, None)
-        saved = (sweep.ALLOW_BROWSER_IMPERSONATION, sweep.DELAY, sweep._meta_sess, sweep.http_session)
+        saved = (sweep.ALLOW_BROWSER_IMPERSONATION, sweep.DELAY, sweep._meta_sess, sweep.http_session,
+                 sweep.ROBOTS_CHECK)
         self.addCleanup(self.restore, saved)
         sweep.ALLOW_BROWSER_IMPERSONATION = False
         sweep.DELAY = 0
+        sweep.ROBOTS_CHECK = False       # the robots.txt read is its own test file; here every call is counted
         sweep._meta_sess = None
         self.rec = Recorder()
         sweep.http_session = lambda: self.rec
@@ -60,7 +62,8 @@ class OptInCase(unittest.TestCase):
 
     @staticmethod
     def restore(saved):
-        (sweep.ALLOW_BROWSER_IMPERSONATION, sweep.DELAY, sweep._meta_sess, sweep.http_session) = saved
+        (sweep.ALLOW_BROWSER_IMPERSONATION, sweep.DELAY, sweep._meta_sess, sweep.http_session,
+         sweep.ROBOTS_CHECK) = saved
 
     def assert_honest(self, headers):
         ua = headers.get("User-Agent", "")

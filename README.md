@@ -174,9 +174,14 @@ What the sweep does on every run:
   large shared job-board hosts (Greenhouse, Ashby, Lever, SmartRecruiters, Workday) get two to five.
 - **Public sources only.** It reads public job-board APIs and companies' own careers pages, with no
   login. It does not read LinkedIn or job-listing aggregators.
-- **robots.txt is not checked.** The code never fetches it. One reader was written around it (the
-  DirectEmployers reader uses the sitemap, not the RSS feeds robots.txt rules out), but there is no
-  general check. That is a known gap.
+- **robots.txt is checked.** Before the first request to a host, the sweep reads that host's
+  `robots.txt` once, with the user agent above, and keeps it for the run. A path it disallows for
+  `maxq-sweep` or for `*` is not fetched; the company is reported as NOT READ with the path, in the
+  coverage table and in the health block, never as a quiet empty board. A `robots.txt` that cannot be
+  fetched (a 404 or a connection error) allows every path, as the standard says, and the health block
+  names the host. `--ignore-robots` (or `MAXQ_IGNORE_ROBOTS=1`) turns the check off for a run. One
+  reader was written around a robots rule before the check existed: the DirectEmployers reader uses
+  the sitemap, not the RSS feeds robots.txt rules out.
 
 **Browser impersonation is off by default.** Meta's careers site only answers requests that look like
 Chrome, and a few Workday sites refuse plain requests. `--allow-browser-impersonation` (or
