@@ -60,7 +60,11 @@ class BuiltInAdaptersLeaveNoSilentEmpty(Patch, unittest.TestCase):
     def test_metacareers_page_without_jobposting(self):
         resp = types.SimpleNamespace(text="<html>no ld+json here</html>", raise_for_status=lambda: None)
         sess = types.SimpleNamespace(get=lambda url, headers=None, timeout=None: resp)
-        self.patch(_meta_session=lambda: sess, DELAY=0)
+        meta = sweep.PLUGINS["metacareers"]                  # the reader lives in adapters/metacareers.py
+        saved = meta._meta_session
+        meta._meta_session = lambda h: sess
+        self.addCleanup(setattr, meta, "_meta_session", saved)
+        self.patch(DELAY=0, ROBOTS_CHECK=False)        # the reader's own robots check must not fetch here
         self.assert_failed_read(detail_row("metacareers"))
 
     def test_pcsx_empty_job_description(self):

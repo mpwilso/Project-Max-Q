@@ -25,7 +25,8 @@ Other flags: --full (no incremental stop), --force (ignore the fresh-snapshot sh
 (opt into tier caching), --fresh, --digest, --show-cadence.
 
 Adapters: greenhouse ashby lever workday eightfold smartrecruiters amazon atlassian phenom radancy
-metacareers oracle pcsx, plus plugins loaded from adapters/<vendor>.py (see adapters/README.md).
+oracle pcsx, plus plugins loaded from adapters/<vendor>.py (see adapters/README.md; the Meta reader is
+adapters/metacareers.py).
 
 Design principles:
   - Coverage is never silent. An employer that errors, or a verified board that answers with zero
@@ -38,7 +39,8 @@ Design principles:
   - Adapters share one HTTP retry policy and are polite: one lane per host, a fixed delay per call.
 
 Every request names the tool in its User-Agent (UA below). Browser impersonation is off by default:
-the Meta reader (it must look like Chrome to be answered) and Workday calls through curl_cffi run only
+the Meta reader (adapters/metacareers.py; it must look like Chrome to be answered) and Workday calls
+through curl_cffi run only
 with --allow-browser-impersonation or MAXQ_ALLOW_BROWSER_IMPERSONATION=1. Without it, Meta is
 SKIPPED with that reason in coverage.
 
@@ -129,7 +131,8 @@ VERSION = "0.1"
 UA = f"maxq-sweep/{VERSION} (+https://github.com/mpwilso/Project-Max-Q)"
 DELAY = 0.15
 # Browser impersonation is opt-in (--allow-browser-impersonation, or this env var set to 1). Off, the
-# Meta reader skips with OptInRequired and USE_CURL_CFFI is ignored, so every request carries UA.
+# Meta reader (adapters/metacareers.py) skips with OptInRequired and USE_CURL_CFFI is ignored, so every
+# request carries UA.
 ALLOW_BROWSER_IMPERSONATION = False
 OPT_IN_HINT = "opt in with --allow-browser-impersonation or MAXQ_ALLOW_BROWSER_IMPERSONATION=1"
 
@@ -1291,110 +1294,9 @@ def radancy_detail(t, row):
         break
     return row
 
-# ------------------------------------------------------------------ metacareers (Meta)
-# Two things about this board that are not obvious:
-#   1. Meta 400s any request that does not look like a browser navigation. A bare urllib or
-#      requests GET with Accept: application/json gets 400 Bad Request, not 403, which reads
-#      like a broken URL. The Sec-Fetch-* set and a real UA are what make it answer.
-#   2. The search result node carries ONLY id, title, locations, teams, sub_teams. There is no
-#      posted date anywhere in the search response, so freshness is impossible from the list
-#      pass alone. The date lives on the job page, in a schema.org JobPosting block, alongside
-#      the full description, responsibilities and qualifications. Detail pass is mandatory here
-#      for any date-aware question, unlike Greenhouse or Ashby where the list carries the date.
-# The GraphQL call needs an LSD token and doc_id, both scraped from the jobs page and its Relay
-# bundle. doc_id is pinned below; if Meta ships a new Relay build it changes and the call starts
-# returning an error payload rather than failing loudly, so the adapter raises on an empty board.
-# All of that is browser impersonation, so this reader runs only on a run that opted in (see
-# browser_impersonation_allowed); otherwise the board is SKIPPED with the reason, before any request.
-_META_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
-_META_NAV = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-             "Accept-Language": "en-US,en;q=0.9", "Sec-Fetch-Dest": "document",
-             "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1",
-             "Upgrade-Insecure-Requests": "1"}
-_META_DOC_ID = "27506805582236862"          # CareersJobSearchResultsDataQuery
-_meta_sess = None
-
-def _meta_session():
-    """One session for the whole run: the LSD token and the datr cookie are bootstrapped once."""
-    global _meta_sess
-    if not browser_impersonation_allowed():
-        raise OptInRequired(f"Meta's careers site needs browser impersonation ({OPT_IN_HINT})")
-    if _meta_sess is not None: return _meta_sess
-    s = requests.Session()
-    s.headers.update({"User-Agent": _META_UA, "Accept-Language": "en-US,en;q=0.9"})
-    robots_check("https://www.metacareers.com/jobs/")      # this session bypasses _request, so check here
-    r = s.get("https://www.metacareers.com/jobs/", headers=_META_NAV, timeout=30)
-    r.raise_for_status()
-    lsd = re.search(r'"LSD",\[\],\{"token":"([^"]+)"', r.text)
-    rev = re.search(r'"server_revision":(\d+)', r.text)
-    if not lsd:
-        raise RuntimeError("metacareers: no LSD token on the jobs page; markup changed")
-    s._lsd = lsd.group(1)
-    s._rev = rev.group(1) if rev else ""
-    _meta_sess = s
-    return s
-
-def metacareers(t, smoke=False):
-    s = _meta_session()
-    body = {"lsd": s._lsd, "doc_id": _META_DOC_ID, "fb_api_caller_class": "RelayModern",
-            "fb_api_req_friendly_name": "CareersJobSearchResultsDataQuery",
-            "server_timestamps": "true", "__rev": s._rev, "__a": "1",
-            "variables": json.dumps({"isLoggedIn": False, "search_input": {}, "viewasUserID": None})}
-    time.sleep(DELAY)
-    robots_check("https://www.metacareers.com/graphql")
-    r = s.post("https://www.metacareers.com/graphql", data=body, timeout=45, headers={
-        "Content-Type": "application/x-www-form-urlencoded", "X-FB-LSD": s._lsd,
-        "Origin": "https://www.metacareers.com", "Referer": "https://www.metacareers.com/jobs/",
-        "Accept": "*/*", "Sec-Fetch-Dest": "empty", "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin", "X-Requested-With": "XMLHttpRequest"})
-    r.raise_for_status()
-    txt = r.text[9:] if r.text.startswith("for (;;);") else r.text
-    d = ((json.loads(txt).get("data") or {}).get("job_search_with_featured_jobs") or {})
-    jobs = (d.get("all_jobs") or []) + (d.get("featured_jobs") or [])
-    if not jobs:
-        # Silent-zero trap: a rotated doc_id returns a well-formed payload with no rows; never let
-        # that read as "board empty".
-        raise RuntimeError("metacareers: 0 rows. doc_id likely rotated; re-scrape it from the "
-                           "Relay bundle (grep CareersJobSearchResultsDataQuery_candidate_portalRelayOperation)")
-    out, seen = [], set()
-    for j in jobs:
-        if j["id"] in seen: continue
-        seen.add(j["id"])
-        out.append(norm("Meta", "metacareers", j["id"], j.get("title"),
-                        " | ".join(j.get("locations") or []),
-                        f"https://www.metacareers.com/jobs/{j['id']}/", None, "", None,
-                        {"teams": j.get("teams") or [], "sub_teams": j.get("sub_teams") or []}))
-        if smoke and len(out) >= 5: break
-    return out
-
-def metacareers_detail(t, row):
-    """Date, full text and the remote flag all come off the job page's JobPosting block."""
-    s = _meta_session()
-    time.sleep(DELAY)
-    robots_check(row["url"])
-    r = s.get(row["url"], headers=_META_NAV, timeout=30)
-    r.raise_for_status()
-    for blob in re.findall(r'<script[^>]+type="application/ld\+json"[^>]*>(.*?)</script>', r.text, flags=re.S):
-        try:
-            d = json.loads(html.unescape(blob.strip()))
-        except Exception:
-            continue
-        if not isinstance(d, dict) or d.get("@type") != "JobPosting": continue
-        # Meta splits the posting across three fields; the qualifications block is where the
-        # years bar lives, so concatenating all three is what makes the tenure gate work.
-        row["description"] = "\n\n".join(strip_html(d.get(k)) for k in
-                                         ("description", "responsibilities", "qualifications") if d.get(k))
-        row["posted"] = iso_date(d.get("datePosted"))
-        locs = d.get("jobLocation") or []
-        if isinstance(locs, dict): locs = [locs]
-        names = [(L or {}).get("name") or "" for L in locs]
-        if d.get("jobLocationType") == "TELECOMMUTE": names.append("Remote")
-        if any(names): row["location"] = " | ".join(dict.fromkeys(n for n in names if n))
-        row["extra"]["employmentType"] = d.get("employmentType")
-        row["extra"]["validThrough"] = iso_date(d.get("validThrough"))
-        break
-    return row
+# The Meta careers reader (Chrome user agent, Sec-Fetch headers, a scraped LSD token and a pinned
+# GraphQL doc_id) is browser impersonation, so it lives in adapters/metacareers.py, behind the
+# --allow-browser-impersonation opt-in, not in this file.
 
 def oracle(t, smoke=False):
     """Oracle Fusion Recruiting (Candidate Experience). Oracle's own ATS, not a vendor board.
@@ -1541,7 +1443,7 @@ def pcsx_detail(t, row):
 ADAPTERS = {"greenhouse": greenhouse, "ashby": ashby, "lever": lever, "workday": workday,
             "eightfold": eightfold, "smartrecruiters": smartrecruiters, "amazon": amazon,
             "atlassian": atlassian, "phenom": phenom, "radancy": radancy,
-            "metacareers": metacareers, "oracle": oracle, "pcsx": pcsx}
+            "oracle": oracle, "pcsx": pcsx}
 
 # Which adapters ENUMERATE the whole board, and which only SAMPLE it with queries.
 # This decides whether "absent from this read" is evidence a req closed.
@@ -1549,17 +1451,17 @@ ADAPTERS = {"greenhouse": greenhouse, "ashby": ashby, "lever": lever, "workday":
 #   Query-scoped: the adapter runs a fixed list of search terms and takes what comes
 #   back. Amazon's search is not stable: the same queries a day apart can return mostly
 #   different rows with nothing closed. Treating absence as closure there deletes live reqs.
-#   metacareers is enumerable: the unfiltered search returns the entire board in one call, and
-#   team-filtered calls were checked against it and returned strict subsets, no extra rows.
+#   metacareers (adapters/metacareers.py) is enumerable: the unfiltered search returns the entire
+#   board in one call; the plugin says so with ENUMERABLE = True.
 #   oracle is enumerable: findReqs with no keyword walks the entire site by offset and
 #   TotalJobsCount agrees with what comes back, so absence is real.
 #   radancy is enumerable: an empty Keywords= walks the whole site at 500 a page, the walk stops
 #   on data-total-results and raises on a short read, and keyword queries return strict subsets
 #   of it (tests/test_radancy.py has the fixtures).
-ENUMERABLE_ATS = {"greenhouse", "ashby", "lever", "atlassian", "smartrecruiters", "metacareers",
+ENUMERABLE_ATS = {"greenhouse", "ashby", "lever", "atlassian", "smartrecruiters",
                   "oracle", "radancy"}
 DETAIL = {"workday": workday_detail, "eightfold": eightfold_detail, "smartrecruiters": smartrecruiters_detail,
-          "phenom": phenom_detail, "radancy": radancy_detail, "metacareers": metacareers_detail,
+          "phenom": phenom_detail, "radancy": radancy_detail,
           "oracle": oracle_detail, "pcsx": pcsx_detail}
 # Single-req lookup for QUERY-SCOPED boards: (target, id) -> row if open, None if closed, raises
 # if the lookup itself failed. A req already scored must not fall out of a sampled board just
@@ -1585,6 +1487,7 @@ DETAIL_VERDICTS = ("PASS", "LOCATION-POLICY", "TENURE")
 # parsing and band extraction instead of growing their own copies.
 ADAPTER_DIR = ROOT / "adapters"
 PLUGIN_ERRORS = {}          # ats name or file -> import error, surfaced as ERROR in coverage
+PLUGINS = {}                # ats name -> the loaded plugin module (tests reach a plugin's own state this way)
 
 def plugin_helpers():
     import types
@@ -1593,6 +1496,9 @@ def plugin_helpers():
         strip_html=strip_html, iso_date=iso_date, days_since=days_since, money_range=money_range,
         comp_from_description=comp_from_description, requests=requests, UA=UA, DELAY=DELAY,
         incremental_stop=lambda t, ids: incremental_stop(t, ids),
+        # Opt-in and politeness hooks, for the one plugin that keeps its own session (adapters/metacareers.py).
+        browser_impersonation_allowed=browser_impersonation_allowed, OptInRequired=OptInRequired,
+        OPT_IN_HINT=OPT_IN_HINT, robots_check=robots_check,
         quote=(lambda s: requests.utils.quote(s)) if requests else None, TODAY=TODAY)
 
 def load_plugins(adapter_dir=None):
@@ -1622,6 +1528,7 @@ def load_plugins(adapter_dir=None):
         if callable(getattr(mod, "lookup", None)):
             LOOKUP[name] = lambda t, jid, _m=mod: _m.lookup(t, jid, h)
         if getattr(mod, "ENUMERABLE", False): ENUMERABLE_ATS.add(name)
+        PLUGINS[name] = mod
         loaded.append(name)
     return loaded
 

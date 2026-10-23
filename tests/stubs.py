@@ -38,10 +38,15 @@ class StubH:
         self.calls = []
         real = sweep.plugin_helpers()
         for k in ("norm", "strip_html", "iso_date", "days_since", "money_range",
-                  "comp_from_description", "UA", "DELAY", "TODAY"):
+                  "comp_from_description", "UA", "DELAY", "TODAY",
+                  "browser_impersonation_allowed", "OptInRequired", "OPT_IN_HINT"):
             setattr(self, k, getattr(real, k))
         self.quote = lambda s: __import__("urllib.parse").parse.quote(s)
         self.requests = None
+        # The robots.txt check belongs to sweep's HTTP layer (tests/test_robots.py). Here it only records
+        # the URLs an adapter with its own session asked about, so a test can see that it asked.
+        self.robots_checked = []
+        self.robots_check = self.robots_checked.append
 
     def _answer(self, url, body=None):
         self.calls.append((url, body))

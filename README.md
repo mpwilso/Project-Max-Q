@@ -188,7 +188,9 @@ Chrome, and a few Workday sites refuse plain requests. `--allow-browser-imperson
 `MAXQ_ALLOW_BROWSER_IMPERSONATION=1`) lets the Meta reader send a Chrome user agent and browser
 headers, and with `USE_CURL_CFFI=1` (after `pip install curl_cffi`) sends Workday calls through
 curl_cffi as Chrome. It is off because it hides who is asking. Without it, Meta is reported as skipped
-with that reason, never as a quiet empty board.
+with that reason, never as a quiet empty board. The Meta reader is the one reader that impersonates a
+browser, and it lives outside the core file, in [adapters/metacareers.py](adapters/metacareers.py), behind
+the same opt-in.
 
 <details>
 <summary><b>Make it yours: set up your own search</b></summary>

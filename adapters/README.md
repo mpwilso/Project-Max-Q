@@ -23,7 +23,13 @@ def lookup(t, jid, h):       # optional, for ENUMERABLE = False boards
 
 `h` is `sweep.plugin_helpers()`: `get`, `post_json`, `get_text`, `request` (all share the retry
 policy: 429/5xx and dropped connections), `norm`, `strip_html`, `iso_date`, `days_since`,
-`money_range`, `comp_from_description`, `quote`, `requests`, `UA`, `DELAY`, `TODAY`.
+`money_range`, `comp_from_description`, `quote`, `requests`, `UA`, `DELAY`, `TODAY`, plus
+`robots_check(url)` (raises `RobotsDisallowed`; `get`/`post_json`/`get_text` already call it, so only
+an adapter with its own session needs to) and the browser-impersonation opt-in,
+`browser_impersonation_allowed()`, `OptInRequired` and `OPT_IN_HINT`. An adapter that must look like a
+browser raises `h.OptInRequired(reason)` before its first request unless `h.browser_impersonation_allowed()`;
+coverage then shows SKIPPED with the reason. `adapters/metacareers.py` is the one such adapter; a new one
+does not go into `sweep.py`.
 
 Rules every adapter follows (each one guards a failure mode seen on a real board):
 - **Silent zero is an error.** A tenant that answers 200 with no rows when it should have rows

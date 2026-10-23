@@ -5,6 +5,7 @@ What changed in each release. The full notes are on the [releases page](https://
 ## Unreleased
 
 - robots.txt is checked, on by default: each host's file is read once per run with the tool's own user agent, a path it disallows is not fetched, and the company is reported NOT READ with the path in coverage and in the health block. A file that cannot be fetched allows, and the host is noted. `--ignore-robots` or `MAXQ_IGNORE_ROBOTS=1` turns the check off. 19 new tests.
+- The Meta careers reader (Chrome user agent, Sec-Fetch headers, scraped LSD token, pinned GraphQL doc_id) moved out of `sweep.py` into `adapters/metacareers.py`, under the plugin contract and behind the same `--allow-browser-impersonation` opt-in. Same `ats` key, same req keys, same behaviour; plugins now get `h.browser_impersonation_allowed`, `h.OptInRequired`, `h.OPT_IN_HINT` and `h.robots_check`. A fixture-backed adapter test on made-up data.
 - A `</posting>` in a posting's own text can no longer end the prompt block: the scorer disarms it before the text goes to the model, for both the API and the Claude Code paths. New test.
 - The API scorer's default model is `claude-opus-5-5`, the model the recorded eval ran on.
 - CLAUDE.md for agents working here, this changelog, the owner's name in LICENSE, a `--help` pointer in Quick start, the README's line count for sweep.py, and the sample report's dashes and paths as the current code prints them.

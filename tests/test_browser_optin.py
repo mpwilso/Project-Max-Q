@@ -1,7 +1,7 @@
 """Honest by default: the sweep names itself in every request, and browser impersonation is opt-in.
 
-Two paths pretend to be a browser: the Meta reader (a Chrome user agent, browser navigation headers,
-a token lifted from the page) and Workday POSTs through curl_cffi with impersonate="chrome"
+Two paths pretend to be a browser: the Meta reader in adapters/metacareers.py (a Chrome user agent,
+browser navigation headers, a token lifted from the page) and Workday POSTs through curl_cffi with impersonate="chrome"
 (USE_CURL_CFFI=1). Both stay off unless the run opts in with --allow-browser-impersonation or
 MAXQ_ALLOW_BROWSER_IMPERSONATION=1. Off, the Meta reader skips with a plain reason and Workday uses
 plain requests.
@@ -11,6 +11,9 @@ import os, subprocess, sys, types, unittest
 from unittest import mock
 
 from tests.stubs import sweep, ROOT
+
+meta = sweep.PLUGINS["metacareers"]          # the Meta reader is a plugin; its session cache lives there
+H = sweep.plugin_helpers()
 
 ENV_KEYS = ("MAXQ_ALLOW_BROWSER_IMPERSONATION", "USE_CURL_CFFI")
 
@@ -45,13 +48,13 @@ class OptInCase(unittest.TestCase):
         self.addCleanup(env.stop)
         for k in ENV_KEYS:
             os.environ.pop(k, None)
-        saved = (sweep.ALLOW_BROWSER_IMPERSONATION, sweep.DELAY, sweep._meta_sess, sweep.http_session,
+        saved = (sweep.ALLOW_BROWSER_IMPERSONATION, sweep.DELAY, meta._meta_sess, sweep.http_session,
                  sweep.ROBOTS_CHECK)
         self.addCleanup(self.restore, saved)
         sweep.ALLOW_BROWSER_IMPERSONATION = False
         sweep.DELAY = 0
         sweep.ROBOTS_CHECK = False       # the robots.txt read is its own test file; here every call is counted
-        sweep._meta_sess = None
+        meta._meta_sess = None
         self.rec = Recorder()
         sweep.http_session = lambda: self.rec
         self.curl_calls = []
@@ -62,7 +65,7 @@ class OptInCase(unittest.TestCase):
 
     @staticmethod
     def restore(saved):
-        (sweep.ALLOW_BROWSER_IMPERSONATION, sweep.DELAY, sweep._meta_sess, sweep.http_session,
+        (sweep.ALLOW_BROWSER_IMPERSONATION, sweep.DELAY, meta._meta_sess, sweep.http_session,
          sweep.ROBOTS_CHECK) = saved
 
     def assert_honest(self, headers):
@@ -143,7 +146,7 @@ class MetaNeedsTheOptIn(OptInCase):
 
     def test_default_skips_meta_with_a_plain_reason_and_sends_nothing(self):
         with self.assertRaises(sweep.OptInRequired) as cm:
-            sweep.metacareers({"company": "Meta", "ats": "metacareers"})
+            sweep.ADAPTERS["metacareers"]({"company": "Meta", "ats": "metacareers"})
         msg = str(cm.exception)
         self.assertIn("Meta's careers site needs browser impersonation", msg)
         self.assertIn("--allow-browser-impersonation", msg)
@@ -152,7 +155,7 @@ class MetaNeedsTheOptIn(OptInCase):
 
     def test_the_opt_in_lets_the_meta_reader_run(self):
         sweep.ALLOW_BROWSER_IMPERSONATION = True
-        s = sweep._meta_session()
+        s = meta._meta_session(H)
         self.assertEqual(s._lsd, "tok123")
         self.assertIn("Chrome", FakeSession.instances[0].calls[0][2]["User-Agent"])
 
