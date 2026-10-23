@@ -1,4 +1,4 @@
-<!-- Trimmed from a real run of the example profile in gates.json (John Doe, fictional): 7 employers. Sections 1 and 2 keep a few entries. -->
+<!-- Trimmed from a real run of the example profile in gates.json (John Doe, fictional): 7 employers. Sections 1 and 2 keep a few entries. Comp dashes and path separators were normalized by hand to what the current code prints. -->
 
 # Sweep report, 2026-09-27
 
@@ -20,25 +20,25 @@ Reqs whose posting text changed since the last read are listed here.
 - Location: United States
 - Dates: posted 2026-05-12 [PRIMARY] · then first seen 2026-09-27 (run-one stamp, not a signal) · 138d old
 - Posted (board): 2026-05-12
-- Comp: $117,400 — $161,350
+- Comp: $117,400 - $161,350
 - ATS id: `greenhouse:Databricks:8535311002`
 - Conversion read: **LOW** · years gap +2 (6+ stated vs 4.5 held) · posted 138d ago (past 14 days: a drag) · flooded board (hundreds of applicants per posting) · no known contact
 - Why now: newly discovered
 - Posting risk: live 138d
 - Flags: VERIFY LOCATION: the board names only the country (United States); confirm remote or an endorsed market before building; REACH: 6+ years stated
-- JD text: `data\jds\2026-09-27\greenhouse_databricks_8535311002.md`
+- JD text: `data/jds/2026-09-27/greenhouse_databricks_8535311002.md`
 
 ### [Datadog · Principal Partner Program Manager - Datadog Partner Network Solution Provider Program](https://careers.datadoghq.com/detail/7984983/?gh_jid=7984983)
 - Location: Boston, Massachusetts, USA; Denver, Colorado, USA; New York, New York, USA; San Francisco, California, USA
 - Dates: posted 2026-06-22 [PRIMARY] · then first seen 2026-09-27 (run-one stamp, not a signal) · 97d old
 - Posted (board): 2026-06-22
-- Comp: $197,000 — $246,000
+- Comp: $197,000 - $246,000
 - ATS id: `greenhouse:Datadog:7984983`
 - Conversion read: **LOW** · years gap +4 (8+ stated vs 4.5 held) · level-up title (principal) · posted 97d ago (past 14 days: a drag) · no known contact
 - Why now: newly discovered
 - Posting risk: live 97d; generic requirements, no named tools
 - Flags: REACH: 8+ years stated
-- JD text: `data\jds\2026-09-27\greenhouse_datadog_7984983.md`
+- JD text: `data/jds/2026-09-27/greenhouse_datadog_7984983.md`
 
 ### [Notion · Product Operations Manager](https://jobs.ashbyhq.com/notion/8b82e596-e828-45db-94d5-b76acc89e749)
 - Location: San Francisco, California | New York, New York | Remote
@@ -50,7 +50,7 @@ Reqs whose posting text changed since the last read are listed here.
 - Why now: newly discovered
 - Posting risk: live 227d
 - Flags: ONSITE TERMS despite remote listing: expect every notino to be intellectually curious, drawn to tinkering and discovery, and
-- JD text: `data\jds\2026-09-27\ashby_notion_8b82e596_e828_45db_94d5_b76acc89e749.md`
+- JD text: `data/jds/2026-09-27/ashby_notion_8b82e596_e828_45db_94d5_b76acc89e749.md`
 
 _... 19 more ..._
 

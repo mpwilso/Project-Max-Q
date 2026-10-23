@@ -98,6 +98,8 @@ python -m unittest discover -s tests -t .
 python sweep.py --targets examples/targets.quickstart.json
 ```
 
+Every flag, with a line on each: `python sweep.py --help`.
+
 On Windows, create the environment with `py -m venv .venv` and activate it with
 `.venv\Scripts\activate` (cmd), `.venv\Scripts\Activate.ps1` (PowerShell) or
 `source .venv/Scripts/activate` (Git Bash); the rest is the same.
@@ -117,7 +119,7 @@ model unless you choose the Claude scorer.
 
 **Reading the code?** Start small: [adapters/tiktok.py](adapters/tiktok.py) is one careers-site reader
 (126 lines), [claimcheck.py](claimcheck.py) is the resume check (334 lines; [spokencheck.py](spokencheck.py) runs it on interview prep), and
-[fitscore.py](fitscore.py) is the scorer. [sweep.py](sweep.py) is the 4,000-line engine that runs
+[fitscore.py](fitscore.py) is the scorer. [sweep.py](sweep.py) is the 5,500-line engine that runs
 everything else.
 
 ## How it works

@@ -25,7 +25,7 @@ PROFILE = ROOT / "examples" / "john_doe" / "profile.md"
 RUBRIC = ROOT / "examples" / "john_doe" / "rubric.md"
 CACHE = ROOT / "data" / "fit_scores.json"
 
-MODEL = "claude-opus-5"
+MODEL = "claude-opus-5-5"
 VERDICTS = ("apply", "maybe", "skip")
 APPLY_AT, MAYBE_AT = 75, 55                      # the rubric's verdict thresholds
 AREAS = {"role_match": 30, "skills": 25, "seniority": 20, "domain": 15, "logistics": 10}
@@ -57,6 +57,12 @@ def verdict_for(score):
 def posting_text(p):
     return (f"Company: {p.get('company', '')}\nTitle: {p.get('title', '')}\n"
             f"Location: {p.get('location', '')}\n\n{p.get('description', '')}").strip()
+
+
+def wrapped(p):
+    """The posting inside <posting> tags. A closing tag inside the posting's own text is disarmed, so
+    text from a careers site can't end the block early and pose as the rest of the prompt."""
+    return "<posting>\n" + posting_text(p).replace("</posting", "<\\/posting") + "\n</posting>"
 
 
 def validate(raw):
@@ -142,7 +148,7 @@ class ClaudeScorer:
             thinking={"type": "adaptive"},
             output_config={"effort": self.effort, "format": {"type": "json_schema", "schema": SCHEMA}},
             system=[{"type": "text", "text": self.system, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": f"<posting>\n{posting_text(p)}\n</posting>"}],
+            messages=[{"role": "user", "content": wrapped(p)}],
         )
         u = getattr(r, "usage", None)
         for k in self.usage:
@@ -173,7 +179,7 @@ class ClaudeCodeScorer(ClaudeScorer):
         self.usage = {"equivalent_api_cost_usd": 0.0}
 
     def command(self, p):
-        cmd = [self.exe or "claude", "-p", f"<posting>\n{posting_text(p)}\n</posting>",
+        cmd = [self.exe or "claude", "-p", wrapped(p),
                "--output-format", "json", "--no-session-persistence", "--setting-sources", "",
                "--strict-mcp-config", "--tools", "", "--system-prompt", self.system,
                "--json-schema", json.dumps(SCHEMA)]
