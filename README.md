@@ -177,20 +177,8 @@ What the sweep does on every run:
 - **robots.txt is checked.** Before the first request to a host, the sweep reads that host's
   `robots.txt` once, with the user agent above, and keeps it for the run. A path it disallows for
   `maxq-sweep` or for `*` is not fetched; the company is reported as NOT READ with the path, in the
-  coverage table and in the health block, never as a quiet empty board. A `robots.txt` that cannot be
-  fetched (a 404 or a connection error) allows every path, as the standard says, and the health block
-  names the host. `--ignore-robots` (or `MAXQ_IGNORE_ROBOTS=1`) turns the check off for a run. One
-  reader was written around a robots rule before the check existed: the DirectEmployers reader uses
-  the sitemap, not the RSS feeds robots.txt rules out.
-
-**Browser impersonation is off by default.** Meta's careers site only answers requests that look like
-Chrome, and a few Workday sites refuse plain requests. `--allow-browser-impersonation` (or
-`MAXQ_ALLOW_BROWSER_IMPERSONATION=1`) lets the Meta reader send a Chrome user agent and browser
-headers, and with `USE_CURL_CFFI=1` (after `pip install curl_cffi`) sends Workday calls through
-curl_cffi as Chrome. It is off because it hides who is asking. Without it, Meta is reported as skipped
-with that reason, never as a quiet empty board. The Meta reader is the one reader that impersonates a
-browser, and it lives outside the core file, in [adapters/metacareers.py](adapters/metacareers.py), behind
-the same opt-in.
+  coverage table and in the health block, never as a quiet empty board. What happens when the file
+  cannot be fetched, and the switch that turns the check off, are under [Limits](#limits).
 
 <details>
 <summary><b>Make it yours: set up your own search</b></summary>
@@ -292,12 +280,10 @@ The first Claude run caught every good job but pushed three bad ones to the top:
 New York, a role in Canada, and a six-month contract. In each case the model had named the problem as a
 dealbreaker and still scored the job 78 to 90, because location is only 10 points of the rubric. The
 fix went in code, not the prompt: a dealbreaker now makes the verdict skip. The third row replays the
-same recorded answers under the new rule, so no model call changed; it also means the rule was chosen
-after seeing this set, and a fresh set is the real test.
+same recorded answers under the new rule, so no model call changed. What these numbers do and do not
+show is under [Limits](#limits).
 
-Two caveats. The labels were written against John Doe's profile by the project's AI coding agent, so
-this is a consistency check rather than independent ground truth. And the scorer and the labeler are the
-same model family. Recorded answers are in [evals/recorded/](evals/recorded/), full reports in
+Recorded answers are in [evals/recorded/](evals/recorded/), full reports in
 [evals/results/](evals/results/). Your own labeled postings can go in `evals/local/`, which is
 gitignored, so real job data never leaves your machine.
 
@@ -339,6 +325,31 @@ python claimcheck.py --spoken examples/john_doe/prep/      # a prep pack and one
 The workflow (a pack per role, a one-page sheet per interviewer, one approved intro, mock interviews held
 to the pack's claims, and a debrief that feeds a question bank) is in
 [docs/INTERVIEW_PREP.md](docs/INTERVIEW_PREP.md).
+
+## Limits
+
+What the code does under a condition worth knowing, and what the numbers in this README do not show.
+
+- **Browser impersonation is off by default.** Meta's careers site only answers requests that look like
+  Chrome, and a few Workday sites refuse plain requests. `--allow-browser-impersonation` (or
+  `MAXQ_ALLOW_BROWSER_IMPERSONATION=1`) lets the Meta reader send a Chrome user agent and browser
+  headers, and with `USE_CURL_CFFI=1` (after `pip install curl_cffi`) sends Workday calls through
+  curl_cffi as Chrome. It is off because it hides who is asking. Without it, Meta is reported as skipped
+  with that reason, never as a quiet empty board. The Meta reader is the one reader that impersonates a
+  browser, and it lives outside the core file, in [adapters/metacareers.py](adapters/metacareers.py),
+  behind the same opt-in.
+- **robots.txt is checked, with two conditions.** A `robots.txt` that cannot be fetched (a 404 or a
+  connection error) allows every path, as the standard says, and the health block names the host.
+  `--ignore-robots` (or `MAXQ_IGNORE_ROBOTS=1`) turns the check off for a run. One reader was written
+  around a robots rule before the check existed: the DirectEmployers reader uses the sitemap, not the
+  RSS feeds robots.txt rules out.
+- **The fit scorer's numbers come from one set of 24 made-up postings.** The labels were written
+  against John Doe's profile by the project's AI coding agent, so the measurement is a consistency check
+  rather than independent ground truth. The scorer and the labeler are the same model family. The
+  dealbreaker rule was chosen after seeing this set, so a fresh set is the real test.
+- **Linux and macOS first.** The commands in this README are written for them. Windows creates and
+  activates the virtual environment differently; the lines are under [Quick start](#quick-start), and
+  the rest is the same.
 
 ## Roadmap
 
