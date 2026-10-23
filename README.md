@@ -46,7 +46,7 @@ Funnel: 2364 postings from 7 employers -> 1107 title excluded, 1066 title out of
 
 Databricks · Senior Customer Enablement Program Manager
   Location:        United States
-  Comp:            $117,400 – $161,350
+  Comp:            $117,400 - $161,350
   Conversion read: LOW · years gap +2 (6+ stated vs 4.5 held) · posted 138d ago · flooded board
   Flags:           VERIFY LOCATION: the board names only the country; REACH: 6+ years stated
 ```
