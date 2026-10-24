@@ -127,7 +127,7 @@ def jd_hash(desc):
     """Stable hash of JD text, so a quietly rewritten req stops looking unchanged."""
     return hashlib.sha256(re.sub(r"\s+", " ", (desc or "")).strip().encode("utf-8")).hexdigest()[:16]
 
-VERSION = "0.1"
+VERSION = "0.3.1"
 UA = f"maxq-sweep/{VERSION} (+https://github.com/mpwilso/Project-Max-Q)"
 DELAY = 0.15
 # Browser impersonation is opt-in (--allow-browser-impersonation, or this env var set to 1). Off, the

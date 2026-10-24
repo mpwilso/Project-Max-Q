@@ -77,7 +77,7 @@ class OptInCase(unittest.TestCase):
 
 class HonestUserAgent(OptInCase):
     def test_the_user_agent_names_the_tool_and_links_the_repo(self):
-        self.assertRegex(sweep.UA, r"^maxq-sweep/\d+\.\d+ \(\+https://github\.com/mpwilso/Project-Max-Q\)$")
+        self.assertRegex(sweep.UA, r"^maxq-sweep/\d+\.\d+(?:\.\d+)? \(\+https://github\.com/mpwilso/Project-Max-Q\)$")
 
     def test_default_calls_send_the_honest_user_agent(self):
         sweep.get("https://example.test/a")

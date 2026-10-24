@@ -49,7 +49,7 @@ Reqs whose posting text changed since the last read are listed here.
 - Conversion read: **MEDIUM** · years bar 4+ (stated) cleared · posted 227d ago (past 14 days: a drag) · no known contact
 - Why now: newly discovered
 - Posting risk: live 227d
-- Flags: ONSITE TERMS despite remote listing: expect every notino to be intellectually curious, drawn to tinkering and discovery, and
+- Flags: ONSITE TERMS despite remote listing: intellectually curious, drawn to tinkering and discovery
 - JD text: `data/jds/2026-09-27/ashby_notion_8b82e596_e828_45db_94d5_b76acc89e749.md`
 
 _... 19 more ..._
