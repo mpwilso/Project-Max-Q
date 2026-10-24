@@ -4,6 +4,11 @@ What changed in each release. The full notes are on the [releases page](https://
 
 ## Unreleased
 
+- README restructured to about a third of its length: the plain sentence and status line up top, then What it does, Try it, What was measured, Keeping the resume truthful, Limits, How it was built, The other tools and License. The job search is spoken of in the past tense. Setup detail moved to docs/SETUP.md, the gates.json keys, filters, ranking commands and glossary to docs/CONFIG.md, how the sweep reads sites to docs/CRAWLING.md, and the full limits list to docs/LIMITS.md. A test, tests/test_readme_rules.py, holds the README under 155 shown lines with no dashes, no broken links and no overclaiming words.
+- targets.json trimmed from 53 example boards to 35: the three quickstart boards plus one per kind of careers site that had an example, with no tiers. Six readers (directemployers, paradox, radancy_v2, taleo, taleo_tbe, tiktok) have a test but no example board; docs/LIMITS.md says so.
+- The user agent now carries the release number: `maxq-sweep/0.3.1`, where it had said 0.1 since the first release.
+- The sample report's one quoted posting fragment that read as a typo is trimmed.
+- 695 tests.
 - robots.txt is checked, on by default: each host's file is read once per run with the tool's own user agent, a path it disallows is not fetched, and the company is reported NOT READ with the path in coverage and in the health block. A file that cannot be fetched allows, and the host is noted. `--ignore-robots` or `MAXQ_IGNORE_ROBOTS=1` turns the check off. 19 new tests.
 - The Meta careers reader (Chrome user agent, Sec-Fetch headers, scraped LSD token, pinned GraphQL doc_id) moved out of `sweep.py` into `adapters/metacareers.py`, under the plugin contract and behind the same `--allow-browser-impersonation` opt-in. Same `ats` key, same req keys, same behaviour; plugins now get `h.browser_impersonation_allowed`, `h.OptInRequired`, `h.OPT_IN_HINT` and `h.robots_check`. A fixture-backed adapter test on made-up data.
 - README: the limits that were spread across How it reads sites and the eval section (browser impersonation, the robots.txt conditions, the one 24-posting labeled set, Linux and macOS first) are gathered into one Limits section near the end.

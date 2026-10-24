@@ -1,4 +1,4 @@
-# Project Max-Q: rules for agents working in this repo
+# Max Q: rules for agents working in this repo
 
 Max-Q reads job postings from companies' own careers sites, filters them against a profile and ranks the short list. [docs/AGENT_RULES.md](docs/AGENT_RULES.md) holds the operating rules the code was built under; read it first. These are the rules for a session here.
 

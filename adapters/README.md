@@ -1,4 +1,4 @@
-# adapters/ — one file per ATS
+# adapters: one file per ATS
 
 `sweep.py` loads every `adapters/<name>.py` at import (`load_plugins()`). The original built-in
 adapters live in `sweep.py`; every new board type goes here.
