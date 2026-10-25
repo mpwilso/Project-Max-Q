@@ -123,5 +123,3 @@ This is one of six tools. Three run in order: [Loupe](https://github.com/mpwilso
 ## License
 
 [MIT](LICENSE).
-
-Built by Matt Wilson · [LinkedIn](https://www.linkedin.com/in/mwilso)
