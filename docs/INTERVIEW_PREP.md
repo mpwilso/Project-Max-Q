@@ -125,7 +125,8 @@ notes and are not read, except `traces:`, `resume:`, `cites:`, and:
 | `i_not_we` | WARN | an answer of 40 or more words with more "we" than "I": say what you did |
 | `resume_coverage` | INFO | figures on the interviewer's page that the pack never says |
 
-Hedges and em-dashes are not checked aloud: nothing here is sent, and an estimate needs its word. Exit
+Hedges, em-dashes, the page's line budget and the unit on a figure are not checked aloud: nothing here
+is sent, a figure's trace is checked without its unit, and an estimate needs its word. Exit
 code 0 when nothing fails, 1 on any FAIL, 2 on a missing file or a malformed claims file.
 
 **Then an independent read.** The check sees figures and phrases. An invented habit with no number in it

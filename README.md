@@ -91,7 +91,7 @@ Claude's run before the rule caught every good job but pushed three bad ones to 
 
 ## Keeping the resume truthful
 
-A tailored resume is where an AI assistant is most tempted to embellish. `claimcheck.py` stops that in code: every bullet must cite a verified claim about the candidate (`[claim-id]`), and a line is blocked if it states a figure, a system or a title those claims don't support, anything on the never-claim list, implied people management, a hedged figure, an AI-tell word or an em dash. One blocked line blocks the whole resume, so the fix is to change the wording or add a verified claim, never to talk the check out of it.
+A tailored resume is where an AI assistant is most tempted to embellish. `claimcheck.py` stops that in code: every bullet must cite a verified claim about the candidate (`[claim-id]`), and a line is blocked if it states a figure, a system or a title those claims don't support, anything on the never-claim list, implied people management, a hedged figure, a figure with a unit no claim states ($1.2M, 40%, 400+ users), an AI-tell word or an em dash. A resume past the line budget of one page is blocked at the line that crosses it. One blocked line blocks the whole resume, so the fix is to change the wording or add a verified claim, never to talk the check out of it.
 
 ```
 python claimcheck.py examples/john_doe/resume.md            # every line traces: passes
@@ -112,9 +112,9 @@ The full list, with the switches: [docs/LIMITS.md](docs/LIMITS.md).
 
 Claude Code wrote most of the code. I wrote the rules it had to follow ([docs/AGENT_RULES.md](docs/AGENT_RULES.md)), decided what it could and couldn't decide on its own, and held it to one standard: any bug found in real data got a test before we moved on. The bugs, with the test that now guards each one, are in [docs/DEFECT_LOG.md](docs/DEFECT_LOG.md); when a written rule didn't stop the agent repeating a mistake, the rule became a check that blocks the commit ([defect 12](docs/DEFECT_LOG.md#12-a-one-line-edit-that-rewrote-the-whole-file)). Built on personal time and equipment, independent of any employer.
 
-Reading the code? Start small: [adapters/tiktok.py](adapters/tiktok.py) is one careers-site reader (126 lines), [claimcheck.py](claimcheck.py) is the resume check (334 lines; [spokencheck.py](spokencheck.py) runs it on interview prep), [fitscore.py](fitscore.py) is the scorer, and [sweep.py](sweep.py) is the 5,500-line engine that runs everything else.
+Reading the code? Start small: [adapters/tiktok.py](adapters/tiktok.py) is one careers-site reader (126 lines), [claimcheck.py](claimcheck.py) is the resume check (407 lines; [spokencheck.py](spokencheck.py) runs it on interview prep), [fitscore.py](fitscore.py) is the scorer, and [sweep.py](sweep.py) is the 5,500-line engine that runs everything else.
 
-What I would do next: a second, independently labeled set to confirm the fit scorer's numbers; more page checks before any reviewer sees a draft (one page, unsupported metrics); an independent review pass and a person's approval before a file is released.
+What I would do next: a second, independently labeled set to confirm the fit scorer's numbers, and an independent review pass with a person's approval before a file is released.
 
 ## The other tools
 

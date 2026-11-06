@@ -16,6 +16,10 @@ and against rules that hold for any candidate, on every line of the page:
     titles not held     a title-cased title from titles_not_held, anywhere on the page (case-sensitive)
     voice               a claim whose voice is spoken or interview is said aloud, never printed
     dashes              em-dashes, U+2015 and "--", and invisible characters (zero-width, soft hyphen)
+    metrics             a figure with a unit ($1.2M, 40%, 3x, 400+ users, 9 working days) that no claim
+                        states: a bullet's cited claims, or any written claim on an uncited line
+    one page            more non-blank lines than max_lines in the claims file (50 when unset); the
+                        first line over the budget is the one named
 
 A single failing line blocks the whole resume (exit code 1). The report names the line and the reason,
 so the fix is to change the wording or add a verified claim, never to argue with the check. A missing
@@ -35,6 +39,7 @@ CITE = re.compile(r"\[([a-z0-9-]+)\]")
 NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?![\w.])")
 ROLE_HEADING = re.compile(r"^###\s+(?P<title>[^·|]+?)\s*[·|]")
 VOICES = ("written", "spoken", "interview")
+MAX_LINES = 50   # non-blank lines on one page, when the claims file sets no max_lines
 
 
 def has_phrase(text, phrase):
@@ -52,6 +57,9 @@ def config_problems(cfg):
     A JSON string "\\b" is a backspace character, not a word boundary, so a pattern holding a control
     character is refused: it would compile, match nothing, and never fire."""
     out = []
+    budget = cfg.get("max_lines", MAX_LINES)
+    if not isinstance(budget, int) or isinstance(budget, bool) or budget < 1:
+        out.append(f"max_lines must be a whole number of lines above zero, not {budget!r}")
     for c in cfg.get("claims", []):
         cid = c.get("id", "?")
         voice = c.get("voice", "written")
@@ -214,6 +222,45 @@ def held_title_hits(text, cfg):
     return list(dict.fromkeys(out))
 
 
+# a figure with a unit: money, a percentage, a multiplier, or a count of something. A bare number on a
+# bullet is already held to the cited claims; this names the unit too, and reaches lines nobody cites,
+# such as a summary line. A year range ("2021 to present", "2019 to 2022") has no unit and is not one.
+_NUM = r"\d[\d,]*(?:\.\d+)?"
+_SCALE = r"(?:\s?(?:[kmb]|bn|mm|thousand|million|billion)(?![a-z]))?"
+METRIC_UNITS = ("users?", "requesters?", "customers?", "clients?", "accounts?", "requests?", "tickets?",
+                "teams?", "people", "employees?", "engineers?", "developers?", "analysts?", "staff",
+                "records?", "rows?", "suppliers?", "vendors?", "transactions?", "orders?", "invoices?",
+                "units?", "countr(?:y|ies)", "regions?", "markets?", "sites?", "stores?", "locations?",
+                "offices?", "systems?", "integrations?", "releases?", "projects?", "programs?", "products?",
+                "features?", "hours?", "days?", "weeks?", "months?", "years?", "quarters?", "sprints?",
+                "fte", "headcount")
+_UNITS = "|".join(METRIC_UNITS)
+METRIC = re.compile(
+    rf"(?<![\w.])(?:[$€£]\s?{_NUM}{_SCALE}\+?"                              # $1.2M, $400K, $1,000
+    rf"|{_NUM}\s?(?:%|percent(?:age points?)?(?![a-z])|pct(?![a-z]))"      # 40%, 40 percent
+    rf"|{_NUM}\s?x(?![a-z])(?!\s?\d)"                                      # 3x, 2.5x (not "2 x 2")
+    rf"|{_NUM}{_SCALE}\+?\s(?:[a-z-]+\s){{0,2}}(?:{_UNITS})(?![a-z])"       # 420 requesters, 9 working days
+    rf"|{_NUM}\s?(?:[kmb]|bn|mm|thousand|million|billion)(?![a-z])\+?"     # 1.2M, 5 million
+    rf"|{_NUM}\+(?![\w]))", re.I)                                           # 400+
+
+
+def metric_hits(text, facts):
+    """The figures with a unit in text that none of facts states. A figure counts as stated when the
+    whole figure, the figure without its currency sign, or its number (with or without commas and a
+    plus) is a fact, case and spacing aside."""
+    known = {f.lower().replace(" ", "") for f in facts}
+    known |= {k.replace(",", "") for k in known}
+    out = []
+    for m in METRIC.finditer(text):
+        figure = re.sub(r"\s+", " ", m.group(0)).strip()
+        low = figure.lower().replace(" ", "")
+        num = re.search(_NUM, low).group(0)
+        forms = {low, low.lstrip("$€£"), low.rstrip("+"), num, num.replace(",", "")}
+        if not forms & known:
+            out.append(figure)
+    return list(dict.fromkeys(out))
+
+
 # ---------------------------------------------------------------- the resume
 
 def check_bullet(line, claims, cfg):
@@ -223,7 +270,9 @@ def check_bullet(line, claims, cfg):
     prose = CITE.sub("", line)
     text = prose.lower()
     if not cited:
-        return ["cites no claim"] + prose_reasons(prose, cfg)
+        return (["cites no claim"]
+                + [f"metric \"{m}\" is not in any written claim" for m in metric_hits(prose, written_facts(cfg))]
+                + prose_reasons(prose, cfg))
     unknown = [c for c in cited if c not in claims]
     if unknown:
         reasons.append("cites unknown claim(s): " + ", ".join(unknown))
@@ -240,7 +289,14 @@ def check_bullet(line, claims, cfg):
     for c in cited:
         if c in claims and claims[c].get("voice", "written") != "written":
             reasons.append(f"cites {c}, a {claims[c]['voice']}-only claim: say it, never print it")
+    reasons += [f"metric \"{m}\" is not in the cited claim(s)" for m in metric_hits(prose, facts)]
     return reasons + prose_reasons(prose, cfg)
+
+
+def written_facts(cfg):
+    """What any line may state without citing a claim: the facts of every written claim. A spoken or
+    interview claim's facts are left out, since they are never printed."""
+    return {f for c in cfg.get("claims", []) if c.get("voice", "written") == "written" for f in c["facts"]}
 
 
 def prose_reasons(text, cfg):
@@ -255,22 +311,39 @@ def prose_reasons(text, cfg):
     return out
 
 
+def page_reason(shown, budget):
+    """The one-page rule, for the first non-blank line past the budget; None for every other line."""
+    if shown == budget + 1:
+        return f"over one page: non-blank line {shown}, past the budget of {budget} (max_lines in the claims file)"
+    return None
+
+
 def check(resume_text, cfg):
     """Check every bullet and role heading, and every other line for the page-wide rules. Returns a list
     of (line_no, line, reasons); a line that is neither a bullet nor a role heading is listed only when
     something is wrong with it."""
     claims = {c["id"]: c for c in cfg["claims"]}
     held = {t.lower() for t in cfg.get("titles_held", [])}
-    results = []
+    uncited = written_facts(cfg)
+    budget = cfg.get("max_lines", MAX_LINES)
+    results, shown = [], 0
     for n, raw in enumerate(resume_text.splitlines(), 1):
         line = raw.strip()
+        if not line:
+            continue
+        shown += 1
+        page = [r] if (r := page_reason(shown, budget)) else []
         if line.startswith(("- ", "* ")):
-            results.append((n, line, dash_hits(line) + check_bullet(line[2:], claims, cfg)))
+            results.append((n, line, page + dash_hits(line) + check_bullet(line[2:], claims, cfg)))
         elif (m := ROLE_HEADING.match(line)):
             title = m.group("title").strip()
-            results.append((n, line, dash_hits(line) + ([] if title.lower() in held else [f"title not held: {title}"])))
-        elif line:
-            reasons = dash_hits(line) + ([] if line.startswith("#") else prose_reasons(line, cfg))
+            results.append((n, line, page + dash_hits(line)
+                            + ([] if title.lower() in held else [f"title not held: {title}"])))
+        else:
+            reasons = page + dash_hits(line)
+            if not line.startswith("#"):
+                reasons += [f"metric \"{m}\" is not in any written claim" for m in metric_hits(line, uncited)]
+                reasons += prose_reasons(line, cfg)
             if reasons:
                 results.append((n, line, reasons))
     return results
