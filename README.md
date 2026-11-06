@@ -77,17 +77,19 @@ Windows, a full run of `targets.json`, probing one company and the maintainer's 
 
 ## What was measured
 
-`evals/run_fit_eval.py` scores 24 made-up postings labeled apply, maybe or skip, including traps: the right title on the wrong job, the right job under an odd title, a good job in a place he can't work. The baseline is plain keyword matching.
+`evals/run_fit_eval.py` scores 24 made-up postings labeled apply, maybe or skip, including traps: the right title on the wrong job, the right job under an odd title, a good job in a place he can't work. The baseline is plain keyword matching. A second set of 24, labeled under written rules by a different model before the run ([evals/fit/SET2.md](evals/fit/SET2.md)), was scored once on 2026-11-05.
 
 | Scorer (24 postings) | Agrees with label | Apply precision | Apply recall | Bad jobs pushed to the top |
 |---|---|---|---|---|
 | Keyword baseline ([report](evals/results/fit_baseline.md)) | 46% | 42% | 83% | 3 of 12 |
 | Claude (Opus 5.5), before the dealbreaker rule<sup>1</sup> | 67% | 50% | 100% | 3 of 12 |
 | Claude, plus the dealbreaker rule ([report](evals/results/fit_claude-code.md)) | 79% | 67% | 100% | 0 of 12 |
+| Keyword baseline, set 2 ([report](evals/results/fit2_baseline.md)) | 50% | 46% | 100% | 4 of 12 |
+| Claude, plus the rule, set 2 ([report](evals/results/fit2_claude-code.md)) | 79% | 55% | 100% | 0 of 12 |
 
 <sup>1</sup> The report from that run was not kept. Its numbers are recomputed from the same recorded answers ([evals/recorded/](evals/recorded/)) with the verdict taken from the score alone, the rule the code had at the time.
 
-Claude's run before the rule caught every good job but pushed three bad ones to the top: five days onsite in New York, a role in Canada, and a six-month contract. In each case the model had named the problem as a dealbreaker and still scored the job 78 to 90, because location is 10 points of the rubric. The fix went in code, not the prompt: a dealbreaker now makes the verdict skip ([defect 9](docs/DEFECT_LOG.md#9-the-ai-scorer-saw-the-dealbreaker-and-scored-the-job-90-anyway)). The third row replays the same recorded answers under the new rule, so no model call changed. What these numbers do and do not show is under [Limits](#limits).
+Claude's run before the rule caught every good job but pushed three bad ones to the top: five days onsite in New York, a role in Canada, and a six-month contract. In each case the model had named the problem as a dealbreaker and still scored the job 78 to 90, because location is 10 points of the rubric. The fix went in code, not the prompt: a dealbreaker now makes the verdict skip ([defect 9](docs/DEFECT_LOG.md#9-the-ai-scorer-saw-the-dealbreaker-and-scored-the-job-90-anyway)). The third row replays the same recorded answers under the new rule, so no model call changed. On set 2 the scorer again caught every good job and pushed no bad one up; all five misses were maybes it scored apply. What these numbers do and do not show is under [Limits](#limits).
 
 ## Keeping the resume truthful
 
@@ -102,7 +104,7 @@ python claimcheck.py examples/john_doe/resume_blocked.md    # 5 of 6 lines block
 
 ## Limits
 
-- The fit scorer's numbers come from one set of 24 made-up postings, labeled by the same model family that does the scoring, under a dealbreaker rule chosen after seeing that set. A fresh set is the real test.
+- The fit scorer's numbers come from two sets of 24 made-up postings, both labeled by Claude models, not a person. Set 1's dealbreaker rule was chosen after seeing that set; set 2 was labeled under written rules before its run, and the rule held.
 - Browser impersonation is off by default, so Meta's careers site is reported as skipped unless you opt in. robots.txt is checked; a file that cannot be fetched allows every path, and the host is named.
 - Six kinds of careers site have a reader and a test but no example company in `targets.json`.
 
@@ -114,7 +116,7 @@ Claude Code wrote most of the code. I wrote the rules it had to follow ([docs/AG
 
 Reading the code? Start small: [adapters/tiktok.py](adapters/tiktok.py) is one careers-site reader (126 lines), [claimcheck.py](claimcheck.py) is the resume check (407 lines; [spokencheck.py](spokencheck.py) runs it on interview prep), [fitscore.py](fitscore.py) is the scorer, and [sweep.py](sweep.py) is the 5,500-line engine that runs everything else.
 
-What I would do next: a second, independently labeled set to confirm the fit scorer's numbers, and an independent review pass with a person's approval before a file is released.
+What I would do next: a set of postings labeled by a person, since both sets so far were labeled by models, and an independent review pass with a person's approval before a file is released.
 
 ## The other tools
 

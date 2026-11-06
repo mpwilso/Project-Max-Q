@@ -24,3 +24,17 @@ python evals/run_fit_eval.py --data evals/fit/labeled-2.jsonl --scorer claude-co
 ```
 
 The scorer runs once. Its answers are recorded under [evals/recorded/](../recorded/) so the report can be replayed without a model call.
+
+## Result (2026-11-05)
+
+Scored once with Claude Opus 5.5 through Claude Code 2.1.318 on Windows, with `ANTHROPIC_MODEL` pinned to the model set 1 used. A first attempt from the WSL machine failed on every posting before any model call, because that Claude Code login had expired; it spent nothing and recorded nothing, and the run was made once from the other machine. Equivalent API cost about $0.55.
+
+| Measure | Set 1 | Set 2 |
+|---|---|---|
+| Agrees with the label | 79% (19 of 24) | 79% (19 of 24) |
+| Precision on apply | 67% | 55% |
+| Recall on apply | 100% | 100% |
+| Good jobs buried | 0 | 0 |
+| Bad jobs pushed up | 0 | 0 |
+
+Every miss on set 2 is a maybe the scorer called apply (t08 HR systems, t09 a 9+ years ask, t10 an analyst role, t11 inventory planning, t12 operations with no systems ownership), with scores of 76 to 81, just over the apply line. The dealbreaker rule, chosen after set 1, held on every skip in set 2, including the three location traps. Full report: [fit2_claude-code.md](../results/fit2_claude-code.md).

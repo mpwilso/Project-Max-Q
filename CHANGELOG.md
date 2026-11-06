@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- A second fit-scorer set, `evals/fit/labeled-2.jsonl`: 24 new made-up postings in the first set's shape and label mix, labeled under rules written first in `evals/fit/SET2.md` by a different Claude model, committed before the scorer ran. Scored once on 2026-11-05 with Claude Opus 5.5 through Claude Code: 79% agreement, apply precision 55%, apply recall 100%, no good job buried and no bad job pushed up; the five misses were maybes scored apply. Reports in `evals/results/fit2_baseline.md` and `fit2_claude-code.md`, answers recorded for replay, and CI runs the baseline on both sets. The README's limits and next steps say that no person has labeled either set.
+
 What changed in each release. The full notes are on the [releases page](https://github.com/mpwilso/Project-Max-Q/releases).
 
 ## 0.4.0 (2026-11-05)

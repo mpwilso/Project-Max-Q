@@ -15,12 +15,17 @@ What the code does under a condition worth knowing, and what the numbers in the 
   `--ignore-robots` (or `MAXQ_IGNORE_ROBOTS=1`) turns the check off for a run. One reader was written
   around a robots rule before the check existed: the DirectEmployers reader uses the sitemap, not the
   RSS feeds robots.txt rules out.
-- **The fit scorer's numbers come from one set of 24 made-up postings.** The labels were written
-  against John Doe's profile by the project's AI coding agent, so the measurement is a consistency check
-  rather than independent ground truth. The scorer and the labeler are the same model family. The
-  dealbreaker rule was chosen after seeing this set, so a fresh set is the real test. The report from
-  the first Claude run, before that rule, was not kept; its row in the README is recomputed from the
-  recorded answers in [evals/recorded/](../evals/recorded/) with the verdict taken from the score alone.
+- **The fit scorer's numbers come from two sets of 24 made-up postings, and no person has labeled
+  either.** Set 1's labels were written against John Doe's profile by the project's AI coding agent,
+  and the dealbreaker rule was chosen after seeing that set, so its measurement is a consistency check
+  rather than independent ground truth. Set 2 ([evals/fit/SET2.md](../evals/fit/SET2.md)) was labeled
+  by a different Claude model under rules written down first, committed before the scorer ran, and
+  scored once: 79% agreement, the same as set 1, with every good job caught and no bad job pushed up;
+  all five misses were maybes scored apply, so the scorer is more generous than the rules on adjacent
+  domains, a step down in scope and a years gap. Both labelers are the same model family as the scorer.
+  The report from the first Claude run on set 1, before the dealbreaker rule, was not kept; its row in
+  the README is recomputed from the recorded answers in [evals/recorded/](../evals/recorded/) with the
+  verdict taken from the score alone.
 - **Linux and macOS are what the commands are written for.** Windows creates and activates the virtual
   environment differently; the lines are in [SETUP.md](SETUP.md), and the rest is the same.
 - **Six kinds of careers site have a reader but no example company in `targets.json`**: directemployers,
