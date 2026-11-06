@@ -2,11 +2,11 @@
 
 What changed in each release. The full notes are on the [releases page](https://github.com/mpwilso/Project-Max-Q/releases).
 
-## Unreleased
+## 0.4.0 (2026-11-05)
 
 - README restructured to about a third of its length: the plain sentence and status line up top, then What it does, Try it, What was measured, Keeping the resume truthful, Limits, How it was built, The other tools and License. The job search is spoken of in the past tense. Setup detail moved to docs/SETUP.md, the gates.json keys, filters, ranking commands and glossary to docs/CONFIG.md, how the sweep reads sites to docs/CRAWLING.md, and the full limits list to docs/LIMITS.md. A test, tests/test_readme_rules.py, holds the README under 155 shown lines with no dashes, no broken links and no overclaiming words.
 - targets.json trimmed from 53 example boards to 35: the three quickstart boards plus one per kind of careers site that had an example, with no tiers. Six readers (directemployers, paradox, radancy_v2, taleo, taleo_tbe, tiktok) have a test but no example board; docs/LIMITS.md says so.
-- The user agent now carries the release number: `maxq-sweep/0.3.1`, where it had said 0.1 since the first release.
+- The user agent now carries the release number (`maxq-sweep/0.4.0` in this release), where it had said 0.1 since the first release.
 - The sample report's one quoted posting fragment that read as a typo is trimmed.
 - Two page checks in `claimcheck.py`, before a reviewer sees a draft. A figure with a unit ($1.2M, 40%, 3x, 400+ users, 9 working days) that no claim states is blocked and quoted with its unit: on a bullet, the cited claims decide; on a line nobody cites, such as a summary line, every written claim does. A year range is not a figure. A resume with more non-blank lines than `max_lines` in the claims file (50 when unset) is blocked at the line that crosses the budget. The README's next steps drop the page checks. 12 new tests.
 - 707 tests.
