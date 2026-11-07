@@ -2,6 +2,7 @@
  "scorer": "claude-code",
  "model": "claude-opus-5-5",
  "data": "evals/fit/labeled-2.jsonl",
+ "data_sha256": "f82204d270d3bcd9b5c5233c6ed0495e0a73052f642d63d639fbd772aea5e68c",
  "answers": {
   "t01": {
    "strengths": [

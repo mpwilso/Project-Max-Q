@@ -166,6 +166,62 @@ class LabeledSet(unittest.TestCase):
                 r.score(dict(POSTING, id="missing"))
 
 
+class EvalFiles(unittest.TestCase):
+    """A second data file never overwrites the first set's reports or recordings, and a recording is
+    replayed against the data it was made on or not at all."""
+    SET1 = ROOT / "evals" / "fit" / "labeled.jsonl"
+    SET2 = ROOT / "evals" / "fit" / "labeled-2.jsonl"
+
+    def test_the_default_report_name_follows_the_data_file(self):
+        self.assertEqual(ev.report_path(self.SET1, "baseline"), ROOT / "evals" / "results" / "fit_baseline.md")
+        self.assertEqual(ev.report_path(self.SET2, "claude-code"), ROOT / "evals" / "results" / "fit2_claude-code.md")
+        self.assertEqual(ev.report_path(ROOT / "evals" / "local" / "mine.jsonl", "baseline"),
+                         ROOT / "evals" / "local" / "fit_mine_baseline.md")
+
+    def test_a_recording_names_its_data_and_never_overwrites_another(self):
+        with tempfile.TemporaryDirectory() as d:
+            first = ev.record_path(Path(d), "claude-code", self.SET2, "2026-11-06")
+            self.assertEqual(first.name, "claude-code-labeled-2-2026-11-06.json")
+            self.assertNotEqual(first, ev.record_path(Path(d), "claude-code", self.SET1, "2026-11-06"))
+            first.write_text("{}", encoding="utf-8")
+            self.assertEqual(ev.record_path(Path(d), "claude-code", self.SET2, "2026-11-06").name,
+                             "claude-code-labeled-2-2026-11-06-2.json")
+
+    def recording(self, d, **fields):
+        p = Path(d) / "rec.json"
+        p.write_text(json.dumps({"scorer": "claude-code", "answers": {"s01": GOOD}, **fields}), encoding="utf-8")
+        return fitscore.ReplayScorer(p)
+
+    def test_a_replay_against_another_data_file_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            r = self.recording(d, data="evals/fit/labeled.jsonl", data_sha256=ev.data_sha256(self.SET1))
+            ev.check_replay(r, self.SET1)
+            with self.assertRaises(SystemExit) as e:
+                ev.check_replay(r, self.SET2)
+            self.assertIn("labeled.jsonl", str(e.exception))
+            # an older recording with a path and no hash is held to the path
+            with self.assertRaises(SystemExit):
+                ev.check_replay(self.recording(d, data="evals/fit/labeled.jsonl"), self.SET2)
+            # the same path with other contents is refused too
+            with self.assertRaises(SystemExit):
+                ev.check_replay(self.recording(d, data="evals/fit/labeled.jsonl", data_sha256="0" * 64), self.SET1)
+
+    def test_the_hash_ignores_line_endings(self):
+        with tempfile.TemporaryDirectory() as d:
+            a, b = Path(d) / "a.jsonl", Path(d) / "b.jsonl"
+            a.write_bytes(b'{"id": 1}\n{"id": 2}\n')
+            b.write_bytes(b'{"id": 1}\r\n{"id": 2}\r\n')
+            self.assertEqual(ev.data_sha256(a), ev.data_sha256(b))
+
+    def test_each_committed_recording_matches_the_data_it_names(self):
+        recs = sorted((ROOT / "evals" / "recorded").glob("*.json"))
+        self.assertTrue(recs)
+        for p in recs:
+            rec = json.loads(p.read_text(encoding="utf-8"))
+            self.assertEqual(rec.get("data_sha256"), ev.data_sha256(ROOT / rec["data"]), p.name)
+            ev.check_replay(fitscore.ReplayScorer(p), ROOT / rec["data"])
+
+
 class RankNeverFilters(unittest.TestCase):
     """The score sorts; it must never make a posting disappear."""
     def test_an_unscorable_posting_is_still_listed(self):

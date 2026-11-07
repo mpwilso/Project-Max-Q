@@ -26,6 +26,19 @@ What the code does under a condition worth knowing, and what the numbers in the 
   The report from the first Claude run on set 1, before the dealbreaker rule, was not kept; its row in
   the README is recomputed from the recorded answers in [evals/recorded/](../evals/recorded/) with the
   verdict taken from the score alone.
+- **claimcheck reads a figure as a value, a unit and a scale, and some numbers as no figure.** A
+  four-digit number from 1900 to 2099 with no currency sign or percent is read as a year, so "2000
+  users" on a line nobody cites is not held as a metric; on a bullet every number, a year included, is
+  still held to the cited claims. A version (3.12 after Python, version or release, 2.0 before release,
+  3.12.1) is not a figure anywhere. Filler words reach a count only before a noun on a fixed list
+  (users, teams, records, days and the like), so "Built 3 new systems" is not read as a metric while
+  "Built 3 systems" is. A range is checked when written with a hyphen ("10-20%"); in "from 40 to 30%"
+  the 40 is a bare number.
+- **The anthropic SDK test checks the request, not the answer.** `tests/test_sdk_request.py` builds the
+  request with the installed SDK against a mocked transport and checks what it would send. It does not
+  show that the API accepts that request; a live run does. requirements-ai.txt asks for anthropic 2.x,
+  which needs Python 3.10 or later and sends the API key as `Authorization: Bearer` with no `X-Api-Key`
+  header, so a proxy that reads `X-Api-Key` alone needs a change.
 - **Linux and macOS are what the commands are written for.** Windows creates and activates the virtual
   environment differently; the lines are in [SETUP.md](SETUP.md), and the rest is the same.
 - **Six kinds of careers site have a reader but no example company in `targets.json`**: directemployers,

@@ -26,3 +26,22 @@ jobs:
       - run: python claimcheck.py examples/john_doe/resume.md
       - run: python claimcheck.py --spoken examples/john_doe/stories/
       - run: python claimcheck.py --spoken examples/john_doe/prep/
+
+  # The Claude scorer against the anthropic SDK that requirements-ai.txt installs, offline: the SDK's
+  # HTTP transport is mocked, so a version bump is tested before a paid run, with no key or network.
+  anthropic-sdk:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      MAXQ_REQUIRE_SDK: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt -r requirements-ai.txt
+      - run: python -m unittest tests.test_sdk_request -v
+      - run: python -m unittest discover -s tests -t .

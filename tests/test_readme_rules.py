@@ -71,6 +71,13 @@ class ReadmeRules(unittest.TestCase):
     def test_the_readme_passes_every_rule(self):
         self.assertEqual(problems(README.read_text(encoding="utf-8")), [])
 
+    def test_the_test_count_is_the_number_the_loader_finds(self):
+        # the README says how many tests run on every push; a number typed by hand goes stale
+        found = unittest.defaultTestLoader.discover(str(ROOT / "tests"), top_level_dir=str(ROOT)).countTestCases()
+        said = re.search(r"\b([\d,]+) automated tests\b", README.read_text(encoding="utf-8"))
+        self.assertIsNotNone(said, 'the README no longer says "<n> automated tests"')
+        self.assertEqual(int(said.group(1).replace(",", "")), found)
+
     def test_each_rule_catches_what_it_should(self):
         self.assertEqual(problems("line\n" * 155), ["155 lines; keep it under 155"])
         self.assertEqual(problems("<details>\n" + "line\n" * 155 + "</details>\n"), [])

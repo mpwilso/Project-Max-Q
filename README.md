@@ -12,14 +12,16 @@
 
 Max Q reads job postings straight from company careers sites, filters out the ones that don't fit, and gives you a short list to decide on. It never applies for you.
 
-Status: a portfolio project, built to show how I design, test and judge an AI tool, and the tool I used on my own 2026 job search, which ended with multiple interviews and offers. The fit scorer was measured on one set of 24 made-up postings: it agreed with the label 79% of the time, against 46% for keyword matching ([evals/results/](evals/results/), misses included).
+Status: a portfolio project, built to show how I design, test and judge an AI tool, and the tool I used on my own 2026 job search, which ended with multiple interviews and offers. The fit scorer was measured on two sets of 24 made-up postings. Set 1 was labeled by the project's own AI coding agent; set 2 by a different model under rules written before scoring, and on set 2 the scorer agreed with the label 79% of the time, against 50% for keyword matching ([evals/results/](evals/results/), misses included).
 
 Each run writes a report. It opens with a health check that accounts for every posting and every company, then lists the matches. Trimmed from [reports/SAMPLE_REPORT.md](reports/SAMPLE_REPORT.md):
 
 ```
-Funnel: 2364 postings from 7 employers -> 1107 title excluded, 1066 title out of lane,
-        95 no US location, 51 outside your markets, 5 over the years limit
-        -> 17 for review -> 22 PASS. 0 employers unread.
+Funnel: 2364 postings from 7 employers, 0 employers unread.
+  Filtered out (2269): 1107 title excluded, 1066 title out of lane, 95 no US location,
+                       1 engineering title without product or program work
+  The other 95:        51 outside your markets, 5 over the years limit,
+                       17 for a person to review, 22 PASS
 
 Databricks · Senior Customer Enablement Program Manager
   Location:        United States
@@ -28,10 +30,12 @@ Databricks · Senior Customer Enablement Program Manager
   Flags:           VERIFY LOCATION: the board names only the country; REACH: 6+ years stated
 ```
 
+PASS means the posting cleared every filter. REACH flags a stated bar above what the candidate holds, here 6+ years against 4.5.
+
 **At a glance**
-- Reads 39 kinds of company careers sites directly, with no job-listing sites in between ([adapters/](adapters/), plus the built-in readers in [sweep.py](sweep.py)).
+- Reads 39 kinds of company careers sites directly, with no job-listing sites in between: adapters, one plug-in reader per kind of site, in [adapters/](adapters/), plus the built-in readers in [sweep.py](sweep.py).
 - In the sample run, 2,364 postings from seven companies came down to 22 matches and 17 for a person to review, and every company was read ([reports/SAMPLE_REPORT.md](reports/SAMPLE_REPORT.md)).
-- 695 automated tests, none of which call a model or the network, run on every push ([tests/](tests/), [tests.yml](.github/workflows/tests.yml)).
+- 723 automated tests, none of which call a model or the network, run on every push ([tests/](tests/), [tests.yml](.github/workflows/tests.yml)).
 
 ## What it does
 
@@ -51,8 +55,8 @@ flowchart LR
 | Which roles are worth an application | Person |
 | Submitting anything | Person, always |
 
-- **Reads each company's own careers site**, never a job-listing site. A site it could not read is reported as UNCOVERED, never as a quiet empty board, and nothing is marked closed unless the whole site was read cleanly. It names itself, goes slowly and checks robots.txt ([docs/CRAWLING.md](docs/CRAWLING.md)).
-- **Filters in code.** Title, a location rule that fails closed, a required-years limit and out-of-scope fields, every threshold in `gates.json`. A posting whose title is off but whose description fits goes to a review pile, never a pass. A suspiciously small result is treated as a bug until the numbers explain it ([docs/CONFIG.md](docs/CONFIG.md)).
+- **Reads each company's own careers site**, never a job-listing site. A site it could not read is reported as UNCOVERED (named as not read), never as a quiet empty board, and nothing is marked closed unless the whole site was read cleanly. It names itself, goes slowly and checks robots.txt ([docs/CRAWLING.md](docs/CRAWLING.md)).
+- **Filters in code.** Title, a location rule that fails closed (a posting with no clear US location fails rather than passes), a required-years limit and out-of-scope fields, every threshold in `gates.json`. A posting whose title is off but whose description fits goes to a review pile, never a pass. A suspiciously small result is treated as a bug until the numbers explain it ([docs/CONFIG.md](docs/CONFIG.md)).
 - **Scores two separate questions**: whether the candidate fits, and whether an application will reach a person (required years, a level jump, an old posting, a flooded board).
 - **Ranks the short list with Claude**, if you choose it. Code checks the structured answer, sets the verdict from the score, and makes any named dealbreaker a skip. The ranking changes the order and nothing else; a person still decides.
 - **Blocks a resume line** that no verified claim about the candidate supports, and holds interview prep to the same claims (below).
@@ -77,7 +81,7 @@ Windows, a full run of `targets.json`, probing one company and the maintainer's 
 
 ## What was measured
 
-`evals/run_fit_eval.py` scores 24 made-up postings labeled apply, maybe or skip, including traps: the right title on the wrong job, the right job under an odd title, a good job in a place he can't work. The baseline is plain keyword matching. A second set of 24, labeled under written rules by a different model before the run ([evals/fit/SET2.md](evals/fit/SET2.md)), was scored once on 2026-11-05.
+`evals/run_fit_eval.py` scores 24 made-up postings labeled apply, maybe or skip, including traps: the right title on the wrong job, the right job under an odd title, a good job in a place the candidate can't work. The baseline is plain keyword matching. A second set of 24, labeled under written rules by a different model before the run ([evals/fit/SET2.md](evals/fit/SET2.md)), was scored once on 2026-11-05. Apply precision is the share of postings scored apply that were labeled apply; apply recall is the share labeled apply that were scored apply.
 
 | Scorer (24 postings) | Agrees with label | Apply precision | Apply recall | Bad jobs pushed to the top |
 |---|---|---|---|---|
@@ -89,11 +93,19 @@ Windows, a full run of `targets.json`, probing one company and the maintainer's 
 
 <sup>1</sup> The report from that run was not kept. Its numbers are recomputed from the same recorded answers ([evals/recorded/](evals/recorded/)) with the verdict taken from the score alone, the rule the code had at the time.
 
-Claude's run before the rule caught every good job but pushed three bad ones to the top: five days onsite in New York, a role in Canada, and a six-month contract. In each case the model had named the problem as a dealbreaker and still scored the job 78 to 90, because location is 10 points of the rubric. The fix went in code, not the prompt: a dealbreaker now makes the verdict skip ([defect 9](docs/DEFECT_LOG.md#9-the-ai-scorer-saw-the-dealbreaker-and-scored-the-job-90-anyway)). The third row replays the same recorded answers under the new rule, so no model call changed. On set 2 the scorer again caught every good job and pushed no bad one up; all five misses were maybes it scored apply. What these numbers do and do not show is under [Limits](#limits).
+Claude's run before the rule caught every good job but pushed three bad ones to the top: five days onsite in New York, a role in Canada, and a six-month contract. In each case the model had named the problem as a dealbreaker and still scored the job 78 to 90, because location is 10 points of the rubric (the written scoring guide the model follows). The fix went in code, not the prompt: a dealbreaker now makes the verdict skip ([defect 9](docs/DEFECT_LOG.md#9-the-ai-scorer-saw-the-dealbreaker-and-scored-the-job-90-anyway)). The third row replays the same recorded answers under the new rule, so no model call changed. On set 2 the scorer again caught every good job and pushed no bad one up; all five misses were maybes it scored apply. What these numbers do and do not show is under [Limits](#limits).
 
 ## Keeping the resume truthful
 
-A tailored resume is where an AI assistant is most tempted to embellish. `claimcheck.py` stops that in code: every bullet must cite a verified claim about the candidate (`[claim-id]`), and a line is blocked if it states a figure, a system or a title those claims don't support, anything on the never-claim list, implied people management, a hedged figure, a figure with a unit no claim states ($1.2M, 40%, 400+ users), an AI-tell word or an em dash. A resume past the line budget of one page is blocked at the line that crosses it. One blocked line blocks the whole resume, so the fix is to change the wording or add a verified claim, never to talk the check out of it.
+A tailored resume is where an AI assistant is most tempted to embellish. `claimcheck.py` stops that in code: every bullet must cite a verified claim about the candidate (`[claim-id]`), and a line is blocked if it has:
+
+- a figure, a system or a title those claims don't support
+- anything on the never-claim list, or implied people management
+- a hedged figure ("about 400")
+- a figure with a unit ($1.2M, 40%, 400+ users) that no claim states with the same value, unit and scale, so a claim's bare 3 does not support $3M; a year, a version or a quarter is not a figure
+- an AI-tell word (one like leveraged or spearheaded, which reads as machine-written) or an em dash
+
+A resume past the line budget of one page is blocked at the line that crosses it. One blocked line blocks the whole resume, so the fix is to change the wording or add a verified claim, never to talk the check out of it.
 
 ```
 python claimcheck.py examples/john_doe/resume.md            # every line traces: passes
@@ -105,7 +117,7 @@ python claimcheck.py examples/john_doe/resume_blocked.md    # 5 of 6 lines block
 ## Limits
 
 - The fit scorer's numbers come from two sets of 24 made-up postings, both labeled by Claude models, not a person. Set 1's dealbreaker rule was chosen after seeing that set; set 2 was labeled under written rules before its run, and the rule held.
-- Browser impersonation is off by default, so Meta's careers site is reported as skipped unless you opt in. robots.txt is checked; a file that cannot be fetched allows every path, and the host is named.
+- Browser impersonation (sending a Chrome user agent, because Meta's careers site answers nothing else) is off by default, so Meta's careers site is reported as skipped unless you opt in. robots.txt is checked; a file that cannot be fetched allows every path, and the host is named.
 - Six kinds of careers site have a reader and a test but no example company in `targets.json`.
 
 The full list, with the switches: [docs/LIMITS.md](docs/LIMITS.md).
@@ -114,7 +126,7 @@ The full list, with the switches: [docs/LIMITS.md](docs/LIMITS.md).
 
 Claude Code wrote most of the code. I wrote the rules it had to follow ([docs/AGENT_RULES.md](docs/AGENT_RULES.md)), decided what it could and couldn't decide on its own, and held it to one standard: any bug found in real data got a test before we moved on. The bugs, with the test that now guards each one, are in [docs/DEFECT_LOG.md](docs/DEFECT_LOG.md); when a written rule didn't stop the agent repeating a mistake, the rule became a check that blocks the commit ([defect 12](docs/DEFECT_LOG.md#12-a-one-line-edit-that-rewrote-the-whole-file)). Built on personal time and equipment, independent of any employer.
 
-Reading the code? Start small: [adapters/tiktok.py](adapters/tiktok.py) is one careers-site reader (126 lines), [claimcheck.py](claimcheck.py) is the resume check (407 lines; [spokencheck.py](spokencheck.py) runs it on interview prep), [fitscore.py](fitscore.py) is the scorer, and [sweep.py](sweep.py) is the 5,500-line engine that runs everything else.
+Reading the code? Start small: [adapters/tiktok.py](adapters/tiktok.py) is one careers-site reader (126 lines), [claimcheck.py](claimcheck.py) is the resume check (505 lines; [spokencheck.py](spokencheck.py) runs it on interview prep), [fitscore.py](fitscore.py) is the scorer, and [sweep.py](sweep.py) is the 5,500-line engine that runs everything else.
 
 What I would do next: a set of postings labeled by a person, since both sets so far were labeled by models, and an independent review pass with a person's approval before a file is released.
 

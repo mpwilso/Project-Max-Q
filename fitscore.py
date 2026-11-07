@@ -212,6 +212,8 @@ class ReplayScorer:
         rec = json.loads(Path(path).read_text(encoding="utf-8"))
         self.recorded = rec["answers"]
         self.source, self.model = rec.get("scorer"), rec.get("model")
+        self.path = Path(path)
+        self.data, self.data_sha256 = rec.get("data"), rec.get("data_sha256")   # what it was recorded on
 
     def score(self, p):
         a = self.recorded.get(str(p["id"]))

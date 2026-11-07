@@ -2,7 +2,8 @@
 
     python evals/run_fit_eval.py                         # baseline scorer on the synthetic set
     python evals/run_fit_eval.py --scorer claude --record  # Claude, and save its answers for replay
-    python evals/run_fit_eval.py --scorer replay --replay evals/recorded/claude-<date>.json
+    python evals/run_fit_eval.py --scorer replay --replay evals/recorded/claude-labeled-<date>.json
+    python evals/run_fit_eval.py --data evals/fit/labeled-2.jsonl   # set 2: writes fit2_baseline.md
     python evals/run_fit_eval.py --data evals/local/mine.jsonl  # your own labels, kept out of git
 
 Each line of the data file is one posting with a person's label: apply, maybe or skip. The report
@@ -10,8 +11,12 @@ says how often the scorer agrees, where it disagrees, and which disagreements ar
 job it would bury (labeled apply, scored skip) and a bad one it would push to the top (labeled skip,
 scored apply). A data file under evals/local/ writes its report there too, and that folder is
 gitignored, so real postings never reach the public repository.
+
+The report is named for the data file (fit_ for labeled.jsonl, fit2_ for labeled-2.jsonl), so one set
+never overwrites another's. A recording names its data file and stores its path and sha256, and a
+replay on any other data is refused rather than written as a report that matches nothing.
 """
-import argparse, datetime as dt, json, re, sys
+import argparse, datetime as dt, hashlib, json, re, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -98,6 +103,50 @@ def report(name, data_path, rows, m, usage=None, model=None):
     return "\n".join(L) + "\n"
 
 
+def data_sha256(path):
+    """The sha256 of a data file, with CRLF read as LF so a Windows checkout hashes the same."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def is_local(data):
+    return "evals/local" in Path(data).resolve().as_posix()
+
+
+def report_path(data, scorer_label):
+    """The default report for a data file: labeled.jsonl keeps fit_<scorer>.md, labeled-2.jsonl writes
+    fit2_<scorer>.md, and any other file fit_<its name>_<scorer>.md, so one set never overwrites another."""
+    stem = Path(data).stem
+    n = re.fullmatch(r"labeled-(\d+)", stem)
+    prefix = "fit" if stem == "labeled" else f"fit{n.group(1)}" if n else f"fit_{stem}"
+    return ROOT / "evals" / ("local" if is_local(data) else "results") / f"{prefix}_{scorer_label}.md"
+
+
+def record_path(rec_dir, scorer_name, data, day):
+    """Where --record saves answers: the scorer, the data file's name and the day, and a counter if a
+    recording of the same data was already made that day, since a recording is never overwritten."""
+    base = f"{scorer_name}-{Path(data).stem}-{day}"
+    p, k = Path(rec_dir) / f"{base}.json", 2
+    while p.exists():
+        p, k = Path(rec_dir) / f"{base}-{k}.json", k + 1
+    return p
+
+
+def check_replay(scorer, data):
+    """Refuse to replay a recording on any data but its own: answers keyed by posting id would match
+    nothing, or the wrong postings, and the report would be wrong without saying so. A recording that
+    carries a hash is held to the file's contents; an older one with a path only, to the path."""
+    if getattr(scorer, "name", None) != "replay":
+        return
+    want, have = getattr(scorer, "data_sha256", None), data_sha256(data)
+    if want and want != have:
+        raise SystemExit(f"{rel(scorer.path)} was recorded on {scorer.data or 'another file'} "
+                         f"(sha256 {want[:12]}), and {rel(data)} is sha256 {have[:12]}: "
+                         f"replay it with --data {scorer.data or 'the file it was recorded on'}")
+    if not want and scorer.data and scorer.data != rel(data):
+        raise SystemExit(f"{rel(scorer.path)} was recorded on {scorer.data}, not {rel(data)}: "
+                         f"replay it with --data {scorer.data}")
+
+
 RUN_DATE = re.compile(r" Run \d{4}-\d{2}-\d{2}\.")
 
 
@@ -127,6 +176,7 @@ def main():
 
     items = load(a.data)
     scorer = fitscore.make_scorer(a.scorer, a.replay)
+    check_replay(scorer, a.data)
     rows, answers = [], {}
     for it in items:
         try:
@@ -138,9 +188,8 @@ def main():
         print(f"  {it['id']:>4}  label {it['label']:5}  scored {rows[-1]['pred'] or 'ERROR':5}  {it['title']}")
 
     m = metrics([(r["label"], r["pred"]) for r in rows])
-    local = "evals/local" in Path(a.data).resolve().as_posix()
-    out_dir = ROOT / "evals" / ("local" if local else "results")
-    out = Path(a.out) if a.out else out_dir / f"fit_{getattr(scorer, 'source', None) or scorer.name}.md"
+    local = is_local(a.data)
+    out = Path(a.out) if a.out else report_path(a.data, getattr(scorer, "source", None) or scorer.name)
     out.parent.mkdir(parents=True, exist_ok=True)
     title = f"{scorer.source} (replayed)" if getattr(scorer, "source", None) else scorer.name
     changed = write_if_changed(out, report(title, a.data, rows, m, getattr(scorer, "usage", None),
@@ -148,9 +197,10 @@ def main():
     if a.record:
         rec_dir = ROOT / "evals" / ("local" if local else "recorded")
         rec_dir.mkdir(parents=True, exist_ok=True)
-        rec = rec_dir / f"{scorer.name}-{dt.date.today().isoformat()}.json"
+        rec = record_path(rec_dir, scorer.name, a.data, dt.date.today().isoformat())
         rec.write_text(json.dumps({"scorer": scorer.name, "model": getattr(scorer, "model", None),
-                                   "data": rel(a.data), "answers": answers}, indent=1), encoding="utf-8")
+                                   "data": rel(a.data), "data_sha256": data_sha256(a.data),
+                                   "answers": answers}, indent=1), encoding="utf-8")
         print(f"recorded answers: {rec.relative_to(ROOT)}")
     print(f"\nagreement {pct(m['agreement'])} | apply precision {pct(m['apply_precision'])} | "
           f"apply recall {pct(m['apply_recall'])} | buried {m['buried']} | pushed {m['pushed']} | errors {m['errors']}")

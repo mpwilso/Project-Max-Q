@@ -3,7 +3,7 @@
 Every bullet on the resume must cite at least one claim, as [claim-id], from the claims file. The
 bullet is then checked against the facts of the claims it cites:
 
-    figures   every number in the bullet must be one those claims state
+    figures   every number in the bullet must be one those claims state, with the same unit and scale
     systems   every named system or tool must be one those claims support
     never     nothing from the never-claim list (people management, certifications he lacks, ...)
     titles    every role heading must be a title the candidate actually held
@@ -17,7 +17,8 @@ and against rules that hold for any candidate, on every line of the page:
     voice               a claim whose voice is spoken or interview is said aloud, never printed
     dashes              em-dashes, U+2015 and "--", and invisible characters (zero-width, soft hyphen)
     metrics             a figure with a unit ($1.2M, 40%, 3x, 400+ users, 9 working days) that no claim
-                        states: a bullet's cited claims, or any written claim on an uncited line
+                        states with the same value, unit and scale: a bullet's cited claims, or any
+                        written claim on an uncited line. Years, versions and quarters are not metrics.
     one page            more non-blank lines than max_lines in the claims file (50 when unset); the
                         first line over the budget is the one named
 
@@ -157,7 +158,8 @@ def hedge_hits(text):
                   r"three quarters|double|triple)\b", low)
     if m:
         out.append(m.group(0))
-    m = re.search(r"\d[\d,.]*\+?\s*(?:[a-z]+\s+)?or so\b", low)
+    # starts only where a run of digits starts, so a long run is read once, not once per digit
+    m = re.search(r"(?<![\d,.])\d[\d,.]*\+?\s*(?:[a-z]+\s+)?or so\b", low)
     if m:
         out.append(m.group(0))
     return list(dict.fromkeys(out))
@@ -222,43 +224,140 @@ def held_title_hits(text, cfg):
     return list(dict.fromkeys(out))
 
 
-# a figure with a unit: money, a percentage, a multiplier, or a count of something. A bare number on a
-# bullet is already held to the cited claims; this names the unit too, and reaches lines nobody cites,
-# such as a summary line. A year range ("2021 to present", "2019 to 2022") has no unit and is not one.
-_NUM = r"\d[\d,]*(?:\.\d+)?"
-_SCALE = r"(?:\s?(?:[kmb]|bn|mm|thousand|million|billion)(?![a-z]))?"
-METRIC_UNITS = ("users?", "requesters?", "customers?", "clients?", "accounts?", "requests?", "tickets?",
+# A figure is read as (value, unit, scale), and a fact supports it only when the fact reads as the same
+# three: "$2.4m" supports "$2.4 million", "40%" supports "40 percent", and a bare "3" supports "3 regions"
+# but never "$3M", "3%" or "3x". The unit is a currency sign, "%", "pp" (percentage points), "x" (a
+# multiplier), "count" (a bare number, or a number of something) or "" (a scaled number and nothing else,
+# "2.4M", which a money fact of the same value and scale also supports); the scale is "", "k", "m" or "b".
+# A range ("10-20%", "$1-2M") is checked at both ends. A plus or a sign changes nothing.
+# A figure with a unit is a metric: money, a percentage, a multiplier, a scaled number, a number with a
+# plus, or a count of a noun below. A bare number on a bullet is already held to the cited claims; the
+# metric check names the unit too, and reaches lines nobody cites, such as a summary line. Never a metric:
+# a year (1900 to 2099, four digits, with no currency or percent), so "2021 to present" and "In 2023 the
+# team" pass; a version (3.12 after Python, version, v or release, 2.0 before release, or 3.12.1); a
+# quarter (Q3). The number has a fixed shape, and cannot start after a comma or a dot, so a long run of
+# "1,1,1" is read in one pass.
+_NUM = r"(?:\d{1,3}(?:,\d{3})+(?!\d)|\d+)(?:\.\d+)?"
+NUMBER = re.compile(rf"(?<![\w.,]){_NUM}(?!\d)")
+_CURRENCY = re.compile(r"([$€£])\s?$")
+_SCALE = re.compile(r"\s?(thousand|million|billion|bn|mm|k|m|b)(?![a-z])", re.I)
+_SCALES = {"thousand": "k", "k": "k", "million": "m", "mm": "m", "m": "m", "billion": "b", "bn": "b", "b": "b"}
+_RANGE = re.compile(r"\s?[-\N{EN DASH}]\s?([$€£]\s?)?(?=\d)")       # a hyphen or an en dash between the ends
+# the nouns a count may name; filler words ("9 working days") reach only the first list
+METRIC_NOUNS = ("users?", "requesters?", "customers?", "clients?", "accounts?", "requests?", "tickets?",
                 "teams?", "people", "employees?", "engineers?", "developers?", "analysts?", "staff",
                 "records?", "rows?", "suppliers?", "vendors?", "transactions?", "orders?", "invoices?",
                 "units?", "countr(?:y|ies)", "regions?", "markets?", "sites?", "stores?", "locations?",
-                "offices?", "systems?", "integrations?", "releases?", "projects?", "programs?", "products?",
-                "features?", "hours?", "days?", "weeks?", "months?", "years?", "quarters?", "sprints?",
-                "fte", "headcount")
-_UNITS = "|".join(METRIC_UNITS)
-METRIC = re.compile(
-    rf"(?<![\w.])(?:[$€£]\s?{_NUM}{_SCALE}\+?"                              # $1.2M, $400K, $1,000
-    rf"|{_NUM}\s?(?:%|percent(?:age points?)?(?![a-z])|pct(?![a-z]))"      # 40%, 40 percent
-    rf"|{_NUM}\s?x(?![a-z])(?!\s?\d)"                                      # 3x, 2.5x (not "2 x 2")
-    rf"|{_NUM}{_SCALE}\+?\s(?:[a-z-]+\s){{0,2}}(?:{_UNITS})(?![a-z])"       # 420 requesters, 9 working days
-    rf"|{_NUM}\s?(?:[kmb]|bn|mm|thousand|million|billion)(?![a-z])\+?"     # 1.2M, 5 million
-    rf"|{_NUM}\+(?![\w]))", re.I)                                           # 400+
+                "offices?", "hours?", "days?", "weeks?", "months?", "years?", "sprints?", "fte", "headcount")
+DIRECT_NOUNS = ("systems?", "integrations?", "releases?", "projects?", "programs?", "products?", "features?",
+                "quarters?")
+_FILLER_STOP = ("to|for|the|a|an|all|our|of|in|on|at|by|from|after|before|with|and|or|per|into|across|over|"
+                "under|since|during|its|their|each|every|these|those|this|that|his|her|my|your|than|as|out|"
+                "up|via|through|between|among|within|without|about|around|is|are|was|were|be|been|it|we|"
+                "they|i|he|she")
+_UNIT = re.compile(
+    r"\s?(?P<pp>percentage points?(?![a-z]))"
+    r"|\s?(?P<pct>%|percent(?![a-z])|pct(?![a-z]))"
+    r"|\s?(?P<x>[x×](?![a-z])(?!\s?\d))"
+    r"|\s+(?P<times>times\s+(?:more|faster|higher|larger|bigger|greater|the|as|over)\b)"
+    rf"|\s+(?P<count>(?:(?!(?:{_FILLER_STOP})\b)[a-z][a-z-]*\s+){{0,2}}(?:{'|'.join(METRIC_NOUNS)})(?![a-z])"
+    rf"|(?:{'|'.join(DIRECT_NOUNS)})(?![a-z]))", re.I)
+_TIMES_FACT = re.compile(r"\s+times(?![a-z])", re.I)          # a fact may say "3 times" with nothing after
+VERSION_BEFORE = re.compile(r"\b(?:version|ver|v|release[ds]?|releasing|python|java|node(?:\.?js)?|php|ruby|"
+                            r"golang|go|rust|perl|scala|kotlin|swift|ios|android|windows|macos|ubuntu|angular|"
+                            r"react|vue|django|rails|spring|\.net|tls|ssl|http|oauth|"
+                            r"(?:upgrad|migrat|updat|bump)(?:e|ed|es|ing)\s+to)\s+$", re.I)
+_DIRECT = re.compile(rf"\b(?:{'|'.join(DIRECT_NOUNS)})$", re.I)
+VERSION_AFTER = re.compile(r"\.\d|\s+(?:release|version|update|upgrade|beta|sdk|api|launch)\b", re.I)
+
+
+def figures(text, fact=False):
+    """Every number in text as a figure: a dict with its text, its ends as (value, unit, scale), the
+    numbers as written, whether it is a metric, and whether it is a version. fact=True reads a fact,
+    where "3 times" on its own is a multiplier. One pass, left to right; a range consumes its far end."""
+    from decimal import Decimal
+    out, pos = [], 0
+    for m in NUMBER.finditer(text):
+        if m.start() < pos:
+            continue
+        cur = _CURRENCY.search(text, max(0, m.start() - 2), m.start())
+        start = cur.start() if cur else m.start()
+        sign = cur.group(1) if cur else ""
+        nums, scales, i = [m.group(0)], [], m.end()
+        sc = _SCALE.match(text, i)
+        scales.append(_SCALES[sc.group(1).lower()] if sc else "")
+        i = sc.end() if sc else i
+        rg = _RANGE.match(text, i)
+        far = NUMBER.match(text, rg.end()) if rg else None
+        if far:
+            sign = sign or (rg.group(1) or "").strip()
+            nums.append(far.group(0))
+            i = far.end()
+            sc = _SCALE.match(text, i)
+            scales.append(_SCALES[sc.group(1).lower()] if sc else "")
+            i = sc.end() if sc else i
+            scales[0] = scales[0] or scales[1]
+        plus = text.startswith("+", i)
+        i += plus
+        u = _UNIT.match(text, i) or (_TIMES_FACT.match(text, i) if fact else None)
+        kind = None
+        if u:
+            kind = u.lastgroup or "x"           # the fact-only "times" pattern has no group
+            kind = {"pp": "pp", "pct": "%", "x": "x", "times": "x", "count": "count"}[kind]
+            i = u.end()
+        unit = kind if kind in ("pp", "%", "x") else sign or ("count" if kind or not any(scales) else "")
+        year = (not sign and kind not in ("pp", "%", "x")
+                and all(re.fullmatch(r"(?:19|20)\d\d", n) for n in nums[:1]))
+        # a version names a release, never a percentage or a count of people, days or records
+        versionable = kind is None or (kind == "count" and _DIRECT.search(u.group(0)))
+        version = ("." in m.group(0) and not sign and bool(versionable)
+                   and bool(VERSION_BEFORE.search(text, max(0, m.start() - 40), m.start())
+                     or VERSION_AFTER.match(text, m.end())))
+        metric = bool(sign or any(scales) or kind or plus) and not year and not version
+        if not metric:
+            i = m.end() if len(nums) == 1 else far.end()
+        ends = [(Decimal(n.replace(",", "")), unit, s) for n, s in zip(nums, scales)]
+        out.append({"text": re.sub(r"\s+", " ", text[start:i]).strip(), "ends": ends, "nums": nums,
+                    "metric": metric, "version": version})
+        pos = i
+    return out
+
+
+def fact_figures(facts):
+    """Every (value, unit, scale) the facts state, versions aside."""
+    return {e for f in facts for fig in figures(f, fact=True) if not fig["version"] for e in fig["ends"]}
+
+
+def supported(end, known):
+    """Whether a fact states this end of a figure: the same value, unit and scale. A scaled number with no
+    unit ("2.4M") and a count of the same scale support each other, and a money fact supports the former."""
+    value, unit, scale = end
+    if end in known:
+        return True
+    if unit in ("", "count"):
+        alts = ("", "count") + (("$", "€", "£") if unit == "" else ())
+        return any((value, u, scale) in known for u in alts)
+    return False
 
 
 def metric_hits(text, facts):
-    """The figures with a unit in text that none of facts states. A figure counts as stated when the
-    whole figure, the figure without its currency sign, or its number (with or without commas and a
-    plus) is a fact, case and spacing aside."""
-    known = {f.lower().replace(" ", "") for f in facts}
-    known |= {k.replace(",", "") for k in known}
-    out = []
-    for m in METRIC.finditer(text):
-        figure = re.sub(r"\s+", " ", m.group(0)).strip()
-        low = figure.lower().replace(" ", "")
-        num = re.search(_NUM, low).group(0)
-        forms = {low, low.lstrip("$€£"), low.rstrip("+"), num, num.replace(",", "")}
-        if not forms & known:
-            out.append(figure)
+    """The figures with a unit in text that none of facts states, at either end of a range."""
+    known = fact_figures(facts)
+    out = [f["text"] for f in figures(text)
+           if f["metric"] and not all(supported(e, known) for e in f["ends"])]
     return list(dict.fromkeys(out))
+
+
+def bare_number_hits(text, facts):
+    """The numbers in text that the facts don't state, as written. A number inside a figure the facts
+    support is stated; any other needs a bare fact of the same value. A version is not a figure."""
+    known = fact_figures(facts)
+    out = []
+    for f in figures(text):
+        if f["version"] or (f["metric"] and all(supported(e, known) for e in f["ends"])):
+            continue
+        out += [n for n, e in zip(f["nums"], f["ends"]) if (e[0], "count", "") not in known]
+    return out
 
 
 # ---------------------------------------------------------------- the resume
@@ -277,9 +376,8 @@ def check_bullet(line, claims, cfg):
     if unknown:
         reasons.append("cites unknown claim(s): " + ", ".join(unknown))
     facts = {f for c in cited if c in claims for f in claims[c]["facts"]}
-    for n in NUMBER.findall(text):
-        if n not in facts:
-            reasons.append(f"figure {n} is not in the cited claim(s)")
+    for n in bare_number_hits(prose, facts):
+        reasons.append(f"figure {n} is not in the cited claim(s)")
     for s in cfg.get("known_systems", []):
         if has_phrase(text, s) and s not in facts:
             reasons.append(f"names {s}, which the cited claim(s) don't support")
