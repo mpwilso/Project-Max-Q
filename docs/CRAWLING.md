@@ -1,7 +1,7 @@
 # How it reads careers sites
 
 - **It says who it is.** Every request carries the user agent
-  `maxq-sweep/0.4.0 (+https://github.com/mpwilso/Project-Max-Q)`.
+  `maxq-sweep/0.4.1 (+https://github.com/mpwilso/Project-Max-Q)`.
 - **It goes slowly.** It waits 0.15 seconds before every request (0.6 seconds on Eightfold's newer
   sites, which rate-limit hard), and backs off on a 429 or 5xx, honoring `Retry-After`.
 - **One request at a time per site.** Requests are grouped by host. Most hosts get one at a time; a few

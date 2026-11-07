@@ -2,7 +2,7 @@
 
 What changed in each release. The full notes are on the [releases page](https://github.com/mpwilso/Project-Max-Q/releases).
 
-## Unreleased
+## 0.4.1 (2026-11-06)
 
 - A second fit-scorer set, `evals/fit/labeled-2.jsonl`: 24 new made-up postings in the first set's shape and label mix, labeled under rules written first in `evals/fit/SET2.md` by a different Claude model, committed before the scorer ran. Scored once on 2026-11-05 with Claude Opus 5.5 through Claude Code: 79% agreement, apply precision 55%, apply recall 100%, no good job buried and no bad job pushed up; the five misses were maybes scored apply. Reports in `evals/results/fit2_baseline.md` and `fit2_claude-code.md`, answers recorded for replay, and CI runs the baseline on both sets. The README's limits and next steps say that no person has labeled either set.
 - claimcheck compares a figure's unit and scale, not just its number. Each figure is read as a value, a unit (a currency sign, percent, percentage points, a multiplier or a count) and a scale (thousand, million, billion), and a fact supports it only when it reads as the same three. Before, a figure passed when its bare number was any fact: "saved $3M" passed on a claim that says 3 business units, and "Delivered $420M" passed on an uncited line because 420 is a fact. A bare number in a claim now supports only a bare count. New tests.
